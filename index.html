@@ -71,7 +71,6 @@
     color: #333;
     min-height: 40px;
   }
-
 </style>
 </head>
 <body>
@@ -95,30 +94,35 @@ async function enviarPregunta() {
     return;
   }
 
-  respuestaDiv.textContent = "⏳ Enviando al asistente..."; 
+  respuestaDiv.textContent = "⏳ Consultando a MedAI..."; 
 
   try {
-    // ⬇️ CAMBIA ESTA URL por la de TU WEBHOOK en n8n
-    const url = "https://nano33.app.n8n.cloud/webhook-test/chat-reto1";
+    // ⬇️ CAMBIA ESTA URL por la del webhook real en n8n
+    const url = "https://nano33.app.n8n.cloud/webhook/chat-reto1"; 
 
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pregunta })
+      body: JSON.stringify({
+        chatInput: pregunta
+      })
     });
 
     const data = await res.json();
-    console.log("Respuesta n8n:", data);
+    console.log("Respuesta de n8n:", data);
 
-    if (data.respuesta) {
-      respuestaDiv.innerHTML = "💬 " + data.respuesta;
+    // ✅ n8n devuelve la respuesta del agente dentro de data
+    if (data.data && data.data[0] && data.data[0].response) {
+      respuestaDiv.innerHTML = "💬 " + data.data[0].response;
+    } else if (data.response) {
+      respuestaDiv.innerHTML = "💬 " + data.response;
     } else {
-      respuestaDiv.innerHTML = "✅ Pregunta enviada correctamente. Mira la consola de n8n.";
+      respuestaDiv.innerHTML = "💬 " + JSON.stringify(data, null, 2);
     }
 
   } catch (err) {
     console.error(err);
-    respuestaDiv.textContent = "❌ Error al conectar con n8n. Revisa la URL.";
+    respuestaDiv.textContent = "❌ Error al conectar con n8n. Revisa la URL o la configuración del webhook.";
   }
 }
 </script>
