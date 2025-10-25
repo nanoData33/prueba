@@ -43,17 +43,25 @@ async function enviarPDF() {
   if (!fileInput.files.length) return alert("Selecciona un PDF primero.");
 
   const file = fileInput.files[0];
-  const base64 = await toBase64(file);
+  const formData = new FormData();
+  formData.append("tipo", "pdf");
+  formData.append("nombre", file.name);
+  formData.append("file", file);  // Aquí el PDF real
 
   document.getElementById("resultado").textContent = "⏳ Enviando PDF a n8n...";
 
-  const res = await fetch(n8nWebhook, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ tipo: "pdf", nombre: file.name, contenido: base64 })
-  });
-  const data = await res.json();
-  document.getElementById("resultado").innerHTML = `<b>Diagnóstico recibido:</b><br>${JSON.stringify(data, null, 2)}`;
+  try {
+    const res = await fetch("https://nano33.app.n8n.cloud/webhook-test/diagnostico", {
+      method: "POST",
+      body: formData
+    });
+    const data = await res.json();
+    document.getElementById("resultado").innerHTML =
+      `<b>Diagnóstico recibido:</b><pre>${JSON.stringify(data, null, 2)}</pre>`;
+  } catch (error) {
+    console.error(error);
+    document.getElementById("resultado").textContent = "❌ Error al enviar PDF.";
+  }
 }
 
 async function enviarValores() {
