@@ -1,215 +1,229 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Asistente Clínico Inteligente</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
 
 <style>
-:root {
-  --fondo: #f4f7f4;
-  --panel: #ffffff;
-  --acento: #4a8c3f;
-  --acento-hover: #3b7133;
-  --texto: #1f1f1f;
-  --gris: #e8ebe8;
-  --sombra: rgba(0,0,0,0.08);
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'Inter', sans-serif;
-  background: var(--fondo);
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  color: var(--texto);
-}
-header {
-  background: var(--panel);
-  padding: 16px 36px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 6px var(--sombra);
-}
-header h1 {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: var(--texto);
-}
-header button {
-  background: var(--acento);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-header button:hover { background: var(--acento-hover); }
+  :root {
+    --verde-principal: #3c6e47;
+    --verde-claro: #edf5ed;
+    --fondo: #f3f1eb;
+    --card: #ffffff;
+    --gris-texto: #1f1f1f;
+    --sombra: rgba(0,0,0,0.08);
+  }
 
-main {
-  flex: 1;
-  display: flex;
-  gap: 20px;
-  padding: 20px;
-  overflow: hidden;
-}
-.chat-panel, .result-panel {
-  background: var(--panel);
-  border-radius: 12px;
-  box-shadow: 0 4px 10px var(--sombra);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-}
-.chat-panel { flex: 1; }
-.result-panel { flex: 1; overflow-y: auto; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-.chat-title, .result-title {
-  font-weight: 600;
-  font-size: 1rem;
-  color: var(--acento);
-  margin-bottom: 12px;
-}
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: var(--fondo);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
 
-.messages {
-  flex: 1;
-  overflow-y: auto;
-  background: #f9faf9;
-  border-radius: 10px;
-  padding: 14px;
-  margin-bottom: 10px;
-}
-.msg {
-  margin-bottom: 12px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  line-height: 1.45;
-  max-width: 80%;
-  word-wrap: break-word;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-}
-.msg.user {
-  background: var(--acento);
-  color: white;
-  align-self: flex-end;
-  border-top-right-radius: 0;
-}
-.msg.bot {
-  background: #eaf4e8;
-  color: var(--texto);
-  align-self: flex-start;
-  border-top-left-radius: 0;
-}
-.input-area {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-input {
-  flex: 1;
-  padding: 12px 14px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 0.95rem;
-}
-button.action {
-  background: var(--acento);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 14px;
-  cursor: pointer;
-  transition: background 0.25s;
-}
-button.action:hover { background: var(--acento-hover); }
-#recordBtn.recording { background: #b91c1c; }
+  header {
+    background: var(--card);
+    color: var(--gris-texto);
+    padding: 18px 40px;
+    font-weight: 600;
+    text-align: center;
+    box-shadow: 0 2px 8px var(--sombra);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header h1 {
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  header button {
+    background: var(--verde-principal);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.25s ease;
+  }
+  header button:hover { background: #2f5637; }
 
-#tablaResultados table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-  margin-top: 10px;
-}
-#tablaResultados th, #tablaResultados td {
-  border-bottom: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-#tablaResultados th {
-  background: #f4f9f3;
-  font-weight: 600;
-  color: #2e2e2e;
-}
-#tablaResultados tr:hover { background: #f7faf7; }
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 25px;
+    overflow: hidden;
+  }
 
-.loader {
-  display: flex;
-  justify-content: center;
-  margin: 10px 0;
-}
-.loader div {
-  width: 10px;
-  height: 10px;
-  margin: 3px;
-  background: var(--acento);
-  border-radius: 50%;
-  animation: bounce 0.6s infinite alternate;
-}
-.loader div:nth-child(2) { animation-delay: 0.2s; }
-.loader div:nth-child(3) { animation-delay: 0.4s; }
-@keyframes bounce {
-  to { opacity: 0.3; transform: translateY(-6px); }
-}
+  .panel {
+    background: var(--card);
+    border-radius: 14px;
+    box-shadow: 0 4px 12px var(--sombra);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    overflow: hidden;
+  }
 
-footer {
-  text-align: center;
-  padding: 10px;
-  background: var(--panel);
-  color: #555;
-  font-size: 0.9em;
-  box-shadow: 0 -2px 6px var(--sombra);
-}
+  h2 {
+    color: var(--verde-principal);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    background: #faf9f7;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 10px;
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.05);
+  }
+
+  .msg {
+    margin-bottom: 12px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    line-height: 1.5;
+    max-width: 80%;
+    word-wrap: break-word;
+  }
+  .msg.user {
+    background: var(--verde-principal);
+    color: white;
+    align-self: flex-end;
+    border-top-right-radius: 0;
+  }
+  .msg.bot {
+    background: var(--verde-claro);
+    color: var(--gris-texto);
+    align-self: flex-start;
+    border-top-left-radius: 0;
+  }
+  .msg.typing {
+    background: var(--verde-claro);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 70px;
+    padding: 8px;
+  }
+
+  .dot {
+    width: 8px; height: 8px;
+    background: var(--verde-principal);
+    border-radius: 50%;
+    animation: blink 1.4s infinite both;
+  }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100%{opacity:0;} 40%{opacity:1;} }
+
+  .input-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  input {
+    flex: 1;
+    padding: 12px 14px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    outline: none;
+    font-size: 0.95rem;
+  }
+  button.action {
+    background: var(--verde-principal);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.25s;
+  }
+  button.action:hover { background: #2f5637; }
+  #recordBtn.recording { background: #b91c1c; }
+
+  #tablaResultados {
+    flex: 1;
+    overflow-y: auto;
+    background: #fafafa;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.05);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+  th, td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #e5e5e5;
+    text-align: left;
+    font-size: 0.9rem;
+  }
+  th { background: var(--verde-principal); color: white; }
+
+  footer {
+    text-align: center;
+    padding: 10px;
+    background: var(--card);
+    font-size: 0.9em;
+    color: #666;
+    box-shadow: 0 -2px 8px var(--sombra);
+  }
 </style>
 </head>
 
 <body>
 <header>
   <h1><i data-lucide="stethoscope"></i> Asistente Clínico Inteligente</h1>
-  <button onclick="window.open('analitica.html','_blank')"><i data-lucide="flask-round"></i> Analizar Analítica</button>
+  <button onclick="window.open('analitica.html', '_blank')"><i data-lucide="flask-round"></i> Analizar Analítica</button>
 </header>
 
 <main>
-  <section class="chat-panel">
-    <h2 class="chat-title">Consultas Clínicas</h2>
+  <!-- PANEL IZQUIERDO: CHAT -->
+  <div class="panel">
+    <h2>Consultas Clínicas</h2>
     <div id="messages" class="messages"></div>
     <div class="input-area">
       <input id="userInput" placeholder="Escribe una consulta sobre la base de datos..." />
       <button id="recordBtn" class="action" onclick="toggleRecording()"><i data-lucide='mic'></i></button>
       <button class="action" onclick="sendText()"><i data-lucide='send'></i></button>
     </div>
-  </section>
+  </div>
 
-  <section class="result-panel">
-    <h2 class="result-title">Resultados y Tablas</h2>
-    <div id="tablaResultados">No hay datos disponibles.</div>
-  </section>
+  <!-- PANEL DERECHO: TABLAS -->
+  <div class="panel">
+    <h2>Resultados y Tablas</h2>
+    <div id="tablaResultados"><p>No hay datos disponibles.</p></div>
+  </div>
 </main>
 
-<footer>© 2025 Asistente Clínico — Módulo Conversacional</footer>
+<footer>© 2025 Asistente Clínico — Panel Conversacional</footer>
 
 <script>
 lucide.createIcons();
+
 const webhook = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
 const datasetWebhook = "https://rubaseval.app.n8n.cloud/webhook-test/dataset";
-
 const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("userInput");
 const tablaDiv = document.getElementById("tablaResultados");
@@ -219,27 +233,24 @@ input.addEventListener("keypress", e => {
   if (e.key === "Enter") { e.preventDefault(); sendText(); }
 });
 
-function appendMessage(sender, html, isLoading=false) {
+function showTyping() {
+  const typing = document.createElement("div");
+  typing.className = "msg bot typing";
+  typing.id = "typing";
+  typing.innerHTML = `<span class="dot"></span><span class="dot"></span><span class="dot"></span>`;
+  messagesDiv.appendChild(typing);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+function removeTyping() {
+  const t = document.getElementById("typing");
+  if (t) t.remove();
+}
+function appendMessage(sender, html) {
   const msg = document.createElement("div");
   msg.className = "msg " + sender;
   msg.innerHTML = html;
-  if (isLoading) msg.id = "loading";
   messagesDiv.appendChild(msg);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
-
-function showLoader() {
-  const loader = document.createElement("div");
-  loader.className = "loader";
-  loader.id = "loading";
-  loader.innerHTML = "<div></div><div></div><div></div>";
-  messagesDiv.appendChild(loader);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
-
-function removeLoading() {
-  const loading = document.getElementById("loading");
-  if (loading) loading.remove();
 }
 
 async function sendText() {
@@ -247,7 +258,7 @@ async function sendText() {
   if (!text) return;
   appendMessage("user", text);
   input.value = "";
-  showLoader();
+  showTyping();
 
   try {
     const res = await fetch(webhook, {
@@ -256,44 +267,48 @@ async function sendText() {
       body: JSON.stringify({ type: "text", content: text })
     });
     const data = await res.json();
-    removeLoading();
+    removeTyping();
 
-    const respuesta = typeof data.respuesta === "string" ? JSON.parse(data.respuesta) : data.respuesta;
-    const sql = data.sql ? JSON.parse(data.sql) : null;
+    let respuesta = data.respuesta;
+    if (typeof respuesta === "string") {
+      try { respuesta = JSON.parse(respuesta); } catch {}
+    }
+    const texto = typeof respuesta === "string" ? respuesta : JSON.stringify(respuesta, null, 2);
+    const sql = data.sql ? data.sql : null;
     ultimaSQL = sql;
 
-    if (respuesta) {
-      const { texto, tabla_html } = separarTextoYTabla(respuesta);
-      appendMessage("bot", texto || "Consulta procesada correctamente.");
-      if (tabla_html) {
-        tablaDiv.innerHTML = tabla_html + 
-          `<button class="action mt-2" onclick="verCompleto()">Ver dataset completo</button>`;
-      }
+    const { textoLimpio, tablaHTML } = detectarYFormatearTabla(texto);
+    appendMessage("bot", textoLimpio || "Consulta completada correctamente.");
+
+    if (tablaHTML) {
+      tablaDiv.innerHTML = tablaHTML + 
+        `<button class="action mt-2" onclick="verCompleto()">Ver dataset completo</button>`;
     } else {
-      appendMessage("bot", "Sin respuesta del modelo.");
+      tablaDiv.innerHTML = "<p>No se detectaron tablas en la respuesta.</p>";
     }
   } catch (err) {
-    removeLoading();
-    appendMessage("bot", "Error al procesar la solicitud.");
+    removeTyping();
+    appendMessage("bot", "⚠️ Error al procesar la respuesta del asistente.");
   }
 }
 
-function separarTextoYTabla(texto) {
-  if (typeof texto !== "string") texto = JSON.stringify(texto, null, 2);
-  const regexTabla = /(\|.+\|[\s\S]*?\|.+\|)/gm;
+function detectarYFormatearTabla(texto) {
+  const regexTabla = /((?:\|.*\|[\r\n]+)+)/gm;
   const tablas = texto.match(regexTabla);
   let textoLimpio = texto.replace(regexTabla, '').trim();
 
-  if (!tablas) return { texto: textoLimpio, tabla_html: null };
+  if (!tablas) return { textoLimpio, tablaHTML: null };
 
-  const filas = tablas[0].trim().split('\n').filter(l => l.includes('|'));
-  const cabecera = filas[0].split('|').map(c => c.trim()).filter(Boolean);
-  const cuerpo = filas.slice(2).map(f => f.split('|').map(c => c.trim()).filter(Boolean));
+  const tabla = tablas[0]
+    .split('\n')
+    .filter(l => l.includes('|') && !l.includes('---'));
 
-  let tabla_html = `<table><thead><tr>${cabecera.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>`;
-  cuerpo.forEach(fila => { tabla_html += `<tr>${fila.map(c=>`<td>${c}</td>`).join('')}</tr>`; });
-  tabla_html += `</tbody></table>`;
-  return { texto: textoLimpio, tabla_html };
+  const filas = tabla.map(l => l.split('|').map(c => c.trim()).filter(Boolean));
+  const cabecera = filas.shift();
+  let tablaHTML = `<table><thead><tr>${cabecera.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+  filas.forEach(fila => { tablaHTML += `<tr>${fila.map(c=>`<td>${c}</td>`).join('')}</tr>`; });
+  tablaHTML += `</tbody></table>`;
+  return { textoLimpio, tablaHTML };
 }
 
 function verCompleto() {
@@ -302,12 +317,10 @@ function verCompleto() {
   form.method = "POST";
   form.action = datasetWebhook;
   form.target = "_blank";
-
   const inputSQL = document.createElement("input");
   inputSQL.type = "hidden";
   inputSQL.name = "sql";
-  inputSQL.value = typeof ultimaSQL === "string" ? ultimaSQL : JSON.stringify(ultimaSQL);
-
+  inputSQL.value = ultimaSQL;
   form.appendChild(inputSQL);
   document.body.appendChild(form);
   form.submit();
