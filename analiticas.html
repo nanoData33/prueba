@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clasificador de Pacientes</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family:"Inter",sans-serif; background:#f6f5f3; color:#1f1f1f; padding:2rem; }
+  .card { background:white; border-radius:0.8rem; padding:1.5rem; box-shadow:0 2px 8px rgba(0,0,0,0.06); max-width:700px; margin:auto; }
+  .btn { background:#4a8c3f; color:white; padding:0.7rem 1.2rem; border-radius:0.4rem; font-weight:500; }
+  .btn:hover { background:#3b7133; }
+</style>
+</head>
+
+<body>
+<h1 class="text-2xl font-semibold text-center mb-6">🩺 Clasificador de Nuevo Paciente</h1>
+
+<div class="card">
+  <h2 class="text-lg font-semibold mb-3">Opción 1: Subir PDF de Analítica</h2>
+  <input type="file" id="pdfFile" accept=".pdf" class="mb-3 w-full border p-2 rounded-md">
+  <button class="btn w-full mb-6" onclick="enviarPDF()">📤 Enviar PDF a n8n</button>
+
+  <h2 class="text-lg font-semibold mb-3">Opción 2: Introducir valores manualmente</h2>
+  <div class="grid grid-cols-2 gap-3 mb-4">
+    <input id="HbA1c" placeholder="HbA1c" class="border p-2 rounded-md">
+    <input id="colesterol_total" placeholder="Colesterol total" class="border p-2 rounded-md">
+    <input id="LDL" placeholder="LDL" class="border p-2 rounded-md">
+    <input id="HDL" placeholder="HDL" class="border p-2 rounded-md">
+    <input id="trigliceridos" placeholder="Triglicéridos" class="border p-2 rounded-md">
+    <input id="TFG" placeholder="TFG" class="border p-2 rounded-md">
+  </div>
+  <button class="btn w-full mb-4" onclick="enviarValores()">⚙️ Analizar manualmente</button>
+
+  <div id="resultado" class="mt-4 text-center text-stone-700"></div>
+</div>
+
+<script>
+const n8nWebhook = "https://nano33.app.n8n.cloud/webhook-test/diagnostico"; // Cambia por tu webhook real
+
+async function enviarPDF() {
+  const fileInput = document.getElementById("pdfFile");
+  if (!fileInput.files.length) return alert("Selecciona un PDF primero.");
+
+  const file = fileInput.files[0];
+  const base64 = await toBase64(file);
+
+  document.getElementById("resultado").textContent = "⏳ Enviando PDF a n8n...";
+
+  const res = await fetch(n8nWebhook, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tipo: "pdf", nombre: file.name, contenido: base64 })
+  });
+  const data = await res.json();
+  document.getElementById("resultado").innerHTML = `<b>Diagnóstico recibido:</b><br>${JSON.stringify(data, null, 2)}`;
+}
+
+async function enviarValores() {
+  const payload = {
+    tipo: "manual",
+    HbA1c: parseFloat(document.getElementById("HbA1c").value) || null,
+    colesterol_total: parseFloat(document.getElementById("colesterol_total").value) || null,
+    LDL: parseFloat(document.getElementById("LDL").value) || null,
+    HDL: parseFloat(document.getElementById("HDL").value) || null,
+    trigliceridos: parseFloat(document.getElementById("trigliceridos").value) || null,
+    TFG: parseFloat(document.getElementById("TFG").value) || null,
+  };
+
+  document.getElementById("resultado").textContent = "⏳ Enviando datos manuales a n8n...";
+
+  const res = await fetch(n8nWebhook, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  document.getElementById("resultado").innerHTML = `<b>Diagnóstico recibido:</b><br>${JSON.stringify(data, null, 2)}`;
+}
+
+function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result.split(",")[1]);
+    reader.onerror = error => reject(error);
+  });
+}
+</script>
+</body>
+</html>
