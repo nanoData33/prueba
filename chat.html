@@ -203,21 +203,21 @@ footer {
   </section>
 </main>
 
-<footer>© 2025 Asistente Clínico — Panel Conversacional</footer>
+<footer>© 2025 Asistente Clínico — Módulo Conversacional</footer>
 
 <script>
 lucide.createIcons();
 const webhook = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
+const datasetWebhook = "https://rubaseval.app.n8n.cloud/webhook-test/dataset";
+
 const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("userInput");
 const tablaDiv = document.getElementById("tablaResultados");
+let ultimaSQL = null;
 
 input.addEventListener("keypress", e => {
   if (e.key === "Enter") { e.preventDefault(); sendText(); }
 });
-
-let recording = false;
-let mediaRecorder, audioChunks = [];
 
 function appendMessage(sender, html, isLoading=false) {
   const msg = document.createElement("div");
@@ -258,11 +258,16 @@ async function sendText() {
     const data = await res.json();
     removeLoading();
 
-    if (data.respuesta) {
-      const { texto, tabla_html } = separarTextoYTabla(data.respuesta);
-      appendMessage("bot", texto || "Procesado correctamente.");
+    const respuesta = typeof data.respuesta === "string" ? JSON.parse(data.respuesta) : data.respuesta;
+    const sql = data.sql ? JSON.parse(data.sql) : null;
+    ultimaSQL = sql;
+
+    if (respuesta) {
+      const { texto, tabla_html } = separarTextoYTabla(respuesta);
+      appendMessage("bot", texto || "Consulta procesada correctamente.");
       if (tabla_html) {
-        tablaDiv.innerHTML = tabla_html + `<button class="action mt-2" onclick="verCompleto()">Ver completo</button>`;
+        tablaDiv.innerHTML = tabla_html + 
+          `<button class="action mt-2" onclick="verCompleto()">Ver dataset completo</button>`;
       }
     } else {
       appendMessage("bot", "Sin respuesta del modelo.");
@@ -274,6 +279,7 @@ async function sendText() {
 }
 
 function separarTextoYTabla(texto) {
+  if (typeof texto !== "string") texto = JSON.stringify(texto, null, 2);
   const regexTabla = /(\|.+\|[\s\S]*?\|.+\|)/gm;
   const tablas = texto.match(regexTabla);
   let textoLimpio = texto.replace(regexTabla, '').trim();
@@ -291,8 +297,21 @@ function separarTextoYTabla(texto) {
 }
 
 function verCompleto() {
-  const nueva = window.open("", "_blank");
-  nueva.document.write(`<html><head><title>Datos completos</title></head><body>${tablaDiv.innerHTML}</body></html>`);
+  if (!ultimaSQL) return alert("No hay consulta SQL disponible.");
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = datasetWebhook;
+  form.target = "_blank";
+
+  const inputSQL = document.createElement("input");
+  inputSQL.type = "hidden";
+  inputSQL.name = "sql";
+  inputSQL.value = typeof ultimaSQL === "string" ? ultimaSQL : JSON.stringify(ultimaSQL);
+
+  form.appendChild(inputSQL);
+  document.body.appendChild(form);
+  form.submit();
+  form.remove();
 }
 </script>
 </body>
