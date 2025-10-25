@@ -3,71 +3,81 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Asistente Clínico Inteligente</title>
-
+<title>Asistente Clínico – Chat Inteligente</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
-
 <style>
   :root {
-    --verde: #3c6e47;
-    --verde-hover: #2f5637;
-    --verde-claro: #edf5ed;
-    --gris: #1f1f1f;
-    --fondo: #f3f1eb;
+    --fondo: #f3f5f1;
     --card: #ffffff;
+    --acento: #3b7b46;
+    --acento-hover: #2f6137;
+    --gris-texto: #1f1f1f;
     --sombra: rgba(0,0,0,0.08);
   }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: 'Poppins', sans-serif;
     background: var(--fondo);
-    height: 100vh;
-    margin: 0;
     display: flex;
     flex-direction: column;
+    height: 100vh;
   }
   header {
     background: var(--card);
+    color: var(--gris-texto);
+    padding: 18px 40px;
+    font-weight: 600;
+    text-align: center;
     box-shadow: 0 2px 8px var(--sombra);
-    padding: 16px 40px;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
-  header h1 { font-size: 1.2rem; color: var(--gris); display: flex; align-items: center; gap: 8px; }
+  header h1 { font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
   header button {
-    background: var(--verde);
-    color: white;
+    background: var(--acento);
+    color: #fff;
     border: none;
-    padding: 8px 14px;
     border-radius: 8px;
+    padding: 8px 14px;
     cursor: pointer;
-    transition: background .3s;
+    font-weight: 500;
+    transition: background 0.25s ease;
   }
-  header button:hover { background: var(--verde-hover); }
+  header button:hover { background: var(--acento-hover); }
 
-  main {
+  main { flex: 1; display: flex; padding: 20px; gap: 20px; }
+
+  .chat-box {
     flex: 1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    padding: 25px;
-  }
-
-  .panel {
     background: var(--card);
-    border-radius: 12px;
+    border-radius: 16px;
     box-shadow: 0 4px 12px var(--sombra);
-    padding: 20px;
+    padding: 25px;
     display: flex;
     flex-direction: column;
   }
 
-  h2 { color: var(--verde); margin-bottom: 10px; }
+  .tabla-box {
+    flex: 1;
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow: 0 4px 12px var(--sombra);
+    padding: 20px;
+    overflow: auto;
+  }
+
+  h2 { color: var(--acento); margin-bottom: 10px; text-align: center; font-weight: 600; }
 
   .messages {
-    flex: 1; overflow-y: auto; background: #faf9f7;
-    border-radius: 10px; padding: 15px; margin-bottom: 10px;
+    flex: 1;
+    overflow-y: auto;
+    background: #f8f9f7;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 10px;
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.05);
   }
 
   .msg {
@@ -78,151 +88,276 @@
     max-width: 80%;
     word-wrap: break-word;
   }
-  .msg.user { background: var(--verde); color: white; align-self: flex-end; border-top-right-radius: 0; }
-  .msg.bot { background: var(--verde-claro); color: var(--gris); align-self: flex-start; border-top-left-radius: 0; }
 
-  .typing { background: var(--verde-claro); display: flex; align-items: center; gap: 6px; width: 60px; padding: 8px; border-radius: 12px; }
-  .dot { width: 8px; height: 8px; background: var(--verde); border-radius: 50%; animation: blink 1.4s infinite both; }
-  .dot:nth-child(2){animation-delay:0.2s;} .dot:nth-child(3){animation-delay:0.4s;}
-  @keyframes blink{0%,80%,100%{opacity:0;}40%{opacity:1;}}
+  .msg.user {
+    background: var(--acento);
+    color: white;
+    align-self: flex-end;
+    border-top-right-radius: 0;
+  }
 
-  .input-area { display: flex; gap: 10px; align-items: center; }
-  input { flex: 1; padding: 10px 12px; border-radius: 10px; border: 1px solid #ccc; font-size: 0.95rem; }
-  button.action { background: var(--verde); color: white; border: none; border-radius: 10px; padding: 10px 14px; cursor: pointer; }
-  button.action:hover { background: var(--verde-hover); }
+  .msg.bot {
+    background: #e6f2e6;
+    color: var(--gris-texto);
+    align-self: flex-start;
+    border-top-left-radius: 0;
+  }
 
-  #tablaResultados {
+  .input-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  input {
     flex: 1;
-    overflow-y: auto;
-    background: #fafafa;
+    padding: 12px 14px;
+    border: 1px solid #ccc;
     border-radius: 10px;
-    padding: 15px;
+    outline: none;
+    font-size: 0.95rem;
   }
-  table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-  th, td { padding: 8px 10px; border-bottom: 1px solid #e5e5e5; text-align: left; }
-  th { background: var(--verde); color: white; }
 
-  .btn-ver { margin-top: 10px; background: var(--verde); color: white; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
-  .btn-ver:hover { background: var(--verde-hover); }
+  button.action {
+    background: var(--acento);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.25s;
+  }
 
-  /* === Modal === */
-  #modal {
+  button.action:hover { background: var(--acento-hover); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+
+  th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left;
+    font-size: 0.9rem;
+  }
+
+  th {
+    background: var(--acento);
+    color: white;
+  }
+
+  tr:nth-child(even) { background-color: #f9f9f9; }
+
+  .loading-dots {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    justify-content: flex-start;
+    padding: 8px;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    background: var(--acento);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+  }
+
+  footer {
+    text-align: center;
+    padding: 10px;
+    background: var(--card);
+    font-size: 0.9em;
+    color: #666;
+    box-shadow: 0 -2px 8px var(--sombra);
+  }
+
+  /* Popup dataset */
+  .popup {
     position: fixed;
-    top:0; left:0; width:100%; height:100%;
-    background: rgba(0,0,0,0.5);
-    display:none; justify-content:center; align-items:center;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
   }
-  #modalContent {
-    background:white; padding:20px; border-radius:10px;
-    width:90%; max-height:80%; overflow:auto;
+  .popup-content {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    width: 80%;
+    max-height: 80%;
+    overflow: auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
   }
-
-  footer { background: var(--card); padding: 10px; text-align: center; font-size: 0.9em; color: #555; box-shadow: 0 -2px 8px var(--sombra); }
+  .popup-content h3 { color: var(--acento); margin-bottom: 10px; }
+  .popup-content button {
+    float: right;
+    background: var(--acento);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
 </style>
 </head>
 
 <body>
 <header>
   <h1><i data-lucide="stethoscope"></i> Asistente Clínico Inteligente</h1>
-  <button onclick="window.open('analitica.html','_blank')"><i data-lucide="flask-round"></i> Analizar Analítica</button>
+  <button onclick="window.open('analitica.html', '_blank')">Analizar Analítica</button>
 </header>
 
 <main>
-  <div class="panel">
-    <h2>Consultas Clínicas</h2>
+  <div class="chat-box">
+    <h2>Chat con el Agente</h2>
     <div id="messages" class="messages"></div>
     <div class="input-area">
-      <input id="userInput" placeholder="Escribe una consulta sobre la base de datos..." />
-      <button id="recordBtn" class="action" onclick="toggleRecording()"><i data-lucide='mic'></i></button>
-      <button class="action" onclick="sendText()"><i data-lucide='send'></i></button>
+      <input id="userInput" placeholder="Escribe tu mensaje..." onkeydown="if(event.key==='Enter') sendText()" />
+      <button class="action" onclick="sendText()">Enviar</button>
     </div>
   </div>
 
-  <div class="panel">
-    <h2>Resultados y Tablas</h2>
-    <div id="tablaResultados"><p>No hay datos disponibles.</p></div>
+  <div class="tabla-box">
+    <h2>Resultados</h2>
+    <div id="tablaContainer"></div>
   </div>
 </main>
 
-<footer>© 2025 Asistente Clínico — Panel Conversacional</footer>
-
-<!-- MODAL -->
-<div id="modal">
-  <div id="modalContent"></div>
-</div>
+<footer>© 2025 Asistente Clínico – Módulo de Análisis Conversacional</footer>
 
 <script>
 lucide.createIcons();
 
 const webhook = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
-const datasetWebhook = "https://rubaseval.app.n8n.cloud/webhook-test/dataset";
+const webhookDataset = "https://rubaseval.app.n8n.cloud/webhook-test/dataset";
+
 const messagesDiv = document.getElementById("messages");
+const tablaDiv = document.getElementById("tablaContainer");
 const input = document.getElementById("userInput");
-const tablaDiv = document.getElementById("tablaResultados");
-let ultimaSQL = null;
 
-input.addEventListener("keypress", e => {
-  if (e.key === "Enter") { e.preventDefault(); sendText(); }
-});
-
-function showTyping(){
-  const t = document.createElement("div");
-  t.className="msg bot typing"; t.id="typing";
-  t.innerHTML='<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
-  messagesDiv.appendChild(t); messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
-function removeTyping(){const t=document.getElementById("typing"); if(t) t.remove();}
-function appendMessage(sender,html){const m=document.createElement("div");m.className="msg "+sender;m.innerHTML=html;messagesDiv.appendChild(m);messagesDiv.scrollTop=messagesDiv.scrollHeight;}
-
-async function sendText(){
-  const text=input.value.trim(); if(!text)return;
-  appendMessage("user",text); input.value=""; showTyping();
-
-  try{
-    const res=await fetch(webhook,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"text",content:text})});
-    const data=await res.json(); removeTyping();
-
-    const texto=data.respuesta; ultimaSQL=data.sql||null;
-    const {textoLimpio,tablaHTML}=detectarYFormatearTabla(texto);
-    appendMessage("bot",textoLimpio||"Consulta procesada.");
-
-    if(tablaHTML){
-      tablaDiv.innerHTML=tablaHTML+`<button class='btn-ver' onclick='verCompleto()'>Ver completo</button>`;
-    } else tablaDiv.innerHTML="<p>No se detectaron tablas en la respuesta.</p>";
-
-  }catch(e){removeTyping();appendMessage("bot","⚠️ Error en la respuesta del asistente.");}
+function appendMessage(sender, html, isLoading=false) {
+  const msg = document.createElement("div");
+  msg.className = "msg " + sender;
+  msg.innerHTML = html;
+  if (isLoading) msg.id = "loading";
+  messagesDiv.appendChild(msg);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-function detectarYFormatearTabla(texto){
-  // Quita las líneas de guiones
-  const limpio=texto.replace(/---+/g,"");
-  // Busca encabezados y filas separadas por |
-  const partes=limpio.match(/([^\n]*\|[^\n]*)/g);
-  if(!partes)return{textoLimpio:limpio,tablaHTML:null};
-
-  const headers=partes[0].split("|").map(c=>c.trim()).filter(Boolean);
-  const filas=partes.slice(1).map(l=>l.split("|").map(c=>c.trim()).filter(Boolean));
-
-  if(headers.length<2)return{textoLimpio:limpio,tablaHTML:null};
-
-  let tablaHTML="<table><thead><tr>"+headers.map(h=>`<th>${h}</th>`).join("")+"</tr></thead><tbody>";
-  filas.forEach(f=>{if(f.length===headers.length)tablaHTML+="<tr>"+f.map(c=>`<td>${c}</td>`).join("")+"</tr>";});
-  tablaHTML+="</tbody></table>";
-  return{textoLimpio:limpio.split(partes[0])[0].trim(),tablaHTML};
+function showLoadingDots() {
+  const container = document.createElement("div");
+  container.className = "msg bot";
+  container.id = "loading";
+  container.innerHTML = `
+    <div class="loading-dots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>`;
+  messagesDiv.appendChild(container);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-function verCompleto(){
-  if(!ultimaSQL)return alert("No hay consulta SQL disponible.");
-  const modal=document.getElementById("modal");
-  const cont=document.getElementById("modalContent");
-  cont.innerHTML="<p style='text-align:center'>⏳ Cargando datos...</p>";
-  modal.style.display="flex";
+function removeLoading() {
+  const loading = document.getElementById("loading");
+  if (loading) loading.remove();
+}
 
-  fetch(datasetWebhook,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sql:ultimaSQL})})
-    .then(r=>r.text())
-    .then(html=>cont.innerHTML=html)
-    .catch(()=>cont.innerHTML="<p>Error al cargar los datos.</p>");
-  modal.onclick=()=>modal.style.display="none";
+async function sendText() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  appendMessage("user", text);
+  input.value = "";
+  showLoadingDots();
+
+  try {
+    const res = await fetch(webhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "text", content: text })
+    });
+
+    const data = await res.json();
+    removeLoading();
+
+    // Mostrar texto en el chat
+    if (data.respuesta) appendMessage("bot", data.respuesta);
+
+    // Procesar si hay tabla
+    if (data.columns && data.rows) renderTable(data.columns, data.rows);
+
+    // Botón dataset completo
+    if (data.sql) {
+      const boton = document.createElement("button");
+      boton.className = "action";
+      boton.textContent = "Ver dataset completo";
+      boton.onclick = () => abrirDatasetCompleto(data.sql);
+      messagesDiv.appendChild(boton);
+    }
+
+  } catch (err) {
+    removeLoading();
+    appendMessage("bot", "Error al procesar la respuesta.");
+  }
+}
+
+function renderTable(columns, rows) {
+  let html = "<table><thead><tr>";
+  columns.forEach(col => html += `<th>${col}</th>`);
+  html += "</tr></thead><tbody>";
+  rows.forEach(r => {
+    html += "<tr>" + r.map(c => `<td>${c}</td>`).join("") + "</tr>";
+  });
+  html += "</tbody></table>";
+  tablaDiv.innerHTML = html;
+}
+
+async function abrirDatasetCompleto(sql) {
+  showPopup("Cargando dataset completo...");
+
+  try {
+    const res = await fetch(webhookDataset, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sql })
+    });
+    const data = await res.json();
+    const html = generarTablaPopup(data.columns, data.rows);
+    showPopup(html);
+  } catch (err) {
+    showPopup("Error al cargar el dataset.");
+  }
+}
+
+function generarTablaPopup(columns, rows) {
+  let html = "<h3>Dataset completo</h3><table><thead><tr>";
+  columns.forEach(c => html += `<th>${c}</th>`);
+  html += "</tr></thead><tbody>";
+  rows.forEach(r => html += "<tr>" + r.map(c => `<td>${c}</td>`).join("") + "</tr>");
+  html += "</tbody></table>";
+  return html;
+}
+
+function showPopup(content) {
+  const popup = document.createElement("div");
+  popup.className = "popup";
+  popup.innerHTML = `
+    <div class="popup-content">
+      <button onclick="this.closest('.popup').remove()">Cerrar</button>
+      ${content}
+    </div>`;
+  document.body.appendChild(popup);
 }
 </script>
 </body>
