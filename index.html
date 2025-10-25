@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel de Cohortes Crónicas</title>
+  <title>Panel Clínico - Identificación de Cohortes</title>
 
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -14,58 +14,145 @@
 
   <style>
     body {
-      background: linear-gradient(135deg, #f2f0ed, #e5e1dc);
-      color: #2b2b2b;
+      background: linear-gradient(145deg, #f9f8f7, #ebe8e5);
+      color: #2d2d2d;
       font-family: "Inter", sans-serif;
+      min-height: 100vh;
     }
+
+    /* Barra superior */
+    .navbar {
+      backdrop-filter: blur(8px);
+      background: rgba(255, 255, 255, 0.8);
+      border-bottom: 1px solid #d1d5db;
+    }
+    .nav-link {
+      color: #444;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-link:hover {
+      color: #166534;
+    }
+
+    /* Tarjetas cohortes */
     .cohorte-card {
       background: white;
       border-radius: 1rem;
       padding: 1.5rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
       transition: all 0.25s ease;
       cursor: pointer;
       border-left: 5px solid #166534;
     }
     .cohorte-card:hover {
       transform: translateY(-4px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
     }
+
+    /* Tarjetas funcionalidades */
+    .feature-card {
+      background: white;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+    .feature-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+      border-left: 4px solid #166534;
+    }
+
     .accent {
       color: #166534;
     }
   </style>
 </head>
 
-<body class="min-h-screen">
-  <header class="px-8 py-6 flex justify-between items-center border-b border-stone-300 bg-white/80 backdrop-blur-md">
-    <h1 class="text-2xl font-semibold tracking-tight">Panel de Cohortes Crónicas</h1>
-    <a href="chat.html" class="px-4 py-2 bg-emerald-700 text-white rounded-md hover:bg-emerald-800">Ir al Chat Clínico</a>
-  </header>
-
-  <main class="p-10">
-    <h2 class="text-lg font-medium text-stone-600 uppercase mb-6">Resumen de Cohortes</h2>
-
-    <div id="cohortes" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      <p class="text-stone-500 italic col-span-full">Cargando datos...</p>
+<body>
+  <!-- 🔝 NAVBAR SUPERIOR -->
+  <nav class="navbar fixed top-0 left-0 right-0 z-10 flex justify-between items-center px-8 py-4">
+    <div class="flex items-center gap-3">
+      <i data-lucide="activity" class="w-6 h-6 accent"></i>
+      <h1 class="text-xl font-semibold tracking-tight">Panel Clínico Cohortes</h1>
     </div>
+
+    <div class="flex gap-8">
+      <a href="index.html" class="nav-link">Inicio</a>
+      <a href="chat.html" class="nav-link font-semibold accent">Chat Clínico</a>
+      <a href="analiticas.html" class="nav-link">Analíticas</a>
+      <a href="cohortes.html" class="nav-link">Cohortes</a>
+      <a href="pacientes.html" class="nav-link">Pacientes</a>
+    </div>
+  </nav>
+
+  <!-- 🧩 CONTENIDO PRINCIPAL -->
+  <main class="pt-24 pb-16 px-10 grid grid-cols-1 lg:grid-cols-2 gap-12">
+
+    <!-- COLUMNA IZQUIERDA: COHORTES -->
+    <section>
+      <h2 class="text-lg font-semibold text-stone-600 uppercase mb-5">Cohortes Detectadas</h2>
+      <div id="cohortes" class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <p class="text-stone-500 italic">Cargando datos...</p>
+      </div>
+    </section>
+
+    <!-- COLUMNA DERECHA: FUNCIONALIDADES -->
+    <aside>
+      <h2 class="text-lg font-semibold text-stone-600 uppercase mb-5">Funciones Inteligentes</h2>
+      <div class="space-y-6">
+
+        <div class="feature-card" onclick="location.href='subir_pdf.html'">
+          <div class="flex items-center gap-3 mb-2">
+            <i data-lucide="file-plus" class="accent"></i>
+            <h3 class="text-lg font-semibold">Subir Analítica o PDF</h3>
+          </div>
+          <p class="text-stone-500 text-sm">Clasifica automáticamente al paciente según las reglas de cohorte configuradas.</p>
+        </div>
+
+        <div class="feature-card" onclick="location.href='recordatorios.html'">
+          <div class="flex items-center gap-3 mb-2">
+            <i data-lucide="mail" class="accent"></i>
+            <h3 class="text-lg font-semibold">Enviar Recordatorios</h3>
+          </div>
+          <p class="text-stone-500 text-sm">Contacta fácilmente con pacientes con baja adherencia o sin seguimiento reciente.</p>
+        </div>
+
+        <div class="feature-card" onclick="location.href='explorar.html'">
+          <div class="flex items-center gap-3 mb-2">
+            <i data-lucide="bar-chart-2" class="accent"></i>
+            <h3 class="text-lg font-semibold">Explorar Tendencias</h3>
+          </div>
+          <p class="text-stone-500 text-sm">Visualiza gráficas de evolución por enfermedad, parámetros y laboratorio.</p>
+        </div>
+
+        <div class="feature-card" onclick="location.href='riesgos.html'">
+          <div class="flex items-center gap-3 mb-2">
+            <i data-lucide="alert-octagon" class="accent"></i>
+            <h3 class="text-lg font-semibold">Pacientes en Riesgo</h3>
+          </div>
+          <p class="text-stone-500 text-sm">Detecta automáticamente pacientes con indicadores de riesgo o descompensación.</p>
+        </div>
+
+      </div>
+    </aside>
   </main>
 
+  <!-- ⚙️ SCRIPT PRINCIPAL -->
   <script>
     lucide.createIcons();
 
-    // ======= CONFIGURACIÓN SUPABASE =======
     const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw"; // ⚠️ pon tu key aquí
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    // ======= FUNCIÓN PRINCIPAL =======
     async function cargarCohortes() {
       const contenedor = document.getElementById("cohortes");
       contenedor.innerHTML = "<p class='text-stone-500 italic'>Cargando datos...</p>";
 
       const { data, error } = await supabase.from("pacientes").select("enfermedad_principal");
-
       if (error) {
         console.error(error);
         contenedor.innerHTML = "<p class='text-red-600'>Error al conectar con la base de datos</p>";
@@ -82,8 +169,8 @@
         .sort((a, b) => b[1] - a[1])
         .map(([enf, total]) => `
           <div class="cohorte-card" onclick="abrirCohorte('${enf}')">
-            <div class="flex items-center gap-3 mb-3">
-              <i data-lucide="activity" class="accent"></i>
+            <div class="flex items-center gap-3 mb-2">
+              <i data-lucide='heart-pulse' class='accent'></i>
               <h3 class="text-lg font-semibold">${enf}</h3>
             </div>
             <p class="text-4xl font-bold accent">${total}</p>
@@ -95,13 +182,10 @@
       lucide.createIcons();
     }
 
-    // ======= REDIRECCIÓN =======
     function abrirCohorte(nombre) {
-      const url = `cohorte.html?nombre=${encodeURIComponent(nombre)}`;
-      window.location.href = url;
+      window.location.href = `cohorte.html?nombre=${encodeURIComponent(nombre)}`;
     }
 
-    // ======= INICIALIZAR =======
     cargarCohortes();
   </script>
 </body>
