@@ -1,131 +1,207 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Asistente Clínico MedAI</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Cohortes Crónicas</title>
 
-<style>
-  body {
-    font-family: 'Poppins', sans-serif;
-    background-color: #f4f6f9;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-  }
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  .container {
-    background: white;
-    padding: 40px;
-    border-radius: 15px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-    width: 90%;
-    max-width: 500px;
-    text-align: center;
-  }
-
-  h1 {
-    color: #0078ff;
-    margin-bottom: 20px;
-  }
-
-  textarea {
-    width: 100%;
-    height: 100px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 10px;
-    font-size: 1rem;
-    resize: none;
-    font-family: inherit;
-  }
-
-  button {
-    background: #0078ff;
-    color: white;
-    border: none;
-    padding: 10px 18px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    margin-top: 15px;
-    transition: background 0.3s;
-  }
-
-  button:hover {
-    background: #005fd1;
-  }
-
-  #respuesta {
-    margin-top: 25px;
-    background: #f1f9ff;
-    border-left: 5px solid #0078ff;
-    padding: 15px;
-    border-radius: 8px;
-    text-align: left;
-    font-size: 0.95rem;
-    color: #333;
-    min-height: 40px;
-  }
-</style>
+  <style>
+    body {
+      background: linear-gradient(135deg, #f2f0ed, #e3e0db);
+      color: #2b2b2b;
+      font-family: "Inter", sans-serif;
+    }
+    .card {
+      background-color: white;
+      border-radius: 1rem;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+      padding: 1.5rem;
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .accent {
+      color: #166534; /* emerald-800 */
+    }
+    .btn {
+      display: inline-block;
+      background-color: #166534;
+      color: white;
+      font-weight: 500;
+      padding: 0.6rem 1.2rem;
+      border-radius: 0.5rem;
+      transition: background-color .2s ease;
+    }
+    .btn:hover {
+      background-color: #115a2c;
+    }
+  </style>
 </head>
-<body>
 
-<div class="container">
-  <h1>🧠 MedAI Asistente Clínico</h1>
-  <p>Escribe tu pregunta sobre los pacientes:</p>
-  <textarea id="pregunta" placeholder="Ejemplo: ¿Cuál fue la glucosa media del paciente PAC001?"></textarea>
-  <button onclick="enviarPregunta()">Enviar pregunta</button>
+<body class="min-h-screen">
 
-  <div id="respuesta">Aquí aparecerá la respuesta del asistente...</div>
-</div>
+  <header class="px-8 py-6 flex justify-between items-center border-b border-stone-300">
+    <h1 class="text-2xl font-semibold tracking-tight">Plataforma de Cohortes Crónicas</h1>
+    <a href="chat.html" class="btn">Ir al Chat Clínico</a>
+  </header>
 
-<script>
-async function enviarPregunta() {
-  const pregunta = document.getElementById("pregunta").value.trim();
-  const respuestaDiv = document.getElementById("respuesta");
+  <main class="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-  if (!pregunta) {
-    respuestaDiv.textContent = "⚠️ Escribe una pregunta primero.";
-    return;
-  }
+    <!-- SECCIÓN PRINCIPAL -->
+    <section class="lg:col-span-2 space-y-8">
+      <div>
+        <h2 class="text-lg font-medium text-stone-600 uppercase mb-4">Cohortes Detectadas</h2>
+        <div id="cohortes" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+      </div>
 
-  respuestaDiv.textContent = "⏳ Consultando a MedAI..."; 
+      <div class="card">
+        <h2 class="text-lg font-semibold flex items-center gap-2 mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3v18h18M3 9h18M9 21V9"/></svg>
+          Tendencia de HbA1c promedio
+        </h2>
+        <canvas id="chartHbA1c" height="200"></canvas>
+      </div>
+    </section>
 
-  try {
-    // ⬇️ CAMBIA ESTA URL por la del webhook real en n8n
-    const url = "https://nano33.app.n8n.cloud/webhook-test/chat-reto1"; 
+    <!-- PANEL LATERAL -->
+    <aside class="space-y-6">
+      <h2 class="text-lg font-medium text-stone-600 uppercase mb-2">Acciones sugeridas</h2>
 
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chatInput: pregunta
-      })
-    });
+      <div class="card space-y-4">
+        <div class="flex items-center gap-3">
+          <i data-lucide="mail" class="accent"></i>
+          <p>Enviar recordatorio a pacientes con baja adherencia</p>
+        </div>
+        <button class="w-full btn">Enviar correos</button>
+      </div>
 
-    const data = await res.json();
-    console.log("Respuesta de n8n:", data);
+      <div class="card space-y-4">
+        <div class="flex items-center gap-3">
+          <i data-lucide="file-text" class="accent"></i>
+          <p>Subir analítica o PDF para clasificación automática</p>
+        </div>
+        <button class="w-full btn">Subir archivo</button>
+      </div>
 
-    // ✅ n8n devuelve la respuesta del agente dentro de data
-    if (data.data && data.data[0] && data.data[0].response) {
-      respuestaDiv.innerHTML = "💬 " + data.data[0].response;
-    } else if (data.response) {
-      respuestaDiv.innerHTML = "💬 " + data.response;
-    } else {
-      respuestaDiv.innerHTML = "💬 " + JSON.stringify(data, null, 2);
+      <div class="card space-y-4">
+        <div class="flex items-center gap-3">
+          <i data-lucide="activity" class="accent"></i>
+          <p>Explorar cohortes emergentes</p>
+        </div>
+        <button class="w-full btn">Ver detalles</button>
+      </div>
+    </aside>
+
+  </main>
+
+  <script>
+    lucide.createIcons();
+
+    // ======= CONFIGURAR SUPABASE =======
+    const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co"; // ← tu proyecto
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw"; // ⚠️ pon tu clave en un archivo JS separado si es público
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    // ======= FUNCIONES =======
+    async function cargarCohortes() {
+      const cohortesDiv = document.getElementById("cohortes");
+      cohortesDiv.innerHTML = "<p class='text-stone-500 italic'>Cargando...</p>";
+
+      const { data, error } = await supabase
+        .from("pacientes")
+        .select("enfermedad_principal");
+
+      if (error) {
+        cohortesDiv.innerHTML = "<p>Error al cargar cohortes</p>";
+        console.error(error);
+        return;
+      }
+
+      const conteo = {};
+      data.forEach(p => {
+        const e = p.enfermedad_principal || "Sin especificar";
+        conteo[e] = (conteo[e] || 0) + 1;
+      });
+
+      cohortesDiv.innerHTML = Object.entries(conteo)
+        .map(([enf, total]) => `
+          <div class="card border-l-4 border-emerald-700">
+            <div class="flex items-center gap-3 mb-2">
+              <i data-lucide="activity" class="accent"></i>
+              <h3 class="text-xl font-semibold">${enf}</h3>
+            </div>
+            <p class="text-3xl font-bold accent">${total}</p>
+            <p class="text-sm text-stone-500 mt-1">pacientes registrados</p>
+          </div>
+        `)
+        .join("");
+
+      lucide.createIcons();
     }
 
-  } catch (err) {
-    console.error(err);
-    respuestaDiv.textContent = "❌ Error al conectar con n8n. Revisa la URL o la configuración del webhook.";
-  }
-}
-</script>
+    async function cargarTendencia() {
+      const { data, error } = await supabase
+        .from("laboratorios")
+        .select("fecha_prueba, HbA1c");
 
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      const grouped = {};
+      data.forEach(r => {
+        const fecha = r.fecha_prueba?.slice(0, 10);
+        if (!fecha || r.HbA1c == null) return;
+        grouped[fecha] = grouped[fecha] || [];
+        grouped[fecha].push(r.HbA1c);
+      });
+
+      const fechas = Object.keys(grouped).sort();
+      const promedios = fechas.map(f => {
+        const vals = grouped[f];
+        return vals.reduce((a,b)=>a+b,0)/vals.length;
+      });
+
+      const ctx = document.getElementById("chartHbA1c");
+      new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: fechas,
+          datasets: [{
+            label: "HbA1c promedio",
+            data: promedios,
+            borderColor: "#166534",
+            backgroundColor: "rgba(22,101,52,0.2)",
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true,
+          }],
+        },
+        options: {
+          scales: {
+            x: { ticks: { color: "#4b5563" } },
+            y: { beginAtZero: false }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    // ======= INICIALIZAR =======
+    cargarCohortes();
+    cargarTendencia();
+  </script>
 </body>
 </html>
