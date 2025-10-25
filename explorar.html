@@ -1,87 +1,79 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Explorar Base de Datos</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Explorar Base de Datos</title>
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    body { background-color: #f5f3f0; font-family: "Inter", sans-serif; }
-    .table-container { overflow-x: auto; background: white; border-radius: 0.5rem; padding: 1rem; box-shadow: 0 3px 6px rgba(0,0,0,0.08); }
-    input, select { border: 1px solid #d4d4d4; border-radius: 0.4rem; padding: 0.4rem 0.6rem; }
-    button { background: #1c1c1b; color: white; border-radius: 0.4rem; padding: 0.5rem 1rem; font-weight: 500; }
-    button:hover { background: #2b2b29; }
-  </style>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  body{font-family:"Inter",sans-serif;background:#f5f4f1;color:#222;}
+  table{width:100%;border-collapse:collapse;}
+  th,td{border-bottom:1px solid #ddd;padding:0.5rem;}
+  th{background:#eee;font-weight:600;}
+  tr:hover{background:#fafafa;}
+  select,button{border:1px solid #ccc;border-radius:0.4rem;padding:0.4rem 0.6rem;}
+  button{background:#1c1c1b;color:white;font-weight:500;}
+  button:hover{background:#2b2b29;}
+</style>
 </head>
 
 <body class="p-8">
   <h1 class="text-2xl font-semibold mb-6">Explorador de Base de Datos</h1>
 
-  <div class="mb-6 flex gap-3">
-    <input id="nombre" placeholder="Nombre" />
-    <input id="apellido" placeholder="Apellido" />
-    <input id="edad" type="number" placeholder="Edad" />
-    <input id="enfermedad" placeholder="Enfermedad principal" />
-    <button onclick="insertar()">Añadir Paciente</button>
+  <div class="flex gap-3 mb-4 items-center">
+    <label class="font-medium">Tabla:</label>
+    <select id="tablaSelect" onchange="cargarTabla()">
+      <option value="pacientes">pacientes</option>
+      <option value="diagnosticos">diagnosticos</option>
+      <option value="laboratorios">laboratorios</option>
+      <option value="medicaciones">medicaciones</option>
+      <option value="notas_clinicas">notas_clinicas</option>
+    </select>
+    <button onclick="cargarTabla()">Actualizar</button>
   </div>
 
-  <div class="table-container">
-    <table class="min-w-full text-sm text-left">
-      <thead class="border-b font-semibold">
-        <tr><th>ID</th><th>Nombre</th><th>Edad</th><th>Enfermedad</th><th>Acciones</th></tr>
-      </thead>
-      <tbody id="tablaPacientes"></tbody>
-    </table>
-  </div>
+  <div id="tablaContainer" class="overflow-x-auto bg-white p-4 rounded-md shadow"></div>
 
   <script>
-    const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    const supabaseUrl="https://tmolxeszsgkffurhrcxy.supabase.co";
+    const supabaseKey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
+    const supabase=window.supabase.createClient(supabaseUrl,supabaseKey);
 
-    async function cargar() {
-      const { data, error } = await supabase.from("pacientes").select("patient_id, nombre, edad, enfermedad_principal");
-      if (error) { console.error(error); return; }
+    async function cargarTabla(){
+      const tabla=document.getElementById("tablaSelect").value;
+      const cont=document.getElementById("tablaContainer");
+      cont.innerHTML="<p class='italic text-stone-500'>Cargando...</p>";
 
-      document.getElementById("tablaPacientes").innerHTML = data.map(p => `
-        <tr class="border-b">
-          <td>${p.patient_id}</td>
-          <td contenteditable onblur="editar('${p.patient_id}','nombre',this.innerText)">${p.nombre || ""}</td>
-          <td contenteditable onblur="editar('${p.patient_id}','edad',this.innerText)">${p.edad || ""}</td>
-          <td contenteditable onblur="editar('${p.patient_id}','enfermedad_principal',this.innerText)">${p.enfermedad_principal || ""}</td>
-          <td><button onclick="eliminar('${p.patient_id}')">🗑️</button></td>
-        </tr>
-      `).join("");
+      const {data,error}=await supabase.from(tabla).select("*").limit(100);
+      if(error){cont.innerHTML="<p>Error al cargar "+tabla+"</p>";console.error(error);return;}
+      if(!data.length){cont.innerHTML="<p>No hay registros.</p>";return;}
+
+      const cols=Object.keys(data[0]);
+      let html="<table><thead><tr>"+cols.map(c=>"<th>"+c+"</th>").join("")+"<th>Acciones</th></tr></thead><tbody>";
+      html+=data.map(r=>{
+        return "<tr>"+cols.map(c=>`<td contenteditable onblur="editar('${tabla}','${c}','${r[cols[0]]}',this.innerText)">${r[c]??""}</td>`).join("")
+        +`<td><button onclick="borrar('${tabla}','${cols[0]}','${r[cols[0]]}')">🗑️</button></td></tr>`;
+      }).join("");
+      html+="</tbody></table>";
+      cont.innerHTML=html;
     }
 
-    async function insertar() {
-      const nombre = document.getElementById("nombre").value;
-      const apellido = document.getElementById("apellido").value;
-      const edad = parseInt(document.getElementById("edad").value);
-      const enfermedad = document.getElementById("enfermedad").value;
-
-      if (!nombre) return alert("Introduce al menos el nombre.");
-
-      const { error } = await supabase.from("pacientes").insert([{ nombre, apellido, edad, enfermedad_principal: enfermedad }]);
-      if (error) { console.error(error); alert("Error al insertar."); return; }
-      cargar();
+    async function editar(tabla,col,id,valor){
+      const {error}=await supabase.from(tabla).update({[col]:valor}).eq(Object.keys((await supabase.from(tabla).select("*", {count:"exact",limit:1})).data[0])[0],id);
+      if(error)console.error(error);
     }
 
-    async function editar(id, campo, valor) {
-      const { error } = await supabase.from("pacientes").update({ [campo]: valor }).eq("patient_id", id);
-      if (error) console.error(error);
+    async function borrar(tabla,idcol,id){
+      if(!confirm("¿Eliminar registro?"))return;
+      const {error}=await supabase.from(tabla).delete().eq(idcol,id);
+      if(error)console.error(error);
+      cargarTabla();
     }
 
-    async function eliminar(id) {
-      if (!confirm("¿Seguro que deseas eliminar este paciente?")) return;
-      const { error } = await supabase.from("pacientes").delete().eq("patient_id", id);
-      if (error) console.error(error);
-      cargar();
-    }
-
-    cargar();
+    cargarTabla();
   </script>
 </body>
 </html>
