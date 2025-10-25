@@ -1,186 +1,194 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Asistente Clínico – Chat Inteligente</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asistente Clínico Inteligente</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
 
 <style>
-  :root {
-    --fondo: #f3f1eb;
-    --panel: #ffffff;
-    --acento: #b47a4c;
-    --acento-hover: #9a633b;
-    --gris-texto: #1f1f1f;
-    --sombra: rgba(0,0,0,0.08);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Poppins', sans-serif;
-    background: var(--fondo);
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-  header {
-    background: var(--panel);
-    color: var(--gris-texto);
-    padding: 16px 40px;
-    box-shadow: 0 2px 8px var(--sombra);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  header h1 {
-    font-size: 1.15rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  header button {
-    background: var(--acento);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 14px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.25s ease;
-  }
-  header button:hover { background: var(--acento-hover); }
+:root {
+  --fondo: #f4f7f4;
+  --panel: #ffffff;
+  --acento: #4a8c3f;
+  --acento-hover: #3b7133;
+  --texto: #1f1f1f;
+  --gris: #e8ebe8;
+  --sombra: rgba(0,0,0,0.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--fondo);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  color: var(--texto);
+}
+header {
+  background: var(--panel);
+  padding: 16px 36px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 6px var(--sombra);
+}
+header h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--texto);
+}
+header button {
+  background: var(--acento);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+header button:hover { background: var(--acento-hover); }
 
-  main {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-  }
+main {
+  flex: 1;
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  overflow: hidden;
+}
+.chat-panel, .result-panel {
+  background: var(--panel);
+  border-radius: 12px;
+  box-shadow: 0 4px 10px var(--sombra);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+.chat-panel { flex: 1; }
+.result-panel { flex: 1; overflow-y: auto; }
 
-  /* === PANEL IZQUIERDO: CHAT === */
-  .chat-panel {
-    flex: 1;
-    background: var(--panel);
-    margin: 20px;
-    border-radius: 12px;
-    box-shadow: 0 3px 10px var(--sombra);
-    display: flex;
-    flex-direction: column;
-    padding: 20px;
-  }
-  .chat-title {
-    color: var(--acento);
-    font-weight: 600;
-    font-size: 1rem;
-    margin-bottom: 10px;
-  }
-  .messages {
-    flex: 1;
-    overflow-y: auto;
-    background: #f8f6f3;
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 10px;
-  }
-  .msg {
-    margin-bottom: 12px;
-    padding: 12px 16px;
-    border-radius: 12px;
-    line-height: 1.45;
-    max-width: 85%;
-    word-wrap: break-word;
-  }
-  .msg.user {
-    background: var(--acento);
-    color: white;
-    align-self: flex-end;
-    border-top-right-radius: 0;
-  }
-  .msg.bot {
-    background: #f1ece8;
-    color: var(--gris-texto);
-    align-self: flex-start;
-    border-top-left-radius: 0;
-  }
-  .input-area {
-    display: flex;
-    gap: 10px;
-    margin-top: 8px;
-  }
-  input {
-    flex: 1;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    font-size: 0.95rem;
-  }
-  button.action {
-    background: var(--acento);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    padding: 10px 14px;
-    cursor: pointer;
-    transition: background 0.25s;
-  }
-  button.action:hover { background: var(--acento-hover); }
-  #recordBtn.recording { background: #b91c1c; }
+.chat-title, .result-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--acento);
+  margin-bottom: 12px;
+}
 
-  /* === PANEL DERECHO: RESULTADOS === */
-  .result-panel {
-    flex: 1;
-    background: var(--panel);
-    margin: 20px 20px 20px 0;
-    border-radius: 12px;
-    box-shadow: 0 3px 10px var(--sombra);
-    padding: 20px;
-    overflow-y: auto;
-  }
-  .result-title {
-    color: var(--acento);
-    font-weight: 600;
-    font-size: 1rem;
-    margin-bottom: 10px;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9rem;
-  }
-  th, td {
-    border-bottom: 1px solid #ddd;
-    padding: 8px 10px;
-    text-align: left;
-  }
-  th {
-    background: #f8f6f3;
-    font-weight: 600;
-    color: #333;
-  }
-  tr:hover { background: #faf8f5; }
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  background: #f9faf9;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.msg {
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  line-height: 1.45;
+  max-width: 80%;
+  word-wrap: break-word;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.msg.user {
+  background: var(--acento);
+  color: white;
+  align-self: flex-end;
+  border-top-right-radius: 0;
+}
+.msg.bot {
+  background: #eaf4e8;
+  color: var(--texto);
+  align-self: flex-start;
+  border-top-left-radius: 0;
+}
+.input-area {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+input {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 0.95rem;
+}
+button.action {
+  background: var(--acento);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.25s;
+}
+button.action:hover { background: var(--acento-hover); }
+#recordBtn.recording { background: #b91c1c; }
 
-  footer {
-    text-align: center;
-    padding: 10px;
-    background: var(--panel);
-    font-size: 0.9em;
-    color: #666;
-    box-shadow: 0 -2px 8px var(--sombra);
-  }
+#tablaResultados table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  margin-top: 10px;
+}
+#tablaResultados th, #tablaResultados td {
+  border-bottom: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+#tablaResultados th {
+  background: #f4f9f3;
+  font-weight: 600;
+  color: #2e2e2e;
+}
+#tablaResultados tr:hover { background: #f7faf7; }
+
+.loader {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0;
+}
+.loader div {
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  background: var(--acento);
+  border-radius: 50%;
+  animation: bounce 0.6s infinite alternate;
+}
+.loader div:nth-child(2) { animation-delay: 0.2s; }
+.loader div:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce {
+  to { opacity: 0.3; transform: translateY(-6px); }
+}
+
+footer {
+  text-align: center;
+  padding: 10px;
+  background: var(--panel);
+  color: #555;
+  font-size: 0.9em;
+  box-shadow: 0 -2px 6px var(--sombra);
+}
 </style>
 </head>
 
 <body>
 <header>
   <h1><i data-lucide="stethoscope"></i> Asistente Clínico Inteligente</h1>
-  <button onclick="window.open('analitica.html', '_blank')"><i data-lucide="flask-round"></i> Analizar Analítica</button>
+  <button onclick="window.open('analitica.html','_blank')"><i data-lucide="flask-round"></i> Analizar Analítica</button>
 </header>
 
 <main>
-  <!-- PANEL DE CHAT -->
   <section class="chat-panel">
-    <h2 class="chat-title">Chat de Consultas</h2>
+    <h2 class="chat-title">Consultas Clínicas</h2>
     <div id="messages" class="messages"></div>
     <div class="input-area">
       <input id="userInput" placeholder="Escribe una consulta sobre la base de datos..." />
@@ -189,98 +197,28 @@
     </div>
   </section>
 
-  <!-- PANEL DE RESULTADOS -->
   <section class="result-panel">
     <h2 class="result-title">Resultados y Tablas</h2>
     <div id="tablaResultados">No hay datos disponibles.</div>
   </section>
 </main>
 
-<footer>© 2025 Asistente Clínico – Módulo Conversacional Integrado</footer>
+<footer>© 2025 Asistente Clínico — Panel Conversacional</footer>
 
 <script>
 lucide.createIcons();
-
 const webhook = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
-const webhookDataset = "https://rubaseval.app.n8n.cloud/webhook-test/dataset";
 const messagesDiv = document.getElementById("messages");
 const input = document.getElementById("userInput");
 const tablaDiv = document.getElementById("tablaResultados");
 
+input.addEventListener("keypress", e => {
+  if (e.key === "Enter") { e.preventDefault(); sendText(); }
+});
+
 let recording = false;
 let mediaRecorder, audioChunks = [];
 
-// === ENVÍO DE TEXTO ===
-async function sendText() {
-  const text = input.value.trim();
-  if (!text) return;
-  appendMessage("user", text);
-  input.value = "";
-  appendMessage("bot", "<em>Procesando...</em>", true);
-
-  try {
-    const res = await fetch(webhook, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "text", content: text })
-    });
-
-    const data = await res.json();
-    removeLoading();
-    appendMessage("bot", data.respuesta || "No se obtuvo respuesta.");
-    if (data.tabla_html) tablaDiv.innerHTML = data.tabla_html;
-  } catch {
-    removeLoading();
-    appendMessage("bot", "Error al procesar la respuesta.");
-  }
-}
-
-// === AUDIO ===
-async function toggleRecording() {
-  const btn = document.getElementById("recordBtn");
-  recording = !recording;
-  btn.classList.toggle("recording");
-  btn.innerHTML = recording ? "<i data-lucide='square'></i>" : "<i data-lucide='mic'></i>";
-  lucide.createIcons();
-  if (recording) startRecording(); else stopRecording();
-}
-
-async function startRecording() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    audioChunks = [];
-    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-    mediaRecorder.onstop = async () => {
-      const blob = new Blob(audioChunks, { type: "audio/webm" });
-      appendMessage("user", "<i>Audio grabado enviado...</i>");
-      appendMessage("bot", "<em>Analizando audio...</em>", true);
-
-      const formData = new FormData();
-      formData.append("type", "audio");
-      formData.append("file", blob, "voz.webm");
-
-      try {
-        const res = await fetch(webhook, { method: "POST", body: formData });
-        const data = await res.json();
-        removeLoading();
-        appendMessage("bot", data.respuesta || "Sin respuesta.");
-        if (data.tabla_html) tablaDiv.innerHTML = data.tabla_html;
-      } catch {
-        removeLoading();
-        appendMessage("bot", "Error al subir audio.");
-      }
-    };
-    mediaRecorder.start();
-  } catch {
-    appendMessage("bot", "No se pudo acceder al micrófono.");
-  }
-}
-function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
-}
-
-// === UTILIDADES DE CHAT ===
 function appendMessage(sender, html, isLoading=false) {
   const msg = document.createElement("div");
   msg.className = "msg " + sender;
@@ -289,9 +227,72 @@ function appendMessage(sender, html, isLoading=false) {
   messagesDiv.appendChild(msg);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
+
+function showLoader() {
+  const loader = document.createElement("div");
+  loader.className = "loader";
+  loader.id = "loading";
+  loader.innerHTML = "<div></div><div></div><div></div>";
+  messagesDiv.appendChild(loader);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
 function removeLoading() {
   const loading = document.getElementById("loading");
   if (loading) loading.remove();
+}
+
+async function sendText() {
+  const text = input.value.trim();
+  if (!text) return;
+  appendMessage("user", text);
+  input.value = "";
+  showLoader();
+
+  try {
+    const res = await fetch(webhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "text", content: text })
+    });
+    const data = await res.json();
+    removeLoading();
+
+    if (data.respuesta) {
+      const { texto, tabla_html } = separarTextoYTabla(data.respuesta);
+      appendMessage("bot", texto || "Procesado correctamente.");
+      if (tabla_html) {
+        tablaDiv.innerHTML = tabla_html + `<button class="action mt-2" onclick="verCompleto()">Ver completo</button>`;
+      }
+    } else {
+      appendMessage("bot", "Sin respuesta del modelo.");
+    }
+  } catch (err) {
+    removeLoading();
+    appendMessage("bot", "Error al procesar la solicitud.");
+  }
+}
+
+function separarTextoYTabla(texto) {
+  const regexTabla = /(\|.+\|[\s\S]*?\|.+\|)/gm;
+  const tablas = texto.match(regexTabla);
+  let textoLimpio = texto.replace(regexTabla, '').trim();
+
+  if (!tablas) return { texto: textoLimpio, tabla_html: null };
+
+  const filas = tablas[0].trim().split('\n').filter(l => l.includes('|'));
+  const cabecera = filas[0].split('|').map(c => c.trim()).filter(Boolean);
+  const cuerpo = filas.slice(2).map(f => f.split('|').map(c => c.trim()).filter(Boolean));
+
+  let tabla_html = `<table><thead><tr>${cabecera.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+  cuerpo.forEach(fila => { tabla_html += `<tr>${fila.map(c=>`<td>${c}</td>`).join('')}</tr>`; });
+  tabla_html += `</tbody></table>`;
+  return { texto: textoLimpio, tabla_html };
+}
+
+function verCompleto() {
+  const nueva = window.open("", "_blank");
+  nueva.document.write(`<html><head><title>Datos completos</title></head><body>${tablaDiv.innerHTML}</body></html>`);
 }
 </script>
 </body>
