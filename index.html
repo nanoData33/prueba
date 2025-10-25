@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel Clínico - Identificación de Cohortes</title>
+  <title>Plataforma Clínica - Cohortes Crónicas</title>
 
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -14,133 +14,71 @@
 
   <style>
     body {
-      background: linear-gradient(145deg, #f9f8f7, #ebe8e5);
-      color: #2d2d2d;
       font-family: "Inter", sans-serif;
-      min-height: 100vh;
+      background-color: #f5f3f0;
+      color: #232323;
     }
-
-    /* Barra superior */
-    .navbar {
-      backdrop-filter: blur(8px);
-      background: rgba(255, 255, 255, 0.8);
-      border-bottom: 1px solid #d1d5db;
+    .sidebar {
+      background-color: #1c1c1b;
+      color: #f9f9f9;
     }
-    .nav-link {
-      color: #444;
-      font-weight: 500;
-      transition: color 0.2s;
+    .sidebar a {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      padding: 0.8rem 1rem;
+      border-radius: 0.5rem;
+      transition: background 0.2s;
+      color: #e4e4e4;
     }
-    .nav-link:hover {
-      color: #166534;
+    .sidebar a:hover {
+      background: #2a2a29;
     }
-
-    /* Tarjetas cohortes */
-    .cohorte-card {
+    .card {
       background: white;
-      border-radius: 1rem;
-      padding: 1.5rem;
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
-      transition: all 0.25s ease;
+      border-radius: 0.8rem;
+      padding: 1.2rem 1.5rem;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+      transition: transform .2s ease;
       cursor: pointer;
-      border-left: 5px solid #166534;
+      border-left: 5px solid #4a8c3f;
     }
-    .cohorte-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
-    }
-
-    /* Tarjetas funcionalidades */
-    .feature-card {
-      background: white;
-      border-radius: 1rem;
-      padding: 1.5rem;
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
-      transition: all 0.25s ease;
-      cursor: pointer;
-    }
-    .feature-card:hover {
+    .card:hover {
       transform: translateY(-3px);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-      border-left: 4px solid #166534;
-    }
-
-    .accent {
-      color: #166534;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.12);
     }
   </style>
 </head>
 
-<body>
-  <!-- 🔝 NAVBAR SUPERIOR -->
-  <nav class="navbar fixed top-0 left-0 right-0 z-10 flex justify-between items-center px-8 py-4">
-    <div class="flex items-center gap-3">
-      <i data-lucide="activity" class="w-6 h-6 accent"></i>
-      <h1 class="text-xl font-semibold tracking-tight">Panel Clínico Cohortes</h1>
+<body class="flex min-h-screen">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar w-64 flex flex-col justify-between p-5 fixed h-full">
+    <div>
+      <h1 class="text-lg font-semibold mb-6 flex items-center gap-2">
+        <i data-lucide="heart-pulse" class="w-5 h-5 text-lime-400"></i>
+        <span>Cohortes Clínicas</span>
+      </h1>
+
+      <nav class="space-y-2">
+        <a href="index.html"><i data-lucide="home"></i>Inicio</a>
+        <a href="chat.html"><i data-lucide="message-circle"></i>Chat Clínico</a>
+        <a href="analiticas.html"><i data-lucide="file-text"></i>Analíticas</a>
+        <a href="explorar.html"><i data-lucide="database"></i>Explorar Base</a>
+      </nav>
     </div>
+    <p class="text-xs text-stone-500 mt-6">&copy; 2025 Plataforma Hospitalaria</p>
+  </aside>
 
-    <div class="flex gap-8">
-      <a href="index.html" class="nav-link">Inicio</a>
-      <a href="chat.html" class="nav-link font-semibold accent">Chat Clínico</a>
-      <a href="analiticas.html" class="nav-link">Analíticas</a>
-      <a href="cohortes.html" class="nav-link">Cohortes</a>
-      <a href="pacientes.html" class="nav-link">Pacientes</a>
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="ml-64 flex-1 p-10">
+    <h2 class="text-xl font-semibold mb-6">Resumen de Cohortes</h2>
+
+    <div id="cohortes" class="space-y-5">
+      <p class="text-stone-500 italic">Cargando datos...</p>
     </div>
-  </nav>
-
-  <!-- 🧩 CONTENIDO PRINCIPAL -->
-  <main class="pt-24 pb-16 px-10 grid grid-cols-1 lg:grid-cols-2 gap-12">
-
-    <!-- COLUMNA IZQUIERDA: COHORTES -->
-    <section>
-      <h2 class="text-lg font-semibold text-stone-600 uppercase mb-5">Cohortes Detectadas</h2>
-      <div id="cohortes" class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <p class="text-stone-500 italic">Cargando datos...</p>
-      </div>
-    </section>
-
-    <!-- COLUMNA DERECHA: FUNCIONALIDADES -->
-    <aside>
-      <h2 class="text-lg font-semibold text-stone-600 uppercase mb-5">Funciones Inteligentes</h2>
-      <div class="space-y-6">
-
-        <div class="feature-card" onclick="location.href='subir_pdf.html'">
-          <div class="flex items-center gap-3 mb-2">
-            <i data-lucide="file-plus" class="accent"></i>
-            <h3 class="text-lg font-semibold">Subir Analítica o PDF</h3>
-          </div>
-          <p class="text-stone-500 text-sm">Clasifica automáticamente al paciente según las reglas de cohorte configuradas.</p>
-        </div>
-
-        <div class="feature-card" onclick="location.href='recordatorios.html'">
-          <div class="flex items-center gap-3 mb-2">
-            <i data-lucide="mail" class="accent"></i>
-            <h3 class="text-lg font-semibold">Enviar Recordatorios</h3>
-          </div>
-          <p class="text-stone-500 text-sm">Contacta fácilmente con pacientes con baja adherencia o sin seguimiento reciente.</p>
-        </div>
-
-        <div class="feature-card" onclick="location.href='explorar.html'">
-          <div class="flex items-center gap-3 mb-2">
-            <i data-lucide="bar-chart-2" class="accent"></i>
-            <h3 class="text-lg font-semibold">Explorar Tendencias</h3>
-          </div>
-          <p class="text-stone-500 text-sm">Visualiza gráficas de evolución por enfermedad, parámetros y laboratorio.</p>
-        </div>
-
-        <div class="feature-card" onclick="location.href='riesgos.html'">
-          <div class="flex items-center gap-3 mb-2">
-            <i data-lucide="alert-octagon" class="accent"></i>
-            <h3 class="text-lg font-semibold">Pacientes en Riesgo</h3>
-          </div>
-          <p class="text-stone-500 text-sm">Detecta automáticamente pacientes con indicadores de riesgo o descompensación.</p>
-        </div>
-
-      </div>
-    </aside>
   </main>
 
-  <!-- ⚙️ SCRIPT PRINCIPAL -->
   <script>
     lucide.createIcons();
 
@@ -150,35 +88,36 @@
 
     async function cargarCohortes() {
       const contenedor = document.getElementById("cohortes");
-      contenedor.innerHTML = "<p class='text-stone-500 italic'>Cargando datos...</p>";
+      contenedor.innerHTML = "<p class='text-stone-500 italic'>Cargando...</p>";
 
       const { data, error } = await supabase.from("pacientes").select("enfermedad_principal");
+
       if (error) {
+        contenedor.innerHTML = "<p class='text-red-600'>Error de conexión con Supabase.</p>";
         console.error(error);
-        contenedor.innerHTML = "<p class='text-red-600'>Error al conectar con la base de datos</p>";
         return;
       }
 
       const conteo = {};
       data.forEach(p => {
-        const enfermedad = p.enfermedad_principal || "Sin especificar";
-        conteo[enfermedad] = (conteo[enfermedad] || 0) + 1;
+        const enf = p.enfermedad_principal || "Sin especificar";
+        conteo[enf] = (conteo[enf] || 0) + 1;
       });
 
-      const cohortesHTML = Object.entries(conteo)
-        .sort((a, b) => b[1] - a[1])
-        .map(([enf, total]) => `
-          <div class="cohorte-card" onclick="abrirCohorte('${enf}')">
-            <div class="flex items-center gap-3 mb-2">
-              <i data-lucide='heart-pulse' class='accent'></i>
+      const html = Object.entries(conteo)
+        .sort((a,b) => b[1] - a[1])
+        .map(([enf,total]) => `
+          <div class="card" onclick="abrirCohorte('${enf}')">
+            <div class="flex justify-between items-center">
               <h3 class="text-lg font-semibold">${enf}</h3>
+              <i data-lucide="chevron-right"></i>
             </div>
-            <p class="text-4xl font-bold accent">${total}</p>
-            <p class="text-sm text-stone-500 mt-1">pacientes registrados</p>
+            <p class="text-3xl font-bold text-lime-700">${total}</p>
+            <p class="text-sm text-stone-500">pacientes registrados</p>
           </div>
         `).join("");
 
-      contenedor.innerHTML = cohortesHTML;
+      contenedor.innerHTML = html;
       lucide.createIcons();
     }
 
