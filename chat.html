@@ -291,13 +291,14 @@ async function sendText() {
     const data = await res.json();
     removeLoading();
 
-    // Mostrar texto en el chat
     if (data.respuesta) appendMessage("bot", data.respuesta);
 
-    // Procesar si hay tabla
-    if (data.columns && data.rows) renderTable(data.columns, data.rows);
+    if (data.columns && data.rows) {
+      const cols = JSON.parse(data.columns);
+      const rows = JSON.parse(data.rows);
+      renderTable(cols, rows);
+    }
 
-    // Botón dataset completo
     if (data.sql) {
       const boton = document.createElement("button");
       boton.className = "action";
@@ -316,9 +317,7 @@ function renderTable(columns, rows) {
   let html = "<table><thead><tr>";
   columns.forEach(col => html += `<th>${col}</th>`);
   html += "</tr></thead><tbody>";
-  rows.forEach(r => {
-    html += "<tr>" + r.map(c => `<td>${c}</td>`).join("") + "</tr>";
-  });
+  rows.forEach(r => html += "<tr>" + r.map(c => `<td>${c}</td>`).join("") + "</tr>");
   html += "</tbody></table>";
   tablaDiv.innerHTML = html;
 }
@@ -333,7 +332,10 @@ async function abrirDatasetCompleto(sql) {
       body: JSON.stringify({ sql })
     });
     const data = await res.json();
-    const html = generarTablaPopup(data.columns, data.rows);
+
+    const cols = JSON.parse(data.columns);
+    const rows = JSON.parse(data.rows);
+    const html = generarTablaPopup(cols, rows);
     showPopup(html);
   } catch (err) {
     showPopup("Error al cargar el dataset.");
