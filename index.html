@@ -9,199 +9,100 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     body {
-      background: linear-gradient(135deg, #f2f0ed, #e3e0db);
+      background: linear-gradient(135deg, #f2f0ed, #e5e1dc);
       color: #2b2b2b;
       font-family: "Inter", sans-serif;
     }
-    .card {
-      background-color: white;
+    .cohorte-card {
+      background: white;
       border-radius: 1rem;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.08);
       padding: 1.5rem;
-      transition: transform .2s ease, box-shadow .2s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: all 0.25s ease;
+      cursor: pointer;
+      border-left: 5px solid #166534;
     }
-    .card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    .cohorte-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
     }
     .accent {
-      color: #166534; /* emerald-800 */
-    }
-    .btn {
-      display: inline-block;
-      background-color: #166534;
-      color: white;
-      font-weight: 500;
-      padding: 0.6rem 1.2rem;
-      border-radius: 0.5rem;
-      transition: background-color .2s ease;
-    }
-    .btn:hover {
-      background-color: #115a2c;
+      color: #166534;
     }
   </style>
 </head>
 
 <body class="min-h-screen">
-
-  <header class="px-8 py-6 flex justify-between items-center border-b border-stone-300">
-    <h1 class="text-2xl font-semibold tracking-tight">Plataforma de Cohortes Crónicas</h1>
-    <a href="chat.html" class="btn">Ir al Chat Clínico</a>
+  <header class="px-8 py-6 flex justify-between items-center border-b border-stone-300 bg-white/80 backdrop-blur-md">
+    <h1 class="text-2xl font-semibold tracking-tight">Panel de Cohortes Crónicas</h1>
+    <a href="chat.html" class="px-4 py-2 bg-emerald-700 text-white rounded-md hover:bg-emerald-800">Ir al Chat Clínico</a>
   </header>
 
-  <main class="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+  <main class="p-10">
+    <h2 class="text-lg font-medium text-stone-600 uppercase mb-6">Resumen de Cohortes</h2>
 
-    <!-- SECCIÓN PRINCIPAL -->
-    <section class="lg:col-span-2 space-y-8">
-      <div>
-        <h2 class="text-lg font-medium text-stone-600 uppercase mb-4">Cohortes Detectadas</h2>
-        <div id="cohortes" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6"></div>
-      </div>
-
-      <div class="card">
-        <h2 class="text-lg font-semibold flex items-center gap-2 mb-3">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3v18h18M3 9h18M9 21V9"/></svg>
-          Tendencia de HbA1c promedio
-        </h2>
-        <canvas id="chartHbA1c" height="200"></canvas>
-      </div>
-    </section>
-
-    <!-- PANEL LATERAL -->
-    <aside class="space-y-6">
-      <h2 class="text-lg font-medium text-stone-600 uppercase mb-2">Acciones sugeridas</h2>
-
-      <div class="card space-y-4">
-        <div class="flex items-center gap-3">
-          <i data-lucide="mail" class="accent"></i>
-          <p>Enviar recordatorio a pacientes con baja adherencia</p>
-        </div>
-        <button class="w-full btn">Enviar correos</button>
-      </div>
-
-      <div class="card space-y-4">
-        <div class="flex items-center gap-3">
-          <i data-lucide="file-text" class="accent"></i>
-          <p>Subir analítica o PDF para clasificación automática</p>
-        </div>
-        <button class="w-full btn">Subir archivo</button>
-      </div>
-
-      <div class="card space-y-4">
-        <div class="flex items-center gap-3">
-          <i data-lucide="activity" class="accent"></i>
-          <p>Explorar cohortes emergentes</p>
-        </div>
-        <button class="w-full btn">Ver detalles</button>
-      </div>
-    </aside>
-
+    <div id="cohortes" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <p class="text-stone-500 italic col-span-full">Cargando datos...</p>
+    </div>
   </main>
 
   <script>
     lucide.createIcons();
 
-    // ======= CONFIGURAR SUPABASE =======
-    const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co"; // ← tu proyecto
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw"; // ⚠️ pon tu clave en un archivo JS separado si es público
+    // ======= CONFIGURACIÓN SUPABASE =======
+    const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw"; // ⚠️ pon tu key aquí
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    // ======= FUNCIONES =======
+    // ======= FUNCIÓN PRINCIPAL =======
     async function cargarCohortes() {
-      const cohortesDiv = document.getElementById("cohortes");
-      cohortesDiv.innerHTML = "<p class='text-stone-500 italic'>Cargando...</p>";
+      const contenedor = document.getElementById("cohortes");
+      contenedor.innerHTML = "<p class='text-stone-500 italic'>Cargando datos...</p>";
 
-      const { data, error } = await supabase
-        .from("pacientes")
-        .select("enfermedad_principal");
+      const { data, error } = await supabase.from("pacientes").select("enfermedad_principal");
 
       if (error) {
-        cohortesDiv.innerHTML = "<p>Error al cargar cohortes</p>";
         console.error(error);
+        contenedor.innerHTML = "<p class='text-red-600'>Error al conectar con la base de datos</p>";
         return;
       }
 
       const conteo = {};
       data.forEach(p => {
-        const e = p.enfermedad_principal || "Sin especificar";
-        conteo[e] = (conteo[e] || 0) + 1;
+        const enfermedad = p.enfermedad_principal || "Sin especificar";
+        conteo[enfermedad] = (conteo[enfermedad] || 0) + 1;
       });
 
-      cohortesDiv.innerHTML = Object.entries(conteo)
+      const cohortesHTML = Object.entries(conteo)
+        .sort((a, b) => b[1] - a[1])
         .map(([enf, total]) => `
-          <div class="card border-l-4 border-emerald-700">
-            <div class="flex items-center gap-3 mb-2">
+          <div class="cohorte-card" onclick="abrirCohorte('${enf}')">
+            <div class="flex items-center gap-3 mb-3">
               <i data-lucide="activity" class="accent"></i>
-              <h3 class="text-xl font-semibold">${enf}</h3>
+              <h3 class="text-lg font-semibold">${enf}</h3>
             </div>
-            <p class="text-3xl font-bold accent">${total}</p>
+            <p class="text-4xl font-bold accent">${total}</p>
             <p class="text-sm text-stone-500 mt-1">pacientes registrados</p>
           </div>
-        `)
-        .join("");
+        `).join("");
 
+      contenedor.innerHTML = cohortesHTML;
       lucide.createIcons();
     }
 
-    async function cargarTendencia() {
-      const { data, error } = await supabase
-        .from("laboratorios")
-        .select("fecha_prueba, HbA1c");
-
-      if (error) {
-        console.error(error);
-        return;
-      }
-
-      const grouped = {};
-      data.forEach(r => {
-        const fecha = r.fecha_prueba?.slice(0, 10);
-        if (!fecha || r.HbA1c == null) return;
-        grouped[fecha] = grouped[fecha] || [];
-        grouped[fecha].push(r.HbA1c);
-      });
-
-      const fechas = Object.keys(grouped).sort();
-      const promedios = fechas.map(f => {
-        const vals = grouped[f];
-        return vals.reduce((a,b)=>a+b,0)/vals.length;
-      });
-
-      const ctx = document.getElementById("chartHbA1c");
-      new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: fechas,
-          datasets: [{
-            label: "HbA1c promedio",
-            data: promedios,
-            borderColor: "#166534",
-            backgroundColor: "rgba(22,101,52,0.2)",
-            borderWidth: 2,
-            tension: 0.3,
-            fill: true,
-          }],
-        },
-        options: {
-          scales: {
-            x: { ticks: { color: "#4b5563" } },
-            y: { beginAtZero: false }
-          },
-          plugins: { legend: { display: false } }
-        }
-      });
+    // ======= REDIRECCIÓN =======
+    function abrirCohorte(nombre) {
+      const url = `cohorte.html?nombre=${encodeURIComponent(nombre)}`;
+      window.location.href = url;
     }
 
     // ======= INICIALIZAR =======
     cargarCohortes();
-    cargarTendencia();
   </script>
 </body>
 </html>
