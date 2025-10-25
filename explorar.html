@@ -1,79 +1,161 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Explorar Base de Datos</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
 
 <style>
-  body{font-family:"Inter",sans-serif;background:#f5f4f1;color:#222;}
-  table{width:100%;border-collapse:collapse;}
-  th,td{border-bottom:1px solid #ddd;padding:0.5rem;}
-  th{background:#eee;font-weight:600;}
-  tr:hover{background:#fafafa;}
-  select,button{border:1px solid #ccc;border-radius:0.4rem;padding:0.4rem 0.6rem;}
-  button{background:#1c1c1b;color:white;font-weight:500;}
-  button:hover{background:#2b2b29;}
+  body { font-family: "Inter", sans-serif; background-color: #f5f3ef; color: #232323; }
+  .sidebar { background-color: #1c1c1b; color: #f8f8f8; }
+  .sidebar input { background: #2b2b2a; color: #fff; border: none; border-radius: 0.5rem; padding: 0.5rem; width: 100%; }
+  .patient-item { padding: 0.8rem 1rem; border-bottom: 1px solid #2b2b2a; cursor: pointer; transition: background .2s; }
+  .patient-item:hover { background-color: #2f2f2d; }
+  .active-patient { background-color: #3b3b39; }
+  .tab { cursor: pointer; padding: 0.6rem 1.2rem; border-bottom: 3px solid transparent; }
+  .tab.active { border-color: #4a8c3f; color: #4a8c3f; font-weight: 600; }
+  .card { background: white; border-radius: 0.8rem; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 </style>
 </head>
 
-<body class="p-8">
-  <h1 class="text-2xl font-semibold mb-6">Explorador de Base de Datos</h1>
+<body class="flex min-h-screen">
+  <!-- Sidebar izquierda -->
+  <aside class="sidebar w-64 flex flex-col">
+    <div class="p-4 border-b border-stone-700">
+      <h1 class="text-lg font-semibold mb-3 flex items-center gap-2">
+        <i data-lucide="database" class="text-lime-400"></i> Explorar
+      </h1>
+      <input id="buscador" placeholder="Buscar paciente..." oninput="filtrarPacientes()">
+    </div>
+    <div id="listaPacientes" class="flex-1 overflow-y-auto"></div>
+  </aside>
 
-  <div class="flex gap-3 mb-4 items-center">
-    <label class="font-medium">Tabla:</label>
-    <select id="tablaSelect" onchange="cargarTabla()">
-      <option value="pacientes">pacientes</option>
-      <option value="diagnosticos">diagnosticos</option>
-      <option value="laboratorios">laboratorios</option>
-      <option value="medicaciones">medicaciones</option>
-      <option value="notas_clinicas">notas_clinicas</option>
-    </select>
-    <button onclick="cargarTabla()">Actualizar</button>
-  </div>
+  <!-- Panel derecho -->
+  <main class="flex-1 p-8 overflow-y-auto">
+    <h2 class="text-2xl font-semibold mb-4">Selecciona un paciente</h2>
+    <div id="detallePaciente" class="space-y-6 hidden">
+      <div class="card">
+        <h3 class="text-xl font-semibold mb-2" id="nombrePaciente"></h3>
+        <p id="infoPaciente" class="text-stone-600 text-sm"></p>
+      </div>
 
-  <div id="tablaContainer" class="overflow-x-auto bg-white p-4 rounded-md shadow"></div>
+      <!-- Tabs -->
+      <div class="flex gap-6 border-b pb-2">
+        <div class="tab active" onclick="mostrarTab('medicaciones')">Medicaciones</div>
+        <div class="tab" onclick="mostrarTab('laboratorios')">Laboratorios</div>
+        <div class="tab" onclick="mostrarTab('diagnosticos')">Diagnósticos</div>
+        <div class="tab" onclick="mostrarTab('notas')">Notas clínicas</div>
+      </div>
 
-  <script>
-    const supabaseUrl="https://tmolxeszsgkffurhrcxy.supabase.co";
-    const supabaseKey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
-    const supabase=window.supabase.createClient(supabaseUrl,supabaseKey);
+      <!-- Contenido -->
+      <div id="contenidoTabs" class="mt-4 space-y-4"></div>
+    </div>
+  </main>
 
-    async function cargarTabla(){
-      const tabla=document.getElementById("tablaSelect").value;
-      const cont=document.getElementById("tablaContainer");
-      cont.innerHTML="<p class='italic text-stone-500'>Cargando...</p>";
+<script>
+lucide.createIcons();
 
-      const {data,error}=await supabase.from(tabla).select("*").limit(100);
-      if(error){cont.innerHTML="<p>Error al cargar "+tabla+"</p>";console.error(error);return;}
-      if(!data.length){cont.innerHTML="<p>No hay registros.</p>";return;}
+const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-      const cols=Object.keys(data[0]);
-      let html="<table><thead><tr>"+cols.map(c=>"<th>"+c+"</th>").join("")+"<th>Acciones</th></tr></thead><tbody>";
-      html+=data.map(r=>{
-        return "<tr>"+cols.map(c=>`<td contenteditable onblur="editar('${tabla}','${c}','${r[cols[0]]}',this.innerText)">${r[c]??""}</td>`).join("")
-        +`<td><button onclick="borrar('${tabla}','${cols[0]}','${r[cols[0]]}')">🗑️</button></td></tr>`;
-      }).join("");
-      html+="</tbody></table>";
-      cont.innerHTML=html;
-    }
+let pacientes = [];
+let pacienteSeleccionado = null;
 
-    async function editar(tabla,col,id,valor){
-      const {error}=await supabase.from(tabla).update({[col]:valor}).eq(Object.keys((await supabase.from(tabla).select("*", {count:"exact",limit:1})).data[0])[0],id);
-      if(error)console.error(error);
-    }
+async function cargarPacientes() {
+  const { data, error } = await supabase.from("pacientes").select("*").order("nombre", { ascending: true });
+  if (error) { console.error(error); return; }
+  pacientes = data;
+  renderPacientes(data);
+}
 
-    async function borrar(tabla,idcol,id){
-      if(!confirm("¿Eliminar registro?"))return;
-      const {error}=await supabase.from(tabla).delete().eq(idcol,id);
-      if(error)console.error(error);
-      cargarTabla();
-    }
+function renderPacientes(lista) {
+  const cont = document.getElementById("listaPacientes");
+  cont.innerHTML = lista.map(p => `
+    <div class="patient-item" onclick="seleccionarPaciente('${p.patient_id}')">
+      <p class="font-medium">${p.nombre} ${p.apellido || ""}</p>
+      <p class="text-xs text-stone-400">${p.enfermedad_principal || "Sin enfermedad"} • ${p.edad || "-"} años</p>
+    </div>
+  `).join("");
+}
 
-    cargarTabla();
-  </script>
+function filtrarPacientes() {
+  const q = document.getElementById("buscador").value.toLowerCase();
+  renderPacientes(pacientes.filter(p => (p.nombre + p.apellido).toLowerCase().includes(q)));
+}
+
+async function seleccionarPaciente(id) {
+  pacienteSeleccionado = pacientes.find(p => p.patient_id === id);
+  document.getElementById("detallePaciente").classList.remove("hidden");
+  document.querySelectorAll(".patient-item").forEach(el => el.classList.remove("active-patient"));
+  event.currentTarget?.classList.add("active-patient");
+
+  document.querySelector("h2").classList.add("hidden");
+  document.getElementById("nombrePaciente").textContent = `${pacienteSeleccionado.nombre} ${pacienteSeleccionado.apellido || ""}`;
+  document.getElementById("infoPaciente").innerHTML = `
+    <b>Edad:</b> ${pacienteSeleccionado.edad || "-"} años · 
+    <b>Sexo:</b> ${pacienteSeleccionado.sexo || "-"} · 
+    <b>IMC:</b> ${pacienteSeleccionado.IMC || "-"} · 
+    <b>Enfermedad:</b> ${pacienteSeleccionado.enfermedad_principal || "-"}
+  `;
+  mostrarTab("medicaciones");
+}
+
+async function mostrarTab(tab) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelector(`.tab[onclick="mostrarTab('${tab}')"]`).classList.add("active");
+  const cont = document.getElementById("contenidoTabs");
+  cont.innerHTML = "<p class='italic text-stone-500'>Cargando...</p>";
+
+  if (!pacienteSeleccionado) return;
+
+  let data = [];
+  if (tab === "medicaciones") {
+    const res = await supabase.from("medicaciones").select("*").eq("patient_id", pacienteSeleccionado.patient_id);
+    data = res.data || [];
+    cont.innerHTML = data.length ? data.map(m => `
+      <div class="card">
+        <p><b>${m.principio_activo}</b> — ${m.dosis_diaria_mg || "?"} mg/día</p>
+        <p class="text-sm text-stone-500">Adherencia: ${m.adherencia_% || "-"}%</p>
+      </div>`).join("") : "<p>No hay medicaciones registradas.</p>";
+  }
+
+  if (tab === "laboratorios") {
+    const res = await supabase.from("laboratorios").select("*").eq("patient_id", pacienteSeleccionado.patient_id);
+    data = res.data || [];
+    cont.innerHTML = data.length ? data.map(l => `
+      <div class="card">
+        <p><b>Fecha:</b> ${l.fecha_prueba}</p>
+        <p>HbA1c: ${l.HbA1c || "-"} | Colesterol: ${l.colesterol_total || "-"} | TFG: ${l.TFG || "-"}</p>
+      </div>`).join("") : "<p>No hay resultados de laboratorio.</p>";
+  }
+
+  if (tab === "diagnosticos") {
+    const res = await supabase.from("diagnosticos").select("*").eq("patient_id", pacienteSeleccionado.patient_id);
+    data = res.data || [];
+    cont.innerHTML = data.length ? data.map(d => `
+      <div class="card">
+        <p><b>${d.nombre_diagnóstico}</b> (${d.CIE10_code || "-"})</p>
+        <p class="text-sm text-stone-500">Estado: ${d.estado || "-"} | Gravedad: ${d.gravedad || "-"}</p>
+      </div>`).join("") : "<p>No hay diagnósticos registrados.</p>";
+  }
+
+  if (tab === "notas") {
+    const res = await supabase.from("notas_clinicas").select("*").eq("patient_id", pacienteSeleccionado.patient_id);
+    data = res.data || [];
+    cont.innerHTML = data.length ? data.map(n => `
+      <div class="card">
+        <p class="text-sm text-stone-500 mb-1">${n.fecha_nota}</p>
+        <p>${n.texto_nota}</p>
+      </div>`).join("") : "<p>No hay notas clínicas registradas.</p>";
+  }
+}
+
+cargarPacientes();
+</script>
 </body>
 </html>
