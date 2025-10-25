@@ -1,102 +1,94 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Plataforma Clínica - Cohortes Crónicas</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Panel Clínico - Inicio</title>
 
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <style>
-    body {
-      font-family: "Inter", sans-serif;
-      background-color: #f5f3f0;
-      color: #232323;
-    }
-    .sidebar {
-      background-color: #1c1c1b;
-      color: #f9f9f9;
-    }
-    .sidebar a {
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-      padding: 0.8rem 1rem;
-      border-radius: 0.5rem;
-      transition: background 0.2s;
-      color: #e4e4e4;
-    }
-    .sidebar a:hover {
-      background: #2a2a29;
-    }
-    .card {
-      background: white;
-      border-radius: 0.8rem;
-      padding: 1.2rem 1.5rem;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.08);
-      transition: transform .2s ease;
-      cursor: pointer;
-      border-left: 5px solid #4a8c3f;
-    }
-    .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 12px rgba(0,0,0,0.12);
-    }
-  </style>
+<style>
+  body { background-color:#f5f4f1; font-family:"Inter",sans-serif; color:#222; }
+  header { backdrop-filter:blur(8px); background:rgba(255,255,255,0.85); border-bottom:1px solid #d4d4d4; }
+  .card { background:white; border-radius:0.8rem; padding:1.2rem; box-shadow:0 2px 8px rgba(0,0,0,0.07); transition:transform .2s; cursor:pointer; border-left:4px solid #4a8c3f; }
+  .card:hover { transform:translateY(-3px); box-shadow:0 6px 12px rgba(0,0,0,0.1); }
+  .feature { background:white; border-radius:0.8rem; padding:1.5rem; box-shadow:0 2px 8px rgba(0,0,0,0.07); transition:transform .2s; cursor:pointer; }
+  .feature:hover { transform:translateY(-3px); box-shadow:0 6px 12px rgba(0,0,0,0.1); border-left:4px solid #4a8c3f; }
+</style>
 </head>
 
-<body class="flex min-h-screen">
+<body>
+  <!-- MENÚ SUPERIOR -->
+  <header class="fixed top-0 left-0 w-full flex justify-between items-center px-10 py-4 z-10">
+    <h1 class="text-xl font-semibold flex items-center gap-2">
+      <i data-lucide="heart-pulse" class="text-lime-700 w-6 h-6"></i>
+      <span>Panel Clínico</span>
+    </h1>
+    <a href="chat.html" class="bg-lime-700 text-white px-4 py-2 rounded-md hover:bg-lime-800 transition">
+      Chat Clínico
+    </a>
+  </header>
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar w-64 flex flex-col justify-between p-5 fixed h-full">
-    <div>
-      <h1 class="text-lg font-semibold mb-6 flex items-center gap-2">
-        <i data-lucide="heart-pulse" class="w-5 h-5 text-lime-400"></i>
-        <span>Cohortes Clínicas</span>
-      </h1>
+  <main class="pt-24 px-10 grid grid-cols-1 lg:grid-cols-2 gap-10">
+    <!-- IZQUIERDA: COHORTES -->
+    <section>
+      <h2 class="text-lg font-semibold text-stone-600 uppercase mb-4">Resumen de Cohortes</h2>
+      <div id="cohortes" class="flex flex-col gap-5">
+        <p class="italic text-stone-500">Cargando datos...</p>
+      </div>
+    </section>
 
-      <nav class="space-y-2">
-        <a href="index.html"><i data-lucide="home"></i>Inicio</a>
-        <a href="chat.html"><i data-lucide="message-circle"></i>Chat Clínico</a>
-        <a href="analiticas.html"><i data-lucide="file-text"></i>Analíticas</a>
-        <a href="explorar.html"><i data-lucide="database"></i>Explorar Base</a>
-      </nav>
-    </div>
-    <p class="text-xs text-stone-500 mt-6">&copy; 2025 Plataforma Hospitalaria</p>
-  </aside>
+    <!-- DERECHA: FUNCIONALIDADES -->
+    <aside>
+      <h2 class="text-lg font-semibold text-stone-600 uppercase mb-4">Funciones disponibles</h2>
+      <div class="flex flex-col gap-6">
+        <div class="feature" onclick="location.href='analiticas.html'">
+          <div class="flex items-center gap-2 mb-2">
+            <i data-lucide='bar-chart-2' class='text-lime-700'></i>
+            <h3 class="text-lg font-semibold">Análisis de Laboratorios</h3>
+          </div>
+          <p class="text-stone-500 text-sm">Visualiza la evolución de parámetros clínicos y tendencias.</p>
+        </div>
 
-  <!-- CONTENIDO PRINCIPAL -->
-  <main class="ml-64 flex-1 p-10">
-    <h2 class="text-xl font-semibold mb-6">Resumen de Cohortes</h2>
+        <div class="feature" onclick="location.href='explorar.html'">
+          <div class="flex items-center gap-2 mb-2">
+            <i data-lucide='database' class='text-lime-700'></i>
+            <h3 class="text-lg font-semibold">Explorar Base de Datos</h3>
+          </div>
+          <p class="text-stone-500 text-sm">Consulta y gestiona toda la información clínica desde un único panel.</p>
+        </div>
 
-    <div id="cohortes" class="space-y-5">
-      <p class="text-stone-500 italic">Cargando datos...</p>
-    </div>
+        <div class="feature" onclick="location.href='riesgos.html'">
+          <div class="flex items-center gap-2 mb-2">
+            <i data-lucide='activity' class='text-lime-700'></i>
+            <h3 class="text-lg font-semibold">Pacientes en Riesgo</h3>
+          </div>
+          <p class="text-stone-500 text-sm">Detecta automáticamente pacientes con parámetros fuera de rango.</p>
+        </div>
+
+        <div class="feature" onclick="location.href='cohortes.html'">
+          <div class="flex items-center gap-2 mb-2">
+            <i data-lucide='users' class='text-lime-700'></i>
+            <h3 class="text-lg font-semibold">Ver todas las Cohortes</h3>
+          </div>
+          <p class="text-stone-500 text-sm">Accede al detalle individual de cada grupo de pacientes.</p>
+        </div>
+      </div>
+    </aside>
   </main>
 
   <script>
     lucide.createIcons();
-
     const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
     async function cargarCohortes() {
-      const contenedor = document.getElementById("cohortes");
-      contenedor.innerHTML = "<p class='text-stone-500 italic'>Cargando...</p>";
-
+      const c = document.getElementById("cohortes");
       const { data, error } = await supabase.from("pacientes").select("enfermedad_principal");
-
-      if (error) {
-        contenedor.innerHTML = "<p class='text-red-600'>Error de conexión con Supabase.</p>";
-        console.error(error);
-        return;
-      }
+      if (error) { c.innerHTML = "<p>Error al conectar.</p>"; console.error(error); return; }
 
       const conteo = {};
       data.forEach(p => {
@@ -104,27 +96,18 @@
         conteo[enf] = (conteo[enf] || 0) + 1;
       });
 
-      const html = Object.entries(conteo)
-        .sort((a,b) => b[1] - a[1])
-        .map(([enf,total]) => `
-          <div class="card" onclick="abrirCohorte('${enf}')">
-            <div class="flex justify-between items-center">
-              <h3 class="text-lg font-semibold">${enf}</h3>
-              <i data-lucide="chevron-right"></i>
-            </div>
-            <p class="text-3xl font-bold text-lime-700">${total}</p>
-            <p class="text-sm text-stone-500">pacientes registrados</p>
+      c.innerHTML = Object.entries(conteo).sort((a,b)=>b[1]-a[1]).map(([e,t])=>`
+        <div class='card' onclick="location.href='cohorte.html?nombre=${encodeURIComponent(e)}'">
+          <div class='flex justify-between items-center mb-1'>
+            <h3 class='text-lg font-semibold'>${e}</h3>
+            <i data-lucide='chevron-right'></i>
           </div>
-        `).join("");
-
-      contenedor.innerHTML = html;
+          <p class='text-3xl font-bold text-lime-700'>${t}</p>
+          <p class='text-sm text-stone-500'>pacientes registrados</p>
+        </div>
+      `).join("");
       lucide.createIcons();
     }
-
-    function abrirCohorte(nombre) {
-      window.location.href = `cohorte.html?nombre=${encodeURIComponent(nombre)}`;
-    }
-
     cargarCohortes();
   </script>
 </body>
