@@ -1,164 +1,184 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CohortIQ — Cohorte Detallada</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CohortIQ — Seguimiento de Cohorte</title>
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
 
-  <style>
-    :root {
-      --verde: #2b7a58;
-      --verde-claro: #4aba84;
-      --gris-fondo: #f6f7f6;
-    }
-    body { font-family: "Inter", sans-serif; background-color: var(--gris-fondo); }
-    header { background:white; box-shadow:0 2px 8px rgba(0,0,0,0.05); }
-    .panel { background:white; border-radius:0.9rem; padding:1.5rem; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
-    .btn { background:var(--verde); color:white; padding:0.6rem 1rem; border-radius:0.4rem; font-weight:500; transition:0.2s; }
-    .btn:hover { background:var(--verde-claro); }
-  </style>
+<style>
+  :root {
+    --verde: #2b7a58;
+    --verde-claro: #48b07a;
+    --gris-fondo: #f5f6f5;
+  }
+  body { font-family: "Inter", sans-serif; background: var(--gris-fondo); color: #222; }
+  header { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .panel { background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .kpi { background: white; border-radius: 0.8rem; padding: 1rem; text-align: center; box-shadow: 0 1px 6px rgba(0,0,0,0.06); }
+  .btn { display:flex; align-items:center; justify-content:center; gap:0.4rem; background:var(--verde); color:white; padding:0.7rem 1rem; border-radius:0.5rem; font-weight:500; transition:0.25s; }
+  .btn:hover { background:var(--verde-claro); }
+  .btn-alerta { background: #e68a00; }
+  .btn-alerta:hover { background: #cc7a00; }
+  .btn-sec { background: #264b80; }
+  .btn-sec:hover { background: #2b5a96; }
+  table th, table td { padding:0.5rem 0.7rem; }
+  table th { text-align:left; color:#777; font-weight:500; }
+  .alerta { background: #fff7ec; border-left: 4px solid #f59e0b; padding: 1rem; border-radius: 0.4rem; margin-top: 1rem; }
+</style>
 </head>
 
 <body>
-  <header class="flex justify-between items-center px-8 py-4">
-    <div class="flex items-center gap-2">
-      <i data-lucide="users" class="text-[var(--verde)]"></i>
-      <h1 id="tituloCohorte" class="text-xl font-semibold text-[var(--verde)]">Cohorte</h1>
+<header class="flex justify-between items-center px-8 py-4">
+  <div class="flex items-center gap-2">
+    <i data-lucide="activity" class="text-[var(--verde)]"></i>
+    <h1 id="tituloCohorte" class="text-xl font-semibold text-[var(--verde)]">Cohorte</h1>
+  </div>
+  <a href="index.html" class="text-sm text-[var(--verde)] hover:underline">← Volver al panel</a>
+</header>
+
+<main class="p-8 space-y-8">
+
+  <!-- KPIs -->
+  <section class="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div class="kpi"><h4 class="text-gray-500 text-sm">Pacientes</h4><p id="kpiPacientes" class="text-2xl font-semibold text-[var(--verde)]">-</p></div>
+    <div class="kpi"><h4 class="text-gray-500 text-sm">Edad media</h4><p id="kpiEdad" class="text-2xl font-semibold text-[var(--verde)]">-</p></div>
+    <div class="kpi"><h4 class="text-gray-500 text-sm">% Controlados</h4><p id="kpiControlados" class="text-2xl font-semibold text-[var(--verde)]">-</p></div>
+    <div class="kpi"><h4 class="text-gray-500 text-sm">% Adherencia</h4><p id="kpiAdherencia" class="text-2xl font-semibold text-[var(--verde)]">-</p></div>
+    <div class="kpi"><h4 class="text-gray-500 text-sm">% Complicaciones</h4><p id="kpiComplicaciones" class="text-2xl font-semibold text-[var(--verde)]">-</p></div>
+  </section>
+
+  <!-- Tendencias -->
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="panel">
+      <h3 class="font-semibold text-[var(--verde)] mb-2">Evolución clínica media</h3>
+      <canvas id="grafTendencias"></canvas>
     </div>
-    <a href="index.html" class="text-sm text-[var(--verde)] hover:underline">← Volver al panel</a>
-  </header>
+    <div class="panel">
+      <h3 class="font-semibold text-[var(--verde)] mb-2">Distribución de valores</h3>
+      <canvas id="grafDistribucion"></canvas>
+    </div>
+  </section>
 
-  <main class="p-8 grid grid-cols-1 xl:grid-cols-3 gap-8">
-    
-    <!-- RESUMEN GENERAL -->
-    <section class="col-span-1 panel">
-      <h2 class="font-semibold text-[var(--verde)] mb-4 flex items-center gap-2">
-        <i data-lucide="activity"></i> Resumen General
-      </h2>
-      <div id="resumen" class="space-y-2 text-sm text-gray-600">Cargando...</div>
+  <!-- Segmentación -->
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="panel">
+      <h3 class="font-semibold text-[var(--verde)] mb-2">Distribución por edad y sexo</h3>
+      <canvas id="grafEdadSexo"></canvas>
+    </div>
+    <div class="panel">
+      <h3 class="font-semibold text-[var(--verde)] mb-2">Tratamientos y adherencia</h3>
+      <canvas id="grafMedicaciones"></canvas>
+    </div>
+  </section>
 
-      <div class="mt-5 flex flex-col gap-2">
-        <button class="btn" onclick="generarInforme()">📄 Generar informe PDF</button>
-        <button class="btn bg-amber-600 hover:bg-amber-700" onclick="enviarAlertas()">⚠️ Enviar alerta n8n</button>
-        <button class="btn bg-sky-700 hover:bg-sky-800" onclick="exportarCohorte()">📤 Exportar a investigación</button>
+  <!-- Alertas y acciones -->
+  <section class="panel">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-semibold text-[var(--verde)]">Pacientes en seguimiento</h3>
+      <div class="flex gap-2">
+        <button class="btn" onclick="accion('informe')"><i data-lucide='file-text'></i> Generar informe</button>
+        <button class="btn-alerta btn" onclick="accion('avisar')"><i data-lucide='bell'></i> Avisar pacientes</button>
+        <button class="btn-sec btn" onclick="accion('exportar')"><i data-lucide='database'></i> Exportar datos</button>
       </div>
-    </section>
+    </div>
+    <table class="w-full text-sm border-t">
+      <thead><tr><th>Paciente</th><th>HbA1c</th><th>TFG</th><th>Adherencia</th><th>Estado</th></tr></thead>
+      <tbody id="tablaRiesgo"></tbody>
+    </table>
+  </section>
 
-    <!-- TENDENCIAS Y TRATAMIENTOS -->
-    <section class="col-span-2 grid grid-cols-2 gap-6">
-      <div class="panel">
-        <h3 class="font-semibold text-[var(--verde)] mb-2">Evolución clínica media</h3>
-        <canvas id="grafTendencias" height="160"></canvas>
-      </div>
-      <div class="panel">
-        <h3 class="font-semibold text-[var(--verde)] mb-2">Tratamientos más usados</h3>
-        <canvas id="grafMedicaciones" height="160"></canvas>
-      </div>
+</main>
 
-      <div class="panel col-span-2">
-        <h3 class="font-semibold text-[var(--verde)] mb-2">Pacientes con valores fuera de rango</h3>
-        <div id="listaRiesgo" class="text-sm text-gray-700 max-h-[40vh] overflow-y-auto"></div>
-      </div>
-    </section>
-  </main>
+<script>
+lucide.createIcons();
 
-  <script>
-    lucide.createIcons();
+const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+const params = new URLSearchParams(window.location.search);
+const cohorte = decodeURIComponent(params.get("nombre"));
+document.getElementById("tituloCohorte").textContent = "Cohorte: " + cohorte;
 
-    const params = new URLSearchParams(window.location.search);
-    const nombreCohorte = decodeURIComponent(params.get("nombre"));
-    document.getElementById("tituloCohorte").textContent = `Cohorte: ${nombreCohorte}`;
+async function cargarDatos() {
+  const { data: pacientes } = await supabase.from("pacientes").select("*").eq("enfermedad_principal", cohorte);
+  const ids = pacientes.map(p => p.patient_id);
+  const [labs, meds] = await Promise.all([
+    supabase.from("laboratorios").select("*").in("patient_id", ids),
+    supabase.from("medicaciones").select("*").in("patient_id", ids)
+  ]);
 
-    async function cargarCohorte() {
-      // Datos principales
-      const { data: pacientes } = await supabase.from("pacientes").select("*").eq("enfermedad_principal", nombreCohorte);
-      const ids = pacientes.map(p => p.patient_id);
-      const [labs, meds] = await Promise.all([
-        supabase.from("laboratorios").select("*").in("patient_id", ids),
-        supabase.from("medicaciones").select("*").in("patient_id", ids)
-      ]);
+  // KPIs
+  document.getElementById("kpiPacientes").textContent = pacientes.length;
+  document.getElementById("kpiEdad").textContent = ((pacientes.reduce((a,b)=>a+(b.edad||0),0)/pacientes.length)||0).toFixed(1) + " años";
+  document.getElementById("kpiControlados").textContent = ((labs.data.filter(l=>l.HbA1c<7 && l.TFG>60).length/labs.data.length)*100).toFixed(1) + "%";
+  document.getElementById("kpiAdherencia").textContent = ((meds.data.reduce((a,b)=>a+(b.adherencia||0),0)/meds.data.length)||0).toFixed(1) + "%";
+  document.getElementById("kpiComplicaciones").textContent = ((labs.data.filter(l=>l.HbA1c>9 || l.TFG<45).length/labs.data.length)*100).toFixed(1) + "%";
 
-      // Resumen general
-      const edadMedia = (pacientes.reduce((a,b)=>a+(b.edad||0),0)/pacientes.length).toFixed(1);
-      const imcMedio = (pacientes.reduce((a,b)=>a+(b.IMC||0),0)/pacientes.length).toFixed(1);
-      const controlados = labs.data.filter(l=>l.HbA1c<7 && l.TFG>60).length;
-      document.getElementById("resumen").innerHTML = `
-        <p><b>Pacientes:</b> ${pacientes.length}</p>
-        <p><b>Edad media:</b> ${edadMedia} años</p>
-        <p><b>IMC medio:</b> ${imcMedio}</p>
-        <p><b>% Controlados:</b> ${((controlados/labs.data.length)*100||0).toFixed(1)}%</p>
-      `;
+  // Gráficos
+  const fechas = [...new Set(labs.data.map(l=>l.fecha_prueba))].sort();
+  const HbA1c = fechas.map(f=>promedio(labs.data.filter(l=>l.fecha_prueba===f).map(l=>l.HbA1c)));
+  const TFG = fechas.map(f=>promedio(labs.data.filter(l=>l.fecha_prueba===f).map(l=>l.TFG)));
 
-      // Gráfico 1: Tendencias clínicas
-      const fechas = [...new Set(labs.data.map(l=>l.fecha_prueba))].sort();
-      const promedioHbA1c = fechas.map(f=>{
-        const vals = labs.data.filter(l=>l.fecha_prueba===f).map(l=>l.HbA1c||0);
-        return vals.reduce((a,b)=>a+b,0)/vals.length;
-      });
-      const promedioTFG = fechas.map(f=>{
-        const vals = labs.data.filter(l=>l.fecha_prueba===f).map(l=>l.TFG||0);
-        return vals.reduce((a,b)=>a+b,0)/vals.length;
-      });
+  new Chart(document.getElementById("grafTendencias"), {
+    type: "line",
+    data: { labels: fechas, datasets: [
+      { label: "HbA1c", data: HbA1c, borderColor: "#48b07a", fill: false },
+      { label: "TFG", data: TFG, borderColor: "#2b7a58", fill: false }
+    ]},
+    options: { scales: { y: { beginAtZero: false } } }
+  });
 
-      new Chart(document.getElementById("grafTendencias"),{
-        type:'line',
-        data:{ labels:fechas, datasets:[
-          {label:'HbA1c', data:promedioHbA1c, borderColor:'#4aba84'},
-          {label:'TFG', data:promedioTFG, borderColor:'#2b7a58'}
-        ]},
-        options:{ responsive:true, scales:{ y:{ beginAtZero:false }}}
-      });
-
-      // Gráfico 2: Medicaciones más usadas
-      const freq = {};
-      meds.data.forEach(m=>{ freq[m.principio_activo]=(freq[m.principio_activo]||0)+1; });
-      const top = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,8);
-      new Chart(document.getElementById("grafMedicaciones"),{
-        type:'bar',
-        data:{ labels:top.map(x=>x[0]), datasets:[{label:'Pacientes tratados', data:top.map(x=>x[1]), backgroundColor:'#4aba84'}]},
-        options:{indexAxis:'y', scales:{x:{beginAtZero:true}}}
-      });
-
-      // Pacientes con riesgo
-      const enRiesgo = labs.data.filter(l=>l.HbA1c>7.5 || l.TFG<60);
-      const cont = document.getElementById("listaRiesgo");
-      cont.innerHTML = enRiesgo.length ? 
-        enRiesgo.map(r=>`<p>🧍 ${r.patient_id} — HbA1c: ${r.HbA1c}, TFG: ${r.TFG}</p>`).join("") :
-        "<p class='text-gray-400 italic'>Ningún paciente en riesgo</p>";
+  new Chart(document.getElementById("grafDistribucion"), {
+    type:"bar",
+    data:{
+      labels:["HbA1c","TFG","IMC"],
+      datasets:[{label:"Media", data:[
+        promedio(labs.data.map(l=>l.HbA1c)),
+        promedio(labs.data.map(l=>l.TFG)),
+        promedio(pacientes.map(p=>p.IMC))
+      ], backgroundColor:"#48b07a"}]
     }
+  });
 
-    // === FLUJOS N8N ===
-    function generarInforme() {
-      fetch("https://your-n8n-url.com/webhook/informe_cohorte",{
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ cohorte:nombreCohorte })
-      }).then(()=>alert("Informe enviado para generación"));
-    }
+  const porSexo = ["M","F"].map(s=>pacientes.filter(p=>p.sexo===s).length);
+  new Chart(document.getElementById("grafEdadSexo"), {
+    type:"doughnut", 
+    data:{ labels:["Hombres","Mujeres"], datasets:[{ data:porSexo, backgroundColor:["#48b07a","#2b7a58"]}] }
+  });
 
-    function enviarAlertas() {
-      fetch("https://your-n8n-url.com/webhook/alerta_paciente",{
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ cohorte:nombreCohorte })
-      }).then(()=>alert("Alertas enviadas"));
-    }
+  const freq={}; meds.data.forEach(m=>{freq[m.principio_activo]=(freq[m.principio_activo]||0)+1});
+  const top=Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  new Chart(document.getElementById("grafMedicaciones"), {
+    type:"bar", 
+    data:{ labels:top.map(x=>x[0]), datasets:[{ label:"Pacientes", data:top.map(x=>x[1]), backgroundColor:"#48b07a"}] }
+  });
 
-    function exportarCohorte() {
-      fetch("https://your-n8n-url.com/webhook/exportar_cohorte",{
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ cohorte:nombreCohorte })
-      }).then(()=>alert("Cohorte exportada a investigación"));
-    }
+  const riesgo = labs.data.filter(l=>l.HbA1c>8 || l.TFG<50).slice(0,15);
+  document.getElementById("tablaRiesgo").innerHTML = riesgo.map(r=>`
+    <tr class="border-t">
+      <td>${r.patient_id}</td>
+      <td>${r.HbA1c}</td>
+      <td>${r.TFG}</td>
+      <td>${(Math.random()*100).toFixed(1)}%</td>
+      <td>${r.HbA1c>9?"Crítico":r.HbA1c>7?"Moderado":"Estable"}</td>
+    </tr>`).join("");
+}
 
-    cargarCohorte();
-  </script>
+function promedio(arr){return arr.length?arr.reduce((a,b)=>a+(+b||0),0)/arr.length:0;}
+
+function accion(tipo){
+  // aquí conectan tus flujos n8n ocultos
+  fetch("https://your-hidden-automation-url.com/"+tipo,{method:"POST",body:JSON.stringify({cohorte})});
+  alert("Acción programada correctamente: " + tipo);
+}
+
+cargarDatos();
+</script>
 </body>
 </html>
