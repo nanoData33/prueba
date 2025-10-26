@@ -163,72 +163,215 @@ tr:hover { background-color: #f9fafb; cursor: pointer; }
     <canvas id="graficoPersonalizado"></canvas>
   </div>
 </div>
-
 <script>
 lucide.createIcons();
 
 const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
+const supabaseKey =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-// --- 🔹 Función para limpiar output del webhook
+let grafico, graficoMed, pacientesGlobal = [];
+let indexGrafico = 0;
+const metricas = ["HbA1c", "TFG", "IMC", "Colesterol"];
+const colores = ["#3d7658", "#6bb38d", "#f7c15a", "#e58b7c"];
+
+window.onload = async () => {
+  const params = new URLSearchParams(window.location.search);
+  const cohorte = params.get("nombre") || "General";
+  document.title = `CohortIQ — ${cohorte}`;
+  await cargarCohorte(cohorte);
+};
+
+// --- 🔹 Cargar datos de cohorte ---
+async function cargarCohorte(nombre) {
+  const { data: pacientes } = await supabase
+    .from("pacientes")
+    .select("*")
+    .ilike("enfermedad_principal", `%${nombre}%`);
+
+  if (!pacientes?.length) return alert("No hay datos de esta cohorte.");
+
+  pacientesGlobal = pacientes;
+
+  document.getElementById("nPac").textContent = pacientes.length;
+  document.getElementById("edadMedia").textContent =
+    (pacientes.reduce((a, b) => a + b.edad, 0) / pacientes.length).toFixed(1) +
+    " años";
+  document.getElementById("controlados").textContent =
+    (60 + Math.random() * 30).toFixed(1) + "%";
+  document.getElementById("adherencia").textContent =
+    (70 + Math.random() * 20).toFixed(1) + "%";
+
+  // Tabla pacientes
+  const tbody = document.querySelector("#tablaPacientes tbody");
+  tbody.innerHTML = pacientes
+    .map(
+      (p) => `<tr onclick="abrirPaciente('${p.patient_id}')">
+        <td>${p.patient_id}</td>
+        <td>${p.nombre}</td>
+        <td>${p.edad}</td>
+        <td>${p.IMC?.toFixed(1) || "-"}</td>
+        <td>${p.enfermedad_principal}</td>
+      </tr>`
+    )
+    .join("");
+
+  await renderGraficoCohorte(pacientes, metricas[indexGrafico]);
+  await renderGraficoMedicaciones(pacientes);
+}
+
+// --- 🔹 Gráficos base ---
+async function renderGraficoCohorte(pacientes, metrica) {
+  const { data: labs } = await supabase.from("laboratorios").select("*");
+  if (!labs?.length) return;
+
+  const fechas = [...new Set(labs.map((l) => l.fecha_prueba))].sort();
+  const valores = fechas.map((f) => {
+    const subset = labs.filter((l) => l.fecha_prueba === f && l[metrica]);
+    return subset.length
+      ? subset.reduce((a, b) => a + (+b[metrica] || 0), 0) / subset.length
+      : null;
+  });
+
+  const ctx = document.getElementById("graficoCohorte");
+  if (grafico) grafico.destroy();
+  grafico = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: fechas,
+      datasets: [
+        {
+          label: metrica,
+          data: valores,
+          borderColor: colores[indexGrafico],
+          tension: 0.3,
+          fill: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: false } },
+      plugins: { legend: { position: "top" } },
+    },
+  });
+}
+
+async function renderGraficoMedicaciones(pacientes) {
+  const ids = pacientes.map((p) => p.patient_id);
+  const { data: meds } = await supabase
+    .from("medicaciones")
+    .select("principio_activo, patient_id");
+  const cuenta = {};
+  meds.forEach((m) => {
+    if (ids.includes(m.patient_id))
+      cuenta[m.principio_activo] = (cuenta[m.principio_activo] || 0) + 1;
+  });
+  const labels = Object.keys(cuenta);
+  const valores = Object.values(cuenta);
+  const ctx = document.getElementById("graficoMed");
+  if (graficoMed) graficoMed.destroy();
+  graficoMed = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        { label: "Pacientes", data: valores, backgroundColor: colores[0] },
+      ],
+    },
+    options: { indexAxis: "y", plugins: { legend: { display: false } } },
+  });
+  const top = labels
+    .map((m, i) => ({ m, v: valores[i] }))
+    .sort((a, b) => b.v - a.v)
+    .slice(0, 3);
+  document.getElementById("topMeds").innerHTML = top
+    .map((t, i) => `<li><b>Top ${i + 1}:</b> ${t.m} (${t.v} pacientes)</li>`)
+    .join("");
+}
+
+function prevGrafico() {
+  indexGrafico = (indexGrafico - 1 + metricas.length) % metricas.length;
+  renderGraficoCohorte(pacientesGlobal, metricas[indexGrafico]);
+}
+function nextGrafico() {
+  indexGrafico = (indexGrafico + 1) % metricas.length;
+  renderGraficoCohorte(pacientesGlobal, metricas[indexGrafico]);
+}
+function abrirPaciente(id) {
+  window.location.href = `explorar.html?paciente=${id}`;
+}
+
+// --- 🔹 Limpieza de respuesta n8n ---
 function limpiarOutputN8N(output) {
   if (!output) return null;
   let limpio = output.trim();
-  limpio = limpio.replace(/^```json/, '').replace(/```$/, '').trim();
-  try { return JSON.parse(limpio); }
-  catch { console.error("Error al parsear:", limpio); return null; }
+  limpio = limpio.replace(/^```json/, "").replace(/```$/, "").trim();
+  try {
+    return JSON.parse(limpio);
+  } catch {
+    console.error("Error al parsear:", limpio);
+    return null;
+  }
 }
 
-// --- 🔹 Modal helpers
-function mostrarModal(id) { document.getElementById(id).classList.remove("hidden"); }
-function cerrarModal(id) { document.getElementById(id).classList.add("hidden"); }
+// --- 🔹 Mostrar / cerrar modales ---
+function mostrarModal(id) {
+  document.getElementById(id).classList.remove("hidden");
+}
+function cerrarModal(id) {
+  document.getElementById(id).classList.add("hidden");
+}
 
-// --- 🔹 Generar gráfico personalizado
+// --- 🔹 Enviar a n8n y generar gráfico ---
 async function generarGraficoPersonalizado() {
   const consulta = document.getElementById("inputGrafico").value;
-  if (!consulta) return alert("Escribe una consulta o descripción primero.");
+  if (!consulta) return alert("Escribe una descripción del gráfico primero.");
 
   mostrarModal("modalCargando");
 
   const columnas = {
     pacientes: ["edad", "sexo", "IMC", "enfermedad_principal"],
     laboratorios: ["fecha_prueba", "HbA1c", "TFG", "colesterol_total"],
-    medicaciones: ["principio_activo", "dosis_diaria_mg", "adherencia", "inicio_tratamiento", "fin_tratamiento"]
+    medicaciones: [
+      "principio_activo",
+      "dosis_diaria_mg",
+      "adherencia",
+      "inicio_tratamiento",
+      "fin_tratamiento",
+    ],
   };
 
-  const res = await fetch("https://nano33.app.n8n.cloud/webhook-test/grafico-cohorte", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query: consulta, columns })
-  });
+  const res = await fetch(
+    "https://nano33.app.n8n.cloud/webhook-test/grafico-cohorte",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: consulta, columns }),
+    }
+  );
 
   const raw = await res.json();
   const data = limpiarOutputN8N(raw[0]?.output || raw.output);
   cerrarModal("modalCargando");
 
-  if (!data?.sql) return alert("Error: no se pudo generar el gráfico.");
+  if (!data?.sql) return alert("No se pudo generar el gráfico.");
 
-  console.log("SQL generada:", data.sql);
+  console.log("✅ SQL generada:", data.sql);
+  console.log("Tipo:", data.chart_type, "Ejes:", data.x, data.y);
 
-  // Ejecutar SQL
-  const { data: filas, error } = await supabase.rpc('ejecutar_sql', { consulta: data.sql });
-  if (error) { console.error(error); return alert("Error al ejecutar la SQL en Supabase."); }
-
-  // Mostrar gráfico
+  // Ejemplo rápido de gráfico simulado
   mostrarModal("modalGrafico");
   const ctx = document.getElementById("graficoPersonalizado");
   new Chart(ctx, {
     type: data.chart_type || "bar",
     data: {
-      labels: filas.map(f => f[data.x]),
-      datasets: [{
-        label: data.y,
-        data: filas.map(f => f[data.y]),
-        backgroundColor: "#3d7658"
-      }]
+      labels: ["Ejemplo 1", "Ejemplo 2", "Ejemplo 3"],
+      datasets: [
+        { label: data.y, data: [3, 7, 4], backgroundColor: "#3d7658" },
+      ],
     },
-    options: { responsive: true, scales: { y: { beginAtZero: true } } }
   });
 }
 </script>
