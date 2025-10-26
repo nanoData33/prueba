@@ -213,7 +213,16 @@ function abrirPaciente(id){ window.location.href = `explorar.html?paciente=${id}
 function generarGraficoPersonalizado(){
   const query = document.getElementById("inputGrafico").value.trim();
   if(!query) return;
-  // 🔗 Placeholder para el POST al flujo automático (n8n o API futura)
+    fetch("https://nano33.app.n8n.cloud/webhook-test/grafico-cohorte", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: "evolución de HbA1c promedio en los últimos 6 meses por grupo de edad"
+    })
+  })
+  .then(r => r.json())
+  .then(data => console.log(data));
+
   console.log("Enviar descripción de gráfico:", query);
 }
 </script>
