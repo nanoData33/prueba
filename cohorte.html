@@ -93,8 +93,8 @@ tr:hover { background-color: #f9fafb; cursor: pointer; }
       <div class="flex mt-3 gap-2">
         <input id="inputGrafico" placeholder="Ej: evolución del colesterol medio en 2025"
           class="flex-grow border border-gray-300 rounded-md p-2 text-sm">
-        <button onclick="generarGraficoPersonalizado()"
-          class="bg-[var(--verde)] text-white px-4 rounded-md">Generar</button>
+        <button onclick="enviarAGraficoCohorte()"
+          class="bg-[var(--verde)] text-white px-4 rounded-md">Enviar</button>
       </div>
     </div>
 
@@ -123,8 +123,9 @@ const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let grafico, graficoMed, indexGrafico = 0;
-const metricas = ["HbA1c", "TFG", "IMC", "Colesterol"];
+const metricas = ["HbA1c", "TFG", "IMC", "colesterol_total"];
 const colores = ["#3d7658", "#6bb38d", "#f7c15a", "#e58b7c"];
+let pacientesGlobal = [];
 
 window.onload = async () => {
   const params = new URLSearchParams(window.location.search);
@@ -140,12 +141,13 @@ async function cargarCohorte(nombre) {
 
   if (!pacientes?.length) return alert("No hay datos de esta cohorte.");
 
+  pacientesGlobal = pacientes;
+
   document.getElementById("nPac").textContent = pacientes.length;
   document.getElementById("edadMedia").textContent = (pacientes.reduce((a,b)=>a+b.edad,0)/pacientes.length).toFixed(1)+" años";
   document.getElementById("controlados").textContent = (60+Math.random()*30).toFixed(1)+"%";
   document.getElementById("adherencia").textContent = (70+Math.random()*20).toFixed(1)+"%";
 
-  // Tabla pacientes
   const tbody = document.querySelector("#tablaPacientes tbody");
   tbody.innerHTML = pacientes.map(p =>
     `<tr onclick="abrirPaciente('${p.patient_id}')">
@@ -160,7 +162,6 @@ async function cargarCohorte(nombre) {
 async function renderGraficoCohorte(pacientes, metrica) {
   const { data: labs } = await supabase.from("laboratorios").select("*");
   if (!labs?.length) return;
-
   const fechas = [...new Set(labs.map(l => l.fecha_prueba))].sort();
   const valores = fechas.map(f => {
     const subset = labs.filter(l => l.fecha_prueba === f && l[metrica]);
@@ -171,15 +172,8 @@ async function renderGraficoCohorte(pacientes, metrica) {
   if (grafico) grafico.destroy();
   grafico = new Chart(ctx, {
     type: "line",
-    data: {
-      labels: fechas,
-      datasets: [{ label: metrica, data: valores, borderColor: colores[indexGrafico], tension: 0.3, fill:false }]
-    },
-    options: {
-      responsive: true,
-      scales: { y: { beginAtZero: false } },
-      plugins: { legend: { position: "top" } }
-    }
+    data: { labels: fechas, datasets: [{ label: metrica, data: valores, borderColor: colores[indexGrafico], tension: 0.3 }] },
+    options: { responsive: true, plugins: { legend: { position: "top" } } }
   });
 }
 
@@ -201,60 +195,37 @@ async function renderGraficoMedicaciones(pacientes) {
   document.getElementById("topMeds").innerHTML = top.map((t,i)=>`<li><b>Top ${i+1}:</b> ${t.m} (${t.v} pacientes)</li>`).join("");
 }
 
-function prevGrafico(){
-  indexGrafico = (indexGrafico-1+metricas.length)%metricas.length;
-  renderGraficoCohorte(window.pacientes, metricas[indexGrafico]);
-}
-function nextGrafico(){
-  indexGrafico = (indexGrafico+1)%metricas.length;
-  renderGraficoCohorte(window.pacientes, metricas[indexGrafico]);
-}
+function prevGrafico(){ indexGrafico = (indexGrafico-1+metricas.length)%metricas.length; renderGraficoCohorte(pacientesGlobal, metricas[indexGrafico]); }
+function nextGrafico(){ indexGrafico = (indexGrafico+1)%metricas.length; renderGraficoCohorte(pacientesGlobal, metricas[indexGrafico]); }
 function abrirPaciente(id){ window.location.href = `explorar.html?paciente=${id}`; }
-async function pedirGraficoPersonalizado() {
-  const consulta = document.getElementById("inputConsultaGrafico").value;
 
-  // tablas y columnas disponibles
+// ✅ Solo enviar el JSON al webhook de n8n (sin graficar)
+async function enviarAGraficoCohorte() {
+  const consulta = document.getElementById("inputGrafico").value.trim();
+  if (!consulta) return alert("Escribe una consulta primero.");
+
   const columnas = {
     pacientes: ["edad", "sexo", "IMC", "enfermedad_principal"],
     laboratorios: ["fecha_prueba", "HbA1c", "TFG", "colesterol_total"],
     medicaciones: ["principio_activo", "dosis_diaria_mg", "adherencia", "inicio_tratamiento", "fin_tratamiento"]
   };
 
+  const payload = {
+    query: consulta,
+    columns: columnas
+  };
+
+  console.log("📤 Enviando a n8n:", payload);
+
   const res = await fetch("https://nano33.app.n8n.cloud/webhook-test/grafico-cohorte", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query: consulta,
-      columns: JSON.stringify(columnas)
-    })
+    body: JSON.stringify(payload)
   });
 
   const data = await res.json();
-
-  // mostrar el resultado en consola o graficar
-  console.log("📊 SQL generada:", data.sql);
-  console.table(data.rows);
-
-  // Ejemplo de representación con Chart.js
-  const ctx = document.getElementById("graficoPersonalizado").getContext("2d");
-  new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: data.rows.map(r => r[0]),
-      datasets: [{
-        label: data.columns[1],
-        data: data.rows.map(r => r[1]),
-        borderColor: "#3d7658",
-        tension: 0.3
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: { y: { beginAtZero: true } }
-    }
-  });
-}
-
+  console.log("📥 Respuesta de n8n:", data);
+  alert("✅ JSON enviado correctamente a n8n. Revisa la consola para detalles.");
 }
 </script>
 </body>
