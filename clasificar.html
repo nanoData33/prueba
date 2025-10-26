@@ -3,83 +3,108 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CohortIQ — Clasificador Clínico Inteligente</title>
+<title>CohortIQ — Clasificador Clínico</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 
 <style>
-  :root {
-    --verde: #2b7a58;
-    --verde-claro: #4aba84;
-    --gris-fondo: #f6f7f6;
-  }
-  body {
-    font-family: "Inter", sans-serif;
-    background-color: var(--gris-fondo);
-  }
-  .card {
-    background: white;
-    border-radius: 1rem;
-    padding: 2rem;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
-    max-width: 1000px;
-    margin: 2rem auto;
-  }
-  .btn {
-    background: var(--verde);
-    color: white;
-    padding: 0.8rem 1.5rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    transition: 0.25s;
-  }
-  .btn:hover { background: var(--verde-claro); }
-  .progress-bar {
-    height: 12px;
-    border-radius: 9999px;
-    background-color: #e5e7eb;
-    overflow: hidden;
-  }
-  .progress-inner {
-    height: 100%;
-    border-radius: 9999px;
-    transition: width 0.5s ease-in-out;
-  }
-  .fade-in { animation: fade 0.5s ease-in-out; }
-  @keyframes fade { from {opacity:0;} to {opacity:1;} }
+:root {
+  --verde: #2b7a58;
+  --verde-claro: #4aba84;
+  --gris-fondo: #f6f7f6;
+  --gris-borde: #e5e7eb;
+}
+body {
+  font-family: "Inter", sans-serif;
+  background-color: var(--gris-fondo);
+  color: #1b1b1b;
+}
+header {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border-bottom: 1px solid var(--gris-borde);
+}
+.card {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+  max-width: 1100px;
+  margin: 2rem auto;
+}
+.btn {
+  background: var(--verde);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: 0.25s;
+}
+.btn:hover { background: var(--verde-claro); }
+.progress-bar {
+  height: 10px;
+  border-radius: 9999px;
+  background-color: #edf2f7;
+  overflow: hidden;
+}
+.progress-inner {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.6s ease-in-out;
+}
+.fade-in { animation: fade 0.4s ease-in-out; }
+@keyframes fade { from {opacity:0;} to {opacity:1;} }
+
+#chatButton {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--verde);
+  color: white;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  cursor: pointer;
+  transition: 0.25s;
+}
+#chatButton:hover { background: var(--verde-claro); }
 </style>
 </head>
 
 <body>
-<header class="flex justify-between items-center px-8 py-4 bg-white shadow">
+<header class="flex justify-between items-center px-8 py-4">
   <div class="flex items-center gap-2">
     <i data-lucide="activity" class="text-[var(--verde)]"></i>
     <h1 class="text-xl font-semibold text-[var(--verde)]">CohortIQ</h1>
-    <span class="text-gray-500 text-sm">Clasificador Clínico Inteligente</span>
+    <span class="text-gray-500 text-sm">Clasificador Clínico</span>
   </div>
-  <a href="index.html" class="text-sm text-[var(--verde)] hover:underline">← Volver al Panel</a>
+  <a href="index.html" class="text-sm text-[var(--verde)] hover:underline">Volver al panel</a>
 </header>
 
 <main class="p-6">
   <div class="card fade-in">
-    <h2 class="text-2xl font-bold mb-6 text-[var(--verde)]">🧬 Clasificador Clínico Inteligente</h2>
+    <h2 class="text-2xl font-bold mb-6 text-[var(--verde)]">Clasificador Clínico Inteligente</h2>
 
     <!-- Subida PDF -->
     <section class="mb-10">
-      <h3 class="text-lg font-semibold text-gray-700 mb-2">1️⃣ Analizar informe clínico (PDF)</h3>
+      <h3 class="text-lg font-semibold text-gray-700 mb-2">Análisis de informe clínico (PDF)</h3>
       <input type="file" id="pdfFile" accept=".pdf" class="w-full border border-gray-300 rounded-md p-2 mb-3">
-      <button class="btn w-full" onclick="enviarPDF()">📤 Analizar PDF</button>
+      <button class="btn w-full" onclick="enviarPDF()">Analizar PDF</button>
     </section>
 
     <hr class="my-8">
 
     <!-- Valores manuales -->
     <section>
-      <h3 class="text-lg font-semibold text-gray-700 mb-2">2️⃣ Introducir valores manualmente</h3>
-      <p class="text-sm text-gray-500 mb-4">Puedes modificar los valores para probar el modelo.</p>
+      <h3 class="text-lg font-semibold text-gray-700 mb-2">Introducir valores manualmente</h3>
+      <p class="text-sm text-gray-500 mb-4">Modifica los valores para probar el clasificador.</p>
 
-      <div class="grid grid-cols-3 md:grid-cols-4 gap-3 mb-5">
+      <div class="grid grid-cols-3 md:grid-cols-4 gap-3 mb-6">
         <input id="glucosa" placeholder="Glucosa (mg/dL)" class="border p-2 rounded-md" value="198">
         <input id="hba1c" placeholder="HbA1c (%)" class="border p-2 rounded-md" value="8.2">
         <input id="colesterol_total" placeholder="Colesterol total (mg/dL)" class="border p-2 rounded-md" value="245">
@@ -97,46 +122,51 @@
         <input id="vitamina_d" placeholder="Vitamina D (ng/mL)" class="border p-2 rounded-md" value="28">
       </div>
 
-      <button class="btn w-full" onclick="enviarValores()">⚙️ Ejecutar Clasificación</button>
+      <button class="btn w-full" onclick="enviarValores()">Ejecutar Clasificación</button>
     </section>
 
     <!-- Resultados -->
-    <section id="resultado" class="mt-10"></section>
+    <section id="resultado" class="mt-10 border-t pt-8">
+      <h3 class="text-lg font-semibold text-gray-700 mb-4">Resultados</h3>
+      <p class="text-gray-400 text-sm">Los resultados del modelo aparecerán aquí.</p>
+    </section>
   </div>
 </main>
 
+<!-- Botón de chat -->
+<div id="chatButton" onclick="window.open('chat.html','_blank')" title="Abrir Chat Asistido">
+  <i data-lucide="message-square"></i>
+</div>
+
 <script>
 lucide.createIcons();
+const n8nWebhook = "https://nano33.app.n8n.cloud/webhook-test/diagnostico";
 
-const n8nWebhook = "https://nano33.app.n8n.cloud/webhook-test/diagnostico"; // tu endpoint n8n
-
-/* === OPCIÓN 1: PDF === */
+/* ======= OPCIÓN 1: PDF ======= */
 async function enviarPDF() {
   const fileInput = document.getElementById("pdfFile");
-  if (!fileInput.files.length) return alert("Selecciona un PDF primero.");
+  if (!fileInput.files.length) return alert("Selecciona un archivo PDF.");
   const formData = new FormData();
   formData.append("file", fileInput.files[0]);
   formData.append("tipo", "pdf");
 
-  document.getElementById("resultado").innerHTML = loader("Analizando PDF...");
-
+  mostrarLoader("Analizando informe clínico...");
   try {
     const res = await fetch(n8nWebhook, { method: "POST", body: formData });
     const data = await res.json();
-    mostrarResultado(data);
+    renderResultados(data);
   } catch {
-    mostrarError("Error al enviar el PDF al servidor n8n.");
+    mostrarError("Error al procesar el archivo. Inténtalo nuevamente.");
   }
 }
 
-/* === OPCIÓN 2: Datos manuales === */
+/* ======= OPCIÓN 2: MANUAL ======= */
 async function enviarValores() {
   const campos = document.querySelectorAll("input");
   const payload = {};
   campos.forEach(c => payload[c.id] = parseFloat(c.value) || null);
 
-  document.getElementById("resultado").innerHTML = loader("Ejecutando clasificación...");
-
+  mostrarLoader("Ejecutando clasificación con los valores introducidos...");
   try {
     const res = await fetch(n8nWebhook, {
       method: "POST",
@@ -144,24 +174,20 @@ async function enviarValores() {
       body: JSON.stringify(payload)
     });
     const data = await res.json();
-    mostrarResultado(data);
+    renderResultados(data);
   } catch {
-    mostrarError("Error al enviar los valores al servidor n8n.");
+    mostrarError("No se pudieron enviar los valores al servidor.");
   }
 }
 
-/* === VISUALIZACIÓN DE RESULTADOS === */
-function mostrarResultado(data) {
+/* ======= VISUALIZACIÓN ======= */
+function renderResultados(data) {
   const cont = document.getElementById("resultado");
-  cont.innerHTML = "";
-
-  const title = `<h3 class="text-2xl font-semibold mb-4 text-[var(--verde)]">🧩 Resultados del Clasificador</h3>`;
-  cont.insertAdjacentHTML("beforeend", title);
+  cont.innerHTML = `<h3 class="text-lg font-semibold text-gray-700 mb-4">Resultados</h3>`;
 
   const enfermedades = Object.entries(data).filter(([k,v]) => typeof v === "number");
   const variables = data["Variables dominantes"] || [];
 
-  // Barras de riesgo
   enfermedades.forEach(([nombre, valor]) => {
     const color = valor > 70 ? "#e53935" : valor > 40 ? "#f9a825" : "#43a047";
     cont.insertAdjacentHTML("beforeend", `
@@ -170,38 +196,31 @@ function mostrarResultado(data) {
           <span>${nombre}</span>
           <span>${valor}%</span>
         </div>
-        <div class="progress-bar"><div class="progress-inner" style="width:${valor}%; background:${color};"></div></div>
+        <div class="progress-bar">
+          <div class="progress-inner" style="width:${valor}%; background:${color};"></div>
+        </div>
       </div>
     `);
   });
 
-  // Variables influyentes
   cont.insertAdjacentHTML("beforeend", `
-    <div class="mt-8 p-4 bg-gray-50 rounded-md border">
-      <h4 class="font-semibold text-gray-700 mb-2">🧠 Variables más influyentes</h4>
-      <p class="text-sm text-gray-600">${variables.length ? variables.join(", ") : "Sin alteraciones destacables."}</p>
+    <div class="mt-8 p-4 bg-gray-50 border rounded-md">
+      <h4 class="font-semibold mb-2 text-gray-700">Variables más influyentes</h4>
+      <p class="text-sm text-gray-600">${variables.length ? variables.join(", ") : "Sin alteraciones relevantes detectadas."}</p>
     </div>
   `);
 
-  // Sugerencia de cohorte
-  const maxCohorte = enfermedades.sort((a,b) => b[1]-a[1])[0];
-  if (maxCohorte && maxCohorte[1] > 60) {
+  const max = enfermedades.sort((a,b)=>b[1]-a[1])[0];
+  if (max && max[1] > 60) {
     cont.insertAdjacentHTML("beforeend", `
-      <button class="btn mt-6" onclick="abrirCohorte('${maxCohorte[0]}')">
-        🔍 Ver cohorte relacionada: ${maxCohorte[0]}
-      </button>
+      <button class="btn mt-6" onclick="abrirCohorte('${max[0]}')">Ver cohorte relacionada: ${max[0]}</button>
     `);
   }
 }
 
-function abrirCohorte(nombre) {
-  window.open(`cohorte.html?nombre=${encodeURIComponent(nombre)}`, "_blank");
-}
-
-/* === Utilidades === */
-function loader(text) {
-  return `
-    <div class="flex flex-col items-center justify-center py-10 text-gray-600">
+function mostrarLoader(text) {
+  document.getElementById("resultado").innerHTML = `
+    <div class="flex flex-col items-center justify-center text-gray-500 py-10">
       <svg class="animate-spin h-6 w-6 mb-2 text-[var(--verde)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
@@ -213,6 +232,10 @@ function loader(text) {
 function mostrarError(msg) {
   document.getElementById("resultado").innerHTML = `
     <div class="bg-red-100 text-red-700 p-4 rounded-md">${msg}</div>`;
+}
+
+function abrirCohorte(nombre) {
+  window.open(`cohorte.html?nombre=${encodeURIComponent(nombre)}`, "_blank");
 }
 </script>
 </body>
