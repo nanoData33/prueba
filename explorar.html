@@ -84,6 +84,7 @@ const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 let vistaActual = "pacientes";
+let chartLabs, chartExtra;
 
 // Cambiar pestañas
 function cambiarVista(vista) {
@@ -115,14 +116,21 @@ async function cargarPacientes() {
   lucide.createIcons();
   window.pacientes = data;
   renderPacientes(data);
+
+  // Si hay un paciente en la URL, cargarlo
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("paciente");
+  if (id) verPaciente(id);
 }
 
 function renderPacientes(lista) {
   const cont = document.getElementById("listaPacientes");
   cont.innerHTML = lista.map(p => `
-    <div class="p-3 mb-2 border rounded-md hover:bg-gray-50 cursor-pointer" onclick="verPaciente('${p.patient_id}')">
-      <p class="font-medium">${p.nombre} ${p.apellido || ""}</p>
-      <p class="text-xs text-gray-500">${p.edad} años • ${p.enfermedad_principal || "Sin diagnóstico"}</p>
+    <div class="p-3 mb-2 border rounded-md hover:bg-gray-50 cursor-pointer flex justify-between items-center" onclick="verPaciente('${p.patient_id}', true)">
+      <div>
+        <p class="font-medium">${p.nombre} ${p.apellido || ""}</p>
+        <p class="text-xs text-gray-500">${p.edad} años • ${p.enfermedad_principal || "Sin diagnóstico"}</p>
+      </div>
       <span class="chip ${p.IMC>30?'riesgo-alto':p.IMC>25?'riesgo-medio':'riesgo-bajo'}">IMC ${p.IMC}</span>
     </div>`).join("");
 }
@@ -131,7 +139,13 @@ function filtrarPacientes() {
   renderPacientes(pacientes.filter(p => JSON.stringify(p).toLowerCase().includes(q)));
 }
 
-async function verPaciente(id) {
+async function verPaciente(id, cambiarUrl=false) {
+  if (cambiarUrl) {
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set("paciente", id);
+    window.history.pushState({}, "", newUrl);
+  }
+
   const p = pacientes.find(x => x.patient_id === id);
   const [labs, meds] = await Promise.all([
     supabase.from("laboratorios").select("*").eq("patient_id", id),
@@ -163,9 +177,9 @@ async function verPaciente(id) {
     </div>
   </div>
 
-  <div class="flex gap-4 overflow-x-auto">
-    <canvas id="graficoLabs" width="300" height="200"></canvas>
-    <canvas id="graficoExtra" width="300" height="200"></canvas>
+  <div class="flex flex-col gap-6">
+    <div class="panel"><canvas id="graficoLabs"></canvas></div>
+    <div class="panel"><canvas id="graficoExtra"></canvas></div>
   </div>`;
   renderGraficoLabs(labData);
   renderGraficoExtra(labData);
@@ -181,17 +195,8 @@ async function cargarLaboratorios() {
   const mediaTFG = avg(data.map(x=>x.TFG));
   cont.innerHTML = `
   <div class="panel mb-6">
-    <h2 class="text-lg font-semibold text-[var(--verde)] mb-2">Resumen general de laboratorio</h2>
-    <div class="grid grid-cols-5 gap-3 text-center">
-      <div class="panel"><p class="text-gray-500 text-sm">HbA1c media</p><p class="text-lg font-semibold">${mediaHb.toFixed(1)}%</p></div>
-      <div class="panel"><p class="text-gray-500 text-sm">TFG media</p><p class="text-lg font-semibold">${mediaTFG.toFixed(0)}</p></div>
-      <div class="panel"><p class="text-gray-500 text-sm">Pacientes</p><p class="text-lg font-semibold">${new Set(data.map(x=>x.patient_id)).size}</p></div>
-      <div class="panel"><p class="text-gray-500 text-sm">Alertas TFG<60</p><p class="text-lg font-semibold text-red-600">${data.filter(x=>x.TFG<60).length}</p></div>
-      <div class="panel"><p class="text-gray-500 text-sm">Muestras totales</p><p class="text-lg font-semibold">${data.length}</p></div>
-    </div>
-  </div>
-  <div class="panel">
-    <canvas id="graficoLabGlobal" height="200"></canvas>
+    <h2 class="text-lg font-semibold text-[var(--verde)] mb-2">Tendencia global de laboratorio</h2>
+    <canvas id="graficoLabGlobal" height="260"></canvas>
   </div>`;
   renderGraficoLabGlobal(data);
 }
@@ -203,90 +208,61 @@ async function cargarMedicaciones() {
   const { data } = await supabase.from("medicaciones").select("*").limit(200);
   const cont = document.getElementById("contenedor");
   cont.innerHTML = `
-  <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-    <section class="panel overflow-y-auto max-h-[80vh]">
-      <h2 class="font-semibold text-[var(--verde)] mb-3 flex items-center gap-2"><i data-lucide="pill"></i> Medicaciones</h2>
-      <div id="listaMeds"></div>
-    </section>
-    <section class="panel" id="detalleMed"></section>
+  <div class="panel">
+    <h2 class="font-semibold text-[var(--verde)] mb-3"><i data-lucide="pill"></i> Medicaciones</h2>
+    <canvas id="graficoMedGlobal"></canvas>
   </div>`;
-  lucide.createIcons();
-  const grupos = {};
-  data.forEach(m => {
-    if (!grupos[m.principio_activo]) grupos[m.principio_activo] = [];
-    grupos[m.principio_activo].push(m);
-  });
-  document.getElementById("listaMeds").innerHTML = Object.keys(grupos).map(k => {
-    const promAdh = avg(grupos[k].map(x => x["adherencia_%"]));
-    return `<div class="p-3 mb-2 border rounded-md hover:bg-gray-50 cursor-pointer" onclick="verMed('${k}')">
-      <p class="font-medium">${k}</p>
-      <p class="text-xs text-gray-500">Adherencia media: ${promAdh.toFixed(1)}%</p>
-    </div>`;
-  }).join("");
-  window.medsData = grupos;
-}
-
-function verMed(nombre) {
-  const arr = medsData[nombre];
-  const promDosis = avg(arr.map(x=>x.dosis_diaria_mg));
-  const promAdh = avg(arr.map(x=>x["adherencia_%"]));
-  document.getElementById("detalleMed").innerHTML = `
-    <h2 class="text-lg font-semibold text-[var(--verde)] mb-3">${nombre}</h2>
-    <p class="text-sm text-gray-600 mb-2">Pacientes tratados: ${arr.length}</p>
-    <div class="grid grid-cols-2 gap-3 mb-3 text-center">
-      <div class="panel"><p class="text-gray-500 text-sm">Dosis media</p><p class="text-lg font-semibold">${promDosis.toFixed(1)} mg</p></div>
-      <div class="panel"><p class="text-gray-500 text-sm">Adherencia media</p><p class="text-lg font-semibold">${promAdh.toFixed(1)}%</p></div>
-    </div>
-    <canvas id="graficoMed" height="180"></canvas>`;
-  renderGraficoMed(arr);
+  renderGraficoMedGlobal(data);
 }
 
 /* ==========================
-   Gráficos
+   Gráficos mejorados
 ========================== */
 function avg(arr){return arr.filter(x=>x).reduce((a,b)=>a+b,0)/(arr.filter(x=>x).length||1)}
 
 function renderGraficoLabs(data){
-  const ctx = document.getElementById("graficoLabs");
-  new Chart(ctx,{type:"line",data:{
+  const ctx=document.getElementById("graficoLabs");
+  if(chartLabs)chartLabs.destroy();
+  chartLabs=new Chart(ctx,{type:"line",data:{
     labels:data.map(l=>l.fecha_prueba),
     datasets:[
-      {label:"HbA1c",data:data.map(l=>l.HbA1c),borderColor:"#f97316",tension:0.3},
-      {label:"TFG",data:data.map(l=>l.TFG),borderColor:"#2563eb",tension:0.3,yAxisID:"y1"}
+      {label:"HbA1c (%)",data:data.map(l=>l.HbA1c),borderColor:"#e76f51",tension:0.35,fill:false},
+      {label:"TFG (ml/min)",data:data.map(l=>l.TFG),borderColor:"#2a9d8f",tension:0.35,fill:false,yAxisID:"y1"}
     ]},
-    options:{scales:{y:{title:{display:true,text:"HbA1c"}},y1:{position:"right",title:{display:true,text:"TFG"}}}}
+    options:{responsive:true,interaction:{mode:"index",intersect:false},
+      plugins:{legend:{position:"top"},title:{display:true,text:"Evolución HbA1c y TFG"}},
+      scales:{y:{title:{display:true,text:"HbA1c (%)"}},y1:{position:"right",title:{display:true,text:"TFG"}}}}
   });
 }
 
 function renderGraficoExtra(data){
-  const ctx = document.getElementById("graficoExtra");
-  new Chart(ctx,{type:"bar",data:{
+  const ctx=document.getElementById("graficoExtra");
+  if(chartExtra)chartExtra.destroy();
+  chartExtra=new Chart(ctx,{type:"bar",data:{
     labels:data.map(l=>l.fecha_prueba),
     datasets:[
-      {label:"Colesterol",data:data.map(l=>l.colesterol_total),backgroundColor:"#4aba84"},
-      {label:"Triglicéridos",data:data.map(l=>l.triglicéridos),backgroundColor:"#94a3b8"}
+      {label:"Colesterol total (mg/dL)",data:data.map(l=>l.colesterol_total),backgroundColor:"#4aba84"},
+      {label:"Triglicéridos (mg/dL)",data:data.map(l=>l.triglicéridos),backgroundColor:"#f4a261"}
     ]},
-    options:{plugins:{legend:{position:"bottom"}}}
+    options:{responsive:true,plugins:{legend:{position:"top"},title:{display:true,text:"Perfil lipídico"}}}
   });
 }
 
 function renderGraficoLabGlobal(data){
-  const ctx = document.getElementById("graficoLabGlobal");
-  new Chart(ctx,{type:"scatter",data:{
-    datasets:[{label:"HbA1c vs TFG",data:data.map(d=>({x:d.HbA1c,y:d.TFG})),backgroundColor:"#4aba84"}]},
-    options:{scales:{x:{title:{display:true,text:"HbA1c"}},y:{title:{display:true,text:"TFG"}}}}
+  new Chart(document.getElementById("graficoLabGlobal"),{
+    type:"scatter",
+    data:{datasets:[{label:"Relación HbA1c-TFG",data:data.map(d=>({x:d.HbA1c,y:d.TFG})),backgroundColor:"#2b7a58"}]},
+    options:{plugins:{legend:{display:true}},scales:{x:{title:{display:true,text:"HbA1c"}},y:{title:{display:true,text:"TFG"}}}}
   });
 }
 
-function renderGraficoMed(data){
-  const ctx = document.getElementById("graficoMed");
-  new Chart(ctx,{type:"bar",data:{
-    labels:data.map(m=>m.patient_id),
-    datasets:[
-      {label:"Dosis (mg)",data:data.map(m=>m.dosis_diaria_mg),backgroundColor:"#4aba84"},
-      {label:"Adherencia (%)",data:data.map(m=>m["adherencia_%"]),backgroundColor:"#93c5fd"}
-    ]},
-    options:{responsive:true,scales:{y:{beginAtZero:true}},plugins:{legend:{position:"bottom"}}}
+function renderGraficoMedGlobal(data){
+  const medsCount={};
+  data.forEach(m=>medsCount[m.principio_activo]=(medsCount[m.principio_activo]||0)+1);
+  new Chart(document.getElementById("graficoMedGlobal"),{
+    type:"bar",
+    data:{labels:Object.keys(medsCount),datasets:[{label:"Pacientes tratados",data:Object.values(medsCount),backgroundColor:"#4aba84"}]},
+    options:{indexAxis:"y",plugins:{legend:{display:false},title:{display:true,text:"Medicaciones más frecuentes"}}}
   });
 }
 
