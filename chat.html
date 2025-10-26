@@ -230,6 +230,7 @@ footer {
 lucide.createIcons();
 
 const webhook = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
+const webhookGrafico = "https://rubaseval.app.n8n.cloud/webhook-test/grafico";
 const supabaseUrl = "https://TU_URL_SUPABASE.supabase.co";
 const supabaseKey = "TU_API_KEY";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -278,18 +279,15 @@ async function sendText() {
     const data = await res.json();
     removeTyping();
 
-    // Mostrar respuesta textual
     if (data.respuesta && !data.respuesta.includes("|")) appendMessage("bot", data.respuesta);
 
-    // Si detecta tabla -> renderizar tabla en el panel de resultados
     if (typeof data.respuesta === "string" && data.respuesta.includes("|")) {
       renderMarkdownTable(data.respuesta);
     }
 
-    // Si llega SQL y recomendación de gráfico
     if (data.sql && data.x && data.y) {
       const cleanType = (data.chart_type || "bar").replace(/[()]/g, "").trim();
-      renderChartButtons(data.sql, cleanType, data.x, data.y);
+      renderChartButtons(data.sql, cleanType, data.x, data.y, data.consulta);
       renderChartFromSQL(data.sql, cleanType, data.x, data.y);
     }
   } catch (err) {
@@ -313,20 +311,33 @@ function renderMarkdownTable(text) {
   document.getElementById("tablaContainer").innerHTML = html;
 }
 
-function renderChartButtons(sql, recType, x, y) {
+function renderChartButtons(sql, recType, x, y, consulta) {
   const div = document.getElementById("chartButtons");
   div.innerHTML = `
+    <p><b>Recomendación del agente:</b> gráfico ${recType}</p>
     <div class="btn-group">
-      <button class="btn-chart btn-rec" onclick="renderChartFromSQL('${sql}', '${recType}', '${x}', '${y}')">Recomendado (${recType})</button>
+      <button class="btn-chart btn-rec" onclick="enviarDecision('${sql}', '${consulta}', '${recType}')">Recomendado (${recType})</button>
       ${["bar", "line", "scatter", "pie", "histogram"].filter(t => t !== recType)
-        .map(t => `<button class="btn-chart btn-alt" onclick="renderChartFromSQL('${sql}', '${t}', '${x}', '${y}')">${t}</button>`).join("")}
+        .map(t => `<button class="btn-chart btn-alt" onclick="enviarDecision('${sql}', '${consulta}', '${t}')">Usar ${t}</button>`).join("")}
     </div>
   `;
 }
 
+async function enviarDecision(sql, consulta, tipo) {
+  try {
+    await fetch(webhookGrafico, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ sql, consulta, tipo })
+    });
+    renderChartFromSQL(sql, tipo, "enfermedad_principal", "edad");
+  } catch (err) {
+    console.error("Error enviando decisión a n8n:", err);
+  }
+}
+
 async function renderChartFromSQL(sql, chartType, xField, yField) {
   try {
-    document.getElementById("tablaContainer").insertAdjacentHTML("beforeend", "<p><i>Generando gráfico...</i></p>");
     const { data, error } = await supabase.rpc("execute_sql_query", { query: sql });
     if (error) throw error;
     if (!data?.length) {
