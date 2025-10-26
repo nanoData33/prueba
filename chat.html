@@ -148,6 +148,9 @@ button.action {
 }
 button.action:hover { background: var(--verde-oscuro); }
 
+#tablaContainer {
+  overflow-x: auto;
+}
 table {
   width: 100%;
   border-collapse: collapse;
@@ -195,7 +198,7 @@ footer {
 
   <div class="tabla-box">
     <h2>Resultados</h2>
-    <div id="tablaContainer"></div>
+    <div id="tablaContainer">Esperando resultados...</div>
     <canvas id="chart"></canvas>
   </div>
 </main>
@@ -211,7 +214,11 @@ const supabaseKey = "TU_API_KEY";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 let chartInstance = null;
 
-// === Mensajería ===
+// ==== CHAT ====
+document.getElementById("userInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") sendText();
+});
+
 function appendMessage(sender, text) {
   const msg = document.createElement("div");
   msg.className = "msg " + sender;
@@ -234,11 +241,6 @@ function removeTyping() {
   if (t) t.remove();
 }
 
-// === Envío de mensajes ===
-document.getElementById("userInput").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") sendText();
-});
-
 async function sendText() {
   const input = document.getElementById("userInput");
   const text = input.value.trim();
@@ -256,17 +258,16 @@ async function sendText() {
     const data = await res.json();
     removeTyping();
 
-    // Mostrar respuesta textual
     if (data.respuesta) appendMessage("bot", data.respuesta);
 
-    // Mostrar tabla si la respuesta parece ser una tabla
-    if (Array.isArray(data.respuesta) && data.respuesta.length && typeof data.respuesta[0] === "object") {
-      renderTable(data.respuesta);
+    // Render tabla si detecta estructura tipo tabla
+    if (typeof data.respuesta === "string" && data.respuesta.includes("|")) {
+      renderMarkdownTable(data.respuesta);
     }
 
-    // Siempre que haya SQL, generar el gráfico
+    // Render gráfico si llega SQL
     if (data.sql && data.x && data.y) {
-      const cleanType = data.chart_type?.replace(/[()]/g,"") || "bar";
+      const cleanType = (data.chart_type || "bar").replace(/[()]/g,"").trim();
       renderChartFromSQL(data.sql, cleanType, data.x, data.y);
     }
   } catch (err) {
@@ -276,30 +277,31 @@ async function sendText() {
   }
 }
 
-// === Renderizado de tabla ===
-function renderTable(rows) {
-  if (!rows.length) return;
-  const columns = Object.keys(rows[0]);
+// ==== TABLA ====
+function renderMarkdownTable(text) {
+  const lines = text.trim().split("\n").filter(l => l.includes("|"));
+  if (lines.length < 2) return;
+  const headers = lines[0].split("|").map(h => h.trim()).filter(Boolean);
+  const rows = lines.slice(2).map(line => line.split("|").map(c => c.trim()).filter(Boolean));
+
   let html = "<table><thead><tr>";
-  columns.forEach(col => html += `<th>${col}</th>`);
+  headers.forEach(h => html += `<th>${h}</th>`);
   html += "</tr></thead><tbody>";
   rows.forEach(r => {
-    html += "<tr>";
-    columns.forEach(c => html += `<td>${r[c] ?? ""}</td>`);
-    html += "</tr>";
+    html += "<tr>" + r.map(c => `<td>${c}</td>`).join("") + "</tr>";
   });
   html += "</tbody></table>";
   document.getElementById("tablaContainer").innerHTML = html;
 }
 
-// === Renderizado de gráfico ===
+// ==== GRÁFICO ====
 async function renderChartFromSQL(sql, chartType, xField, yField) {
   try {
     const { data, error } = await supabase.rpc("execute_sql_query", { query: sql });
     if (error) throw error;
 
     if (!data?.length) {
-      appendMessage("bot", "No hay datos para graficar.");
+      document.getElementById("tablaContainer").innerHTML = "Sin datos para graficar.";
       return;
     }
 
@@ -322,12 +324,13 @@ async function renderChartFromSQL(sql, chartType, xField, yField) {
       },
       options: {
         responsive: true,
+        plugins: { legend: { display: true } },
         scales: { y: { beginAtZero: true } }
       }
     });
   } catch (err) {
     console.error(err);
-    appendMessage("bot","Error al generar el gráfico.");
+    document.getElementById("tablaContainer").innerHTML = "Error al generar el gráfico.";
   }
 }
 </script>
