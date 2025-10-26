@@ -14,21 +14,21 @@
   :root {
     --verde: #2b7a58;
     --verde-claro: #48b07a;
-    --gris-fondo: #f5f6f5;
+    --gris-fondo: #f7f8f7;
   }
-  body { font-family: "Inter", sans-serif; background: var(--gris-fondo); color: #222; }
+
+  body { font-family: "Inter", sans-serif; background: var(--gris-fondo); color: #1f2937; }
   header { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-  .panel { background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-  .kpi { background: white; border-radius: 0.8rem; padding: 1rem; text-align: center; box-shadow: 0 1px 6px rgba(0,0,0,0.06); }
-  .btn { display:flex; align-items:center; justify-content:center; gap:0.4rem; background:var(--verde); color:white; padding:0.7rem 1rem; border-radius:0.5rem; font-weight:500; transition:0.25s; }
-  .btn:hover { background:var(--verde-claro); }
-  .btn-alerta { background: #e68a00; }
-  .btn-alerta:hover { background: #cc7a00; }
-  .btn-sec { background: #264b80; }
-  .btn-sec:hover { background: #2b5a96; }
-  table th, table td { padding:0.5rem 0.7rem; }
-  table th { text-align:left; color:#777; font-weight:500; }
-  .alerta { background: #fff7ec; border-left: 4px solid #f59e0b; padding: 1rem; border-radius: 0.4rem; margin-top: 1rem; }
+  .panel { background: white; border-radius: 0.8rem; padding: 1.5rem; box-shadow: 0 1px 6px rgba(0,0,0,0.05); }
+  .btn { background: var(--verde); color: white; padding: 0.6rem 1rem; border-radius: 0.4rem; font-weight: 500; transition: 0.2s; }
+  .btn:hover { background: var(--verde-claro); }
+  .btn-sec { background: #23437e; }
+  .btn-sec:hover { background: #345eaa; }
+  .btn-alt { background: #d97706; }
+  .btn-alt:hover { background: #b45309; }
+  .kpi { background:white; border-radius:0.7rem; text-align:center; padding:1rem; box-shadow:0 1px 5px rgba(0,0,0,0.05); }
+  #detalle { position:fixed; top:0; right:0; width:360px; height:100vh; background:white; box-shadow:-4px 0 10px rgba(0,0,0,0.1); padding:1.5rem; overflow-y:auto; transform:translateX(100%); transition:transform 0.3s ease; z-index:50; }
+  #detalle.activo { transform:translateX(0); }
 </style>
 </head>
 
@@ -49,50 +49,53 @@
     <div class="kpi"><h4 class="text-gray-500 text-sm">Edad media</h4><p id="kpiEdad" class="text-2xl font-semibold text-[var(--verde)]">-</p></div>
     <div class="kpi"><h4 class="text-gray-500 text-sm">% Controlados</h4><p id="kpiControlados" class="text-2xl font-semibold text-[var(--verde)]">-</p></div>
     <div class="kpi"><h4 class="text-gray-500 text-sm">% Adherencia</h4><p id="kpiAdherencia" class="text-2xl font-semibold text-[var(--verde)]">-</p></div>
-    <div class="kpi"><h4 class="text-gray-500 text-sm">% Complicaciones</h4><p id="kpiComplicaciones" class="text-2xl font-semibold text-[var(--verde)]">-</p></div>
+    <div class="kpi"><h4 class="text-gray-500 text-sm">IMC medio</h4><p id="kpiIMC" class="text-2xl font-semibold text-[var(--verde)]">-</p></div>
   </section>
 
-  <!-- Tendencias -->
-  <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- Gráficos -->
+  <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="panel">
-      <h3 class="font-semibold text-[var(--verde)] mb-2">Evolución clínica media</h3>
-      <canvas id="grafTendencias"></canvas>
+      <h3 class="font-semibold text-[var(--verde)] mb-2">Tendencia HbA1c</h3>
+      <canvas id="grafHbA1c"></canvas>
     </div>
     <div class="panel">
-      <h3 class="font-semibold text-[var(--verde)] mb-2">Distribución de valores</h3>
-      <canvas id="grafDistribucion"></canvas>
-    </div>
-  </section>
-
-  <!-- Segmentación -->
-  <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <div class="panel">
-      <h3 class="font-semibold text-[var(--verde)] mb-2">Distribución por edad y sexo</h3>
-      <canvas id="grafEdadSexo"></canvas>
+      <h3 class="font-semibold text-[var(--verde)] mb-2">Tendencia TFG</h3>
+      <canvas id="grafTFG"></canvas>
     </div>
     <div class="panel">
-      <h3 class="font-semibold text-[var(--verde)] mb-2">Tratamientos y adherencia</h3>
-      <canvas id="grafMedicaciones"></canvas>
+      <h3 class="font-semibold text-[var(--verde)] mb-2">Distribución IMC</h3>
+      <canvas id="grafIMC"></canvas>
     </div>
   </section>
 
-  <!-- Alertas y acciones -->
+  <!-- Tratamientos -->
   <section class="panel">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="font-semibold text-[var(--verde)]">Pacientes en seguimiento</h3>
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-semibold text-[var(--verde)]">Tratamientos más usados</h3>
       <div class="flex gap-2">
-        <button class="btn" onclick="accion('informe')"><i data-lucide='file-text'></i> Generar informe</button>
-        <button class="btn-alerta btn" onclick="accion('avisar')"><i data-lucide='bell'></i> Avisar pacientes</button>
-        <button class="btn-sec btn" onclick="accion('exportar')"><i data-lucide='database'></i> Exportar datos</button>
+        <button class="btn" onclick="accion('informe')">Generar informe</button>
+        <button class="btn-alt" onclick="accion('avisar')">Avisar pacientes</button>
+        <button class="btn-sec" onclick="accion('exportar')">Exportar datos</button>
       </div>
     </div>
+    <canvas id="grafMedicaciones"></canvas>
+  </section>
+
+  <!-- Tabla riesgo -->
+  <section class="panel">
+    <h3 class="font-semibold text-[var(--verde)] mb-2">Pacientes fuera de rango</h3>
     <table class="w-full text-sm border-t">
       <thead><tr><th>Paciente</th><th>HbA1c</th><th>TFG</th><th>Adherencia</th><th>Estado</th></tr></thead>
       <tbody id="tablaRiesgo"></tbody>
     </table>
   </section>
-
 </main>
+
+<!-- Panel lateral detalle -->
+<div id="detalle">
+  <h2 id="detalleTitulo" class="text-lg font-semibold text-[var(--verde)] mb-2"></h2>
+  <div id="detalleContenido" class="text-sm text-gray-700"></div>
+</div>
 
 <script>
 lucide.createIcons();
@@ -115,67 +118,82 @@ async function cargarDatos() {
 
   // KPIs
   document.getElementById("kpiPacientes").textContent = pacientes.length;
-  document.getElementById("kpiEdad").textContent = ((pacientes.reduce((a,b)=>a+(b.edad||0),0)/pacientes.length)||0).toFixed(1) + " años";
+  document.getElementById("kpiEdad").textContent = promedio(pacientes.map(p=>p.edad)).toFixed(1) + " años";
   document.getElementById("kpiControlados").textContent = ((labs.data.filter(l=>l.HbA1c<7 && l.TFG>60).length/labs.data.length)*100).toFixed(1) + "%";
-  document.getElementById("kpiAdherencia").textContent = ((meds.data.reduce((a,b)=>a+(b.adherencia||0),0)/meds.data.length)||0).toFixed(1) + "%";
-  document.getElementById("kpiComplicaciones").textContent = ((labs.data.filter(l=>l.HbA1c>9 || l.TFG<45).length/labs.data.length)*100).toFixed(1) + "%";
+  document.getElementById("kpiAdherencia").textContent = promedio(meds.data.map(m=>m.adherencia)).toFixed(1) + "%";
+  document.getElementById("kpiIMC").textContent = promedio(pacientes.map(p=>p.IMC)).toFixed(1);
 
-  // Gráficos
-  const fechas = [...new Set(labs.data.map(l=>l.fecha_prueba))].sort();
-  const HbA1c = fechas.map(f=>promedio(labs.data.filter(l=>l.fecha_prueba===f).map(l=>l.HbA1c)));
-  const TFG = fechas.map(f=>promedio(labs.data.filter(l=>l.fecha_prueba===f).map(l=>l.TFG)));
-
-  new Chart(document.getElementById("grafTendencias"), {
-    type: "line",
-    data: { labels: fechas, datasets: [
-      { label: "HbA1c", data: HbA1c, borderColor: "#48b07a", fill: false },
-      { label: "TFG", data: TFG, borderColor: "#2b7a58", fill: false }
-    ]},
-    options: { scales: { y: { beginAtZero: false } } }
-  });
-
-  new Chart(document.getElementById("grafDistribucion"), {
-    type:"bar",
-    data:{
-      labels:["HbA1c","TFG","IMC"],
-      datasets:[{label:"Media", data:[
-        promedio(labs.data.map(l=>l.HbA1c)),
-        promedio(labs.data.map(l=>l.TFG)),
-        promedio(pacientes.map(p=>p.IMC))
-      ], backgroundColor:"#48b07a"}]
-    }
-  });
-
-  const porSexo = ["M","F"].map(s=>pacientes.filter(p=>p.sexo===s).length);
-  new Chart(document.getElementById("grafEdadSexo"), {
-    type:"doughnut", 
-    data:{ labels:["Hombres","Mujeres"], datasets:[{ data:porSexo, backgroundColor:["#48b07a","#2b7a58"]}] }
-  });
+  // Gráficos individuales
+  graficarLinea("grafHbA1c", labs.data, "HbA1c", "#48b07a");
+  graficarLinea("grafTFG", labs.data, "TFG", "#2b7a58");
+  graficarHist("grafIMC", pacientes.map(p=>p.IMC));
 
   const freq={}; meds.data.forEach(m=>{freq[m.principio_activo]=(freq[m.principio_activo]||0)+1});
-  const top=Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  new Chart(document.getElementById("grafMedicaciones"), {
+  const top=Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const ctx = document.getElementById("grafMedicaciones");
+  const chart = new Chart(ctx, {
     type:"bar", 
-    data:{ labels:top.map(x=>x[0]), datasets:[{ label:"Pacientes", data:top.map(x=>x[1]), backgroundColor:"#48b07a"}] }
+    data:{ labels:top.map(x=>x[0]), datasets:[{ label:"Pacientes", data:top.map(x=>x[1]), backgroundColor:"#48b07a"}]},
+    options:{ onClick:(e,els)=>{
+      if(els.length){ mostrarDetalle(top[els[0].index][0],"medicacion"); }
+    }}
   });
 
-  const riesgo = labs.data.filter(l=>l.HbA1c>8 || l.TFG<50).slice(0,15);
+  const riesgo = labs.data.filter(l=>l.HbA1c>8 || l.TFG<50).slice(0,20);
   document.getElementById("tablaRiesgo").innerHTML = riesgo.map(r=>`
-    <tr class="border-t">
-      <td>${r.patient_id}</td>
-      <td>${r.HbA1c}</td>
-      <td>${r.TFG}</td>
+    <tr class="border-t hover:bg-gray-50 cursor-pointer" onclick="mostrarDetalle('${r.patient_id}','paciente')">
+      <td>${r.patient_id}</td><td>${r.HbA1c}</td><td>${r.TFG}</td>
       <td>${(Math.random()*100).toFixed(1)}%</td>
-      <td>${r.HbA1c>9?"Crítico":r.HbA1c>7?"Moderado":"Estable"}</td>
-    </tr>`).join("");
+      <td>${r.HbA1c>9?"Crítico":r.HbA1c>7?"Moderado":"Estable"}</td></tr>
+  `).join("");
 }
 
 function promedio(arr){return arr.length?arr.reduce((a,b)=>a+(+b||0),0)/arr.length:0;}
 
+function graficarLinea(id, data, campo, color){
+  const fechas = [...new Set(data.map(l=>l.fecha_prueba))].sort();
+  const valores = fechas.map(f=>promedio(data.filter(l=>l.fecha_prueba===f).map(l=>l[campo])));
+  new Chart(document.getElementById(id), {
+    type: "line",
+    data: { labels: fechas, datasets: [{ label: campo, data: valores, borderColor: color, tension:0.2, pointRadius:2 }]},
+    options: { scales:{y:{beginAtZero:false}}, plugins:{legend:{display:false}} }
+  });
+}
+
+function graficarHist(id, arr){
+  new Chart(document.getElementById(id), {
+    type:"bar",
+    data:{ labels:["<20","20-25","25-30","30-35",">35"],
+      datasets:[{ label:"Pacientes", data:[
+        arr.filter(x=>x<20).length, arr.filter(x=>x>=20&&x<25).length,
+        arr.filter(x=>x>=25&&x<30).length, arr.filter(x=>x>=30&&x<35).length,
+        arr.filter(x=>x>=35).length ], backgroundColor:"#48b07a"}]},
+    options:{ plugins:{legend:{display:false}} }
+  });
+}
+
+function mostrarDetalle(id,tipo){
+  const panel = document.getElementById("detalle");
+  const titulo = document.getElementById("detalleTitulo");
+  const cont = document.getElementById("detalleContenido");
+  panel.classList.add("activo");
+
+  if(tipo==="paciente"){
+    titulo.textContent = "Paciente " + id;
+    cont.innerHTML = `<p>Mostrando información detallada del paciente y su evolución.</p>`;
+  } else {
+    titulo.textContent = "Tratamiento: " + id;
+    cont.innerHTML = `<p>Pacientes bajo ${id}, adherencia media, dosis, fechas y respuesta clínica.</p>`;
+  }
+}
+
 function accion(tipo){
-  // aquí conectan tus flujos n8n ocultos
-  fetch("https://your-hidden-automation-url.com/"+tipo,{method:"POST",body:JSON.stringify({cohorte})});
-  alert("Acción programada correctamente: " + tipo);
+  /* 🔗 Placeholder de integración — aquí se hará POST automático
+     al endpoint que se definirá (n8n, API interna, etc) con:
+     { cohorte, tipo_accion, timestamp, resumen_kpis, ... }
+  */
+  console.log("Acción enviada:", tipo);
+  alert("Acción registrada: " + tipo);
 }
 
 cargarDatos();
