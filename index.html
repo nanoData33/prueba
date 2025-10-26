@@ -3,169 +3,94 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Plataforma de Cohortes Crónicas — Investigación y Análisis</title>
+<title>CohortIQ — Clinical Research Assistant</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-  body { background-color:#f5f5f2; font-family:"Inter",sans-serif; color:#222; }
-  header { backdrop-filter:blur(8px); background:white; border-bottom:1px solid #e5e7eb; box-shadow:0 2px 8px rgba(0,0,0,0.05); }
-  .hero { background:linear-gradient(120deg,#6aa84f,#4a8c3f); color:white; border-radius:0.8rem; padding:2rem; margin-bottom:2rem; }
-  .hero h2 { font-size:1.6rem; font-weight:600; margin-bottom:0.5rem; }
-  .hero p { font-size:0.95rem; opacity:0.9; max-width:800px; }
-  .card { background:white; border-radius:0.8rem; padding:1.5rem; box-shadow:0 3px 10px rgba(0,0,0,0.05); border-left:5px solid #4a8c3f; transition:all .25s ease; cursor:pointer; }
-  .card:hover { transform:translateY(-3px); box-shadow:0 6px 14px rgba(0,0,0,0.1); }
-  .card h3 { font-weight:600; font-size:1.1rem; color:#2f3b2f; }
-  .card p { color:#6b6b6b; font-size:0.9rem; margin-top:4px; }
-  .btn-chat {
-    background:#4a8c3f; color:white; border:none; padding:1.1rem;
-    border-radius:0.6rem; font-weight:600; font-size:1rem;
-    text-align:center; width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
-    transition:all .25s ease;
-  }
-  .btn-chat:hover { background:#3b7033; transform:translateY(-2px); }
-  .cohorte-box { background:white; border-radius:0.6rem; padding:1rem 1.3rem; border-left:4px solid #4a8c3f; box-shadow:0 2px 6px rgba(0,0,0,0.05); transition:0.2s; }
-  .cohorte-box:hover { transform:translateY(-2px); }
+  body { background-color:#f6f7f5; font-family:"Inter",sans-serif; color:#1f1f1f; }
+  header { background:white; border-bottom:1px solid #e5e7eb; box-shadow:0 1px 6px rgba(0,0,0,0.05); }
+  .section-title { font-weight:600; color:#374151; font-size:1rem; margin-bottom:0.8rem; text-transform:uppercase; }
+  .card { background:white; border-radius:0.8rem; padding:1.4rem; border-left:4px solid #4a8c3f; box-shadow:0 2px 6px rgba(0,0,0,0.05); transition:all .2s ease; cursor:pointer; }
+  .card:hover { transform:translateY(-3px); box-shadow:0 5px 12px rgba(0,0,0,0.08); }
+  .card h3 { font-weight:600; color:#1f1f1f; }
+  .card p { color:#6b7280; font-size:0.9rem; margin-top:3px; }
+  .cohorte { background:white; border-radius:0.6rem; padding:0.9rem 1rem; border-left:4px solid #4a8c3f; display:flex; justify-content:space-between; align-items:center; }
+  .btn { background:#4a8c3f; color:white; border:none; padding:0.6rem 1rem; border-radius:0.4rem; font-weight:500; transition:all .2s ease; }
+  .btn:hover { background:#3b7033; }
 </style>
 </head>
 
 <body>
-  <!-- CABECERA -->
-  <header class="fixed top-0 left-0 w-full flex justify-between items-center px-10 py-4 z-10">
-    <h1 class="text-xl font-semibold flex items-center gap-2">
-      <i data-lucide="stethoscope" class="text-lime-700 w-6 h-6"></i>
-      <span>Plataforma de Cohortes Crónicas</span>
+  <!-- HEADER -->
+  <header class="w-full flex justify-between items-center px-10 py-4">
+    <h1 class="flex items-center gap-2 text-xl font-semibold text-lime-800">
+      <i data-lucide="activity"></i> CohortIQ
+      <span class="text-gray-500 text-sm font-normal">Clinical Research Assistant</span>
     </h1>
-    <a href="chat.html" class="btn-chat max-w-xs">
-      <i data-lucide="bot"></i> Asistente Conversacional
-    </a>
+    <a href="chat.html" class="btn flex items-center gap-2"><i data-lucide="bot"></i> Asistente Conversacional</a>
   </header>
 
-  <main class="pt-28 px-10 max-w-7xl mx-auto">
-    <!-- PRESENTACIÓN -->
-    <section class="hero">
-      <h2>Reto 2 · Agente Conversacional para Identificación de Cohortes Crónicas</h2>
-      <p>
-        Esta plataforma está diseñada para <strong>investigadores clínicos y analistas sanitarios</strong> que deseen explorar y comprender 
-        los patrones de pacientes con enfermedades crónicas de forma rápida e intuitiva.  
-        Sin necesidad de escribir consultas SQL, el sistema integra <strong>motores n8n</strong> y una <strong>base de datos Supabase</strong> 
-        para realizar análisis automáticos, clasificaciones e informes visuales en tiempo real.
-      </p>
+  <!-- MAIN CONTENT -->
+  <main class="px-10 py-8 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+    
+    <!-- IZQUIERDA -->
+    <section>
+      <h2 class="section-title">Resumen de Cohortes Activas</h2>
+      <div id="cohortes" class="flex flex-col gap-3">
+        <p class="text-gray-400 italic">Cargando cohortes...</p>
+      </div>
     </section>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
-      <!-- COLUMNA IZQUIERDA -->
-      <section>
-        <h2 class="text-lg font-semibold text-stone-700 uppercase mb-3">Resumen de Cohortes Activas</h2>
-        <div id="cohortes" class="flex flex-col gap-4">
-          <p class="text-stone-500 italic">Cargando recuentos desde Supabase...</p>
+    <!-- DERECHA -->
+    <section>
+      <h2 class="section-title">Herramientas de Investigación</h2>
+      <div class="flex flex-col gap-5">
+        <div class="card" onclick="location.href='clasificar.html'">
+          <div class="flex items-center gap-2 mb-1">
+            <i data-lucide='user-plus' class='text-lime-700'></i>
+            <h3>Clasificar nuevo paciente</h3>
+          </div>
+          <p>Sube una analítica o introduce valores clínicos para ubicar al paciente en una cohorte y obtener una interpretación automática.</p>
         </div>
-      </section>
 
-      <!-- COLUMNA DERECHA -->
-      <section>
-        <h2 class="text-lg font-semibold text-stone-700 uppercase mb-3">Herramientas de Investigación</h2>
-        <div class="flex flex-col gap-5">
-          <!-- Clasificar -->
-          <div class="card" onclick="location.href='clasificar.html'">
-            <div class="flex items-center gap-2 mb-1">
-              <i data-lucide='user-plus' class='text-lime-700'></i>
-              <h3>Clasificar nuevo paciente</h3>
-            </div>
-            <p>
-              Introduce los valores de laboratorio o sube un PDF de analítica.  
-              El sistema clasificará automáticamente al paciente dentro de una cohorte existente 
-              y mostrará el grado de pertenencia con interpretación automática.
-            </p>
+        <div class="card" onclick="location.href='explorar.html'">
+          <div class="flex items-center gap-2 mb-1">
+            <i data-lucide='database' class='text-lime-700'></i>
+            <h3>Explorar base de datos</h3>
           </div>
-
-          <!-- Explorar -->
-          <div class="card" onclick="location.href='explorar.html'">
-            <div class="flex items-center gap-2 mb-1">
-              <i data-lucide='database' class='text-lime-700'></i>
-              <h3>Explorar base de datos</h3>
-            </div>
-            <p>
-              Explora toda la base de datos clínica mediante filtros dinámicos y búsquedas semánticas.  
-              Ideal para investigadores que buscan detectar subgrupos o patrones sin usar SQL.
-            </p>
-          </div>
-
-          <!-- Comparar -->
-          <div class="card" onclick="location.href='comparar.html'">
-            <div class="flex items-center gap-2 mb-1">
-              <i data-lucide='bar-chart-2' class='text-lime-700'></i>
-              <h3>Comparar cohortes</h3>
-            </div>
-            <p>
-              Compara visualmente cohortes por edad, sexo, patología o nivel socioeconómico.  
-              Genera gráficos automáticos con diferencias significativas y resúmenes exportables.
-            </p>
-          </div>
-
-          <!-- Informes -->
-          <div class="card" onclick="location.href='informes.html'">
-            <div class="flex items-center gap-2 mb-1">
-              <i data-lucide='file-bar-chart' class='text-lime-700'></i>
-              <h3>Generar informes automáticos</h3>
-            </div>
-            <p>
-              Crea informes personalizados con resultados estadísticos y visuales.  
-              Exporta a PDF o Excel con un clic para presentaciones o publicaciones científicas.
-            </p>
-          </div>
-
-          <!-- Análisis Predictivo -->
-          <div class="card" onclick="location.href='predictivo.html'">
-            <div class="flex items-center gap-2 mb-1">
-              <i data-lucide='activity' class='text-lime-700'></i>
-              <h3>Análisis predictivo</h3>
-            </div>
-            <p>
-              Aplica modelos de predicción sobre cohortes (riesgo cardiovascular, progresión de diabetes o reingreso hospitalario).  
-              Los modelos se ejecutan a través de n8n y devuelven resultados interpretados automáticamente.
-            </p>
-          </div>
-
-          <!-- Seguimiento -->
-          <div class="card" onclick="location.href='seguimiento.html'">
-            <div class="flex items-center gap-2 mb-1">
-              <i data-lucide='calendar-clock' class='text-lime-700'></i>
-              <h3>Seguimiento de cohortes</h3>
-            </div>
-            <p>
-              Monitoriza la evolución longitudinal de pacientes dentro de una cohorte (por ejemplo, hipertensos con control domiciliario).  
-              Recibe alertas automáticas y visualiza tendencias individuales.
-            </p>
-          </div>
+          <p>Consulta todos los pacientes mediante filtros y búsqueda inteligente sin usar SQL.</p>
         </div>
-      </section>
-    </div>
 
-    <!-- BLOQUE CHAT -->
-    <div class="mt-10 text-center">
-      <h2 class="text-lg font-semibold text-stone-700 mb-3">Asistente Conversacional de Cohortes</h2>
-      <p class="text-stone-500 mb-5 max-w-2xl mx-auto">
-        Pregunta en lenguaje natural sobre tus cohortes, por ejemplo:  
-        <em>“pacientes con EPOC y tabaquismo activo”</em> o <em>“evolución de la HbA1c media en diabéticos mayores de 65”</em>.  
-        El asistente genera automáticamente la consulta y los resultados, mostrando tablas y gráficos procesados en n8n.
-      </p>
-      <a href="chat.html" class="btn-chat max-w-md mx-auto">
-        <i data-lucide="message-circle"></i> Iniciar conversación con el asistente
-      </a>
-    </div>
+        <div class="card" onclick="location.href='comparar.html'">
+          <div class="flex items-center gap-2 mb-1">
+            <i data-lucide='bar-chart-2' class='text-lime-700'></i>
+            <h3>Comparar cohortes</h3>
+          </div>
+          <p>Analiza diferencias entre cohortes por edad, sexo o enfermedad principal, con gráficos automáticos.</p>
+        </div>
+
+        <div class="card" onclick="location.href='informes.html'">
+          <div class="flex items-center gap-2 mb-1">
+            <i data-lucide='file-bar-chart' class='text-lime-700'></i>
+            <h3>Informes y asistente</h3>
+          </div>
+          <p>Genera informes automáticos sobre cohortes o conversa con el asistente n8n para explorar datos y obtener análisis.</p>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <footer class="text-center text-sm text-stone-500 py-4 border-t border-stone-200">
-    © 2025 Plataforma de Investigación Clínica — Cohortes Crónicas · Integración Supabase + n8n
+  <footer class="text-center text-sm text-gray-400 py-3 border-t border-gray-200">
+    © 2025 CohortIQ · Plataforma de Análisis de Cohortes Clínicas
   </footer>
 
   <script>
     lucide.createIcons();
 
-    // === Conexión Supabase ===
+    // === SUPABASE CONNECTION ===
     const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -173,11 +98,7 @@
     async function cargarCohortes() {
       const c = document.getElementById("cohortes");
       const { data, error } = await supabase.from("pacientes").select("enfermedad_principal");
-      if (error) {
-        c.innerHTML = "<p class='text-red-600'>Error al conectar con Supabase.</p>";
-        console.error(error);
-        return;
-      }
+      if (error) { c.innerHTML = "<p class='text-red-600'>Error al conectar con Supabase.</p>"; console.error(error); return; }
 
       const conteo = {};
       data.forEach(p => {
@@ -187,19 +108,16 @@
 
       c.innerHTML = Object.entries(conteo)
         .sort((a,b)=>b[1]-a[1])
+        .slice(0,5)
         .map(([e,t])=>`
-          <div class='cohorte-box flex justify-between items-center'>
+          <div class='cohorte'>
             <div>
-              <h4 class='font-semibold text-stone-800'>${e}</h4>
-              <p class='text-stone-500 text-sm'>${t} pacientes registrados</p>
+              <h4 class='font-semibold text-gray-800'>${e}</h4>
+              <p class='text-gray-500 text-sm'>${t} pacientes registrados</p>
             </div>
-            <button onclick="location.href='cohorte.html?nombre=${encodeURIComponent(e)}'" 
-              class='bg-lime-700 hover:bg-lime-800 text-white px-3 py-1.5 rounded-md text-sm transition'>
-              Ver cohorte
-            </button>
+            <button onclick="location.href='cohorte.html?nombre=${encodeURIComponent(e)}'" class='btn text-sm'>Ver cohorte</button>
           </div>
         `).join("");
-      lucide.createIcons();
     }
 
     cargarCohortes();
