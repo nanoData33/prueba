@@ -3,102 +3,210 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Asistente Clínico – Chat Inteligente</title>
+<title>CohortIQ – Asistente Clínico</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
-
 <style>
-  :root {
-    --fondo: #f3f5f1;
-    --card: #ffffff;
-    --acento: #3b7b46;
-    --acento-hover: #2f6137;
-    --gris-texto: #1f1f1f;
-    --sombra: rgba(0,0,0,0.08);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Poppins', sans-serif;
-    background: var(--fondo);
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-  }
-  header {
-    background: var(--card);
-    color: var(--gris-texto);
-    padding: 18px 40px;
-    font-weight: 600;
-    text-align: center;
-    box-shadow: 0 2px 8px var(--sombra);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  header h1 { font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
-  header button {
-    background: var(--acento);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 14px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.25s ease;
-  }
-  header button:hover { background: var(--acento-hover); }
+:root {
+  --fondo: #f2f5f0;
+  --card: #ffffff;
+  --acento: #2f6e3e;
+  --acento-hover: #235330;
+  --gris: #444;
+  --sombra: rgba(0,0,0,0.1);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Poppins", sans-serif;
+  background: var(--fondo);
+  color: var(--gris);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+header {
+  background: var(--card);
+  box-shadow: 0 2px 8px var(--sombra);
+  padding: 16px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+header h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--acento);
+  font-size: 1.2rem;
+}
+header button {
+  background: var(--acento);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.3s;
+}
+header button:hover { background: var(--acento-hover); }
 
-  main { flex: 1; display: flex; padding: 20px; gap: 20px; }
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 20px;
+}
 
-  .chat-box, .tabla-box {
-    flex: 1;
-    background: var(--card);
-    border-radius: 16px;
-    box-shadow: 0 4px 12px var(--sombra);
-    padding: 25px;
-    display: flex;
-    flex-direction: column;
-  }
+.chat-box, .tabla-box {
+  background: var(--card);
+  border-radius: 14px;
+  box-shadow: 0 4px 10px var(--sombra);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
 
-  h2 { color: var(--acento); margin-bottom: 10px; text-align: center; font-weight: 600; }
+h2 {
+  color: var(--acento);
+  text-align: center;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
 
-  .messages {
-    flex: 1;
-    overflow-y: auto;
-    background: #f8f9f7;
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 10px;
-    box-shadow: inset 0 0 6px rgba(0,0,0,0.05);
-  }
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  background: #f8faf8;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.05);
+  margin-bottom: 10px;
+}
 
-  .msg { margin-bottom: 12px; padding: 12px 16px; border-radius: 12px; line-height: 1.5; max-width: 80%; word-wrap: break-word; }
-  .msg.user { background: var(--acento); color: white; align-self: flex-end; border-top-right-radius: 0; }
-  .msg.bot { background: #e6f2e6; color: var(--gris-texto); align-self: flex-start; border-top-left-radius: 0; }
+.msg {
+  max-width: 85%;
+  padding: 12px 15px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  line-height: 1.5;
+  word-wrap: break-word;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.msg.user {
+  background: var(--acento);
+  color: white;
+  align-self: flex-end;
+  border-bottom-right-radius: 0;
+}
+.msg.bot {
+  background: #eaf3ea;
+  color: var(--gris);
+  align-self: flex-start;
+  border-bottom-left-radius: 0;
+}
 
-  .input-area { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
-  input { flex: 1; padding: 12px 14px; border: 1px solid #ccc; border-radius: 10px; outline: none; font-size: 0.95rem; }
-  button.action { background: var(--acento); color: white; border: none; border-radius: 10px; padding: 10px 14px; cursor: pointer; transition: background 0.25s; }
-  button.action:hover { background: var(--acento-hover); }
+.typing {
+  display: flex;
+  gap: 5px;
+  padding: 10px 0 0 10px;
+}
+.dot {
+  width: 8px; height: 8px;
+  background: var(--acento);
+  border-radius: 50%;
+  animation: blink 1.2s infinite;
+}
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
 
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 0.9rem; }
-  th { background: var(--acento); color: white; }
-  tr:nth-child(even) { background-color: #f9f9f9; }
+.input-area {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+input {
+  flex: 1;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 10px 12px;
+  outline: none;
+  font-size: 0.95rem;
+}
+button.action {
+  background: var(--acento);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+button.action:hover { background: var(--acento-hover); }
 
-  .recomendacion { margin-top: 15px; padding: 10px; border: 1px solid #d1d5db; border-radius: 10px; background: #f3f4f6; }
-  .recomendacion button { margin: 6px; padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer; }
-  .btn-rec { background: var(--acento); color: white; }
-  .btn-alt { background: #e5e7eb; color: var(--gris-texto); }
+.recomendacion {
+  margin-top: 15px;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 10px;
+}
+.recomendacion p {
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.recomendacion button {
+  border: none;
+  padding: 8px 14px;
+  margin-right: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-rec {
+  background: var(--acento);
+  color: white;
+}
+.btn-alt {
+  background: #e5e7eb;
+  color: var(--gris);
+}
+.btn-rec:hover { background: var(--acento-hover); }
+.btn-alt:hover { background: #d1d5db; }
 
-  footer { text-align: center; padding: 10px; background: var(--card); font-size: 0.9em; color: #666; box-shadow: 0 -2px 8px var(--sombra); }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+}
+th {
+  background: var(--acento);
+  color: white;
+}
+tr:nth-child(even) { background-color: #f9f9f9; }
+
+footer {
+  background: var(--card);
+  text-align: center;
+  padding: 8px;
+  font-size: 0.85rem;
+  color: #555;
+  box-shadow: 0 -2px 6px var(--sombra);
+}
 </style>
 </head>
 
 <body>
 <header>
-  <h1><i data-lucide="stethoscope"></i> Asistente Clínico Inteligente</h1>
-  <button onclick="window.open('analitica.html', '_blank')">Analizar Analítica</button>
+  <h1><i data-lucide="stethoscope"></i> CohortIQ – Asistente Clínico</h1>
+  <button onclick="window.location.href='index.html'">Volver al Inicio</button>
 </header>
 
 <main>
@@ -113,11 +221,11 @@
 
   <div class="tabla-box">
     <h2>Resultados</h2>
-    <div id="tablaContainer"></div>
+    <div id="tablaContainer">Esperando resultados...</div>
   </div>
 </main>
 
-<footer>© 2025 Asistente Clínico – Módulo de Análisis Conversacional</footer>
+<footer>© 2025 CohortIQ – Plataforma Inteligente de Apoyo Clínico</footer>
 
 <script>
 lucide.createIcons();
@@ -136,14 +244,27 @@ function appendMessage(sender, html) {
   document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
 }
 
+function showTyping() {
+  const typingDiv = document.createElement("div");
+  typingDiv.className = "typing";
+  typingDiv.id = "typing";
+  typingDiv.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+  document.getElementById("messages").appendChild(typingDiv);
+  document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+}
+function removeTyping() {
+  const t = document.getElementById("typing");
+  if (t) t.remove();
+}
+
 async function sendText() {
   const input = document.getElementById("userInput");
   const text = input.value.trim();
   if (!text) return;
-
   appendMessage("user", text);
   ultimaConsulta = text;
   input.value = "";
+  showTyping();
 
   try {
     const res = await fetch(webhook, {
@@ -152,7 +273,7 @@ async function sendText() {
       body: JSON.stringify({ type: "text", content: text })
     });
     const data = await res.json();
-    console.log("Respuesta de n8n:", data);
+    removeTyping();
 
     if (data.sql) ultimaSQL = data.sql;
 
@@ -160,26 +281,30 @@ async function sendText() {
       try {
         const parsed = JSON.parse(data.respuesta);
         if (Array.isArray(parsed)) renderTable(parsed);
-        else appendMessage("bot", `<pre>${JSON.stringify(parsed, null, 2)}</pre>`);
+        else appendMessage("bot", `<div>${data.respuesta}</div>`);
       } catch {
-        appendMessage("bot", data.respuesta);
+        appendMessage("bot", `<div>${data.respuesta}</div>`);
       }
     }
 
     if (data.recomendacion) renderRecomendaciones(data.recomendacion);
 
   } catch (err) {
-    appendMessage("bot", "⚠️ Error al conectar con el agente.");
+    removeTyping();
+    appendMessage("bot", "Error al conectar con el agente.");
   }
 }
 
-function renderTable(arrayData) {
+function renderTable(data) {
   const cont = document.getElementById("tablaContainer");
-  if (!arrayData.length) return (cont.innerHTML = "<p>Sin resultados.</p>");
-  const cols = Object.keys(arrayData[0]);
+  if (!data.length) {
+    cont.innerHTML = "<p>No se encontraron resultados.</p>";
+    return;
+  }
+  const cols = Object.keys(data[0]);
   let html = "<table><thead><tr>" + cols.map(c=>`<th>${c}</th>`).join("") + "</tr></thead><tbody>";
-  arrayData.forEach(row => {
-    html += "<tr>" + cols.map(c=>`<td>${row[c]}</td>`).join("") + "</tr>";
+  data.forEach(r=>{
+    html += "<tr>" + cols.map(c=>`<td>${r[c]}</td>`).join("") + "</tr>";
   });
   html += "</tbody></table>";
   cont.innerHTML = html;
@@ -188,20 +313,19 @@ function renderTable(arrayData) {
 function renderRecomendaciones(tipo) {
   const div = document.createElement("div");
   div.className = "recomendacion";
-  div.innerHTML = `<p><strong>Recomendación del agente:</strong> gráfico ${tipo}</p>`;
-  const tipos = ["bar", "line", "scatter", "pie", "histogram"];
-  tipos.forEach(t => {
+  div.innerHTML = `<p>Recomendación del agente: <b>${tipo}</b></p>`;
+  ["bar","line","scatter","pie","histogram"].forEach(t=>{
     const b = document.createElement("button");
-    b.textContent = (t === tipo ? "Enviar decisión: Recomendado (" + t + ")" : "Enviar " + t);
-    b.className = (t === tipo ? "btn-rec" : "btn-alt");
-    b.onclick = () => enviarDecision(t, t === tipo ? "recomendado" : "alternativo");
+    b.textContent = t === tipo ? "Recomendado ("+t+")" : "Usar "+t;
+    b.className = t===tipo ? "btn-rec" : "btn-alt";
+    b.onclick = ()=>enviarDecision(t, t===tipo ? "recomendado" : "alternativo");
     div.appendChild(b);
   });
   document.getElementById("messages").appendChild(div);
 }
 
 async function enviarDecision(tipo, decision) {
-  appendMessage("bot", `✅ Decisión registrada: ${decision} (${tipo})`);
+  appendMessage("bot", `Decisión enviada: ${decision} (${tipo})`);
   try {
     await fetch(webhookGrafico, {
       method: "POST",
@@ -213,7 +337,7 @@ async function enviarDecision(tipo, decision) {
       })
     });
   } catch (err) {
-    appendMessage("bot", "⚠️ Error al enviar la decisión a n8n.");
+    appendMessage("bot", "Error al enviar decisión a n8n.");
   }
 }
 </script>
