@@ -22,14 +22,12 @@
   }
   .panel {
     background: white;
-    border-radius: 1rem;
-    padding: 1.4rem;
+    border-radius: 0.9rem;
+    padding: 1.2rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     transition: 0.25s;
   }
-  .panel:hover {
-    transform: translateY(-1px);
-  }
+  .panel:hover { transform: translateY(-1px); }
   .chip {
     display: inline-block;
     padding: 0.25rem 0.6rem;
@@ -40,15 +38,6 @@
   .chip.riesgo-alto { background: #fee2e2; color: #991b1b; }
   .chip.riesgo-medio { background: #fef9c3; color: #92400e; }
   .chip.riesgo-bajo { background: #dcfce7; color: #166534; }
-  .seccion h3 {
-    font-weight: 600;
-    color: var(--verde);
-    margin-bottom: 0.4rem;
-  }
-  .subtitulo {
-    color: #6b7280;
-    font-size: 0.85rem;
-  }
 </style>
 </head>
 
@@ -57,7 +46,7 @@
   <div class="flex items-center gap-2">
     <i data-lucide="activity" class="text-[var(--verde)]"></i>
     <h1 class="text-xl font-semibold text-[var(--verde)]">CohortIQ</h1>
-    <span class="text-gray-500 text-sm">Historia Clínica Avanzada</span>
+    <span class="text-gray-500 text-sm">Historia Clínica</span>
   </div>
   <a href="index.html" class="text-sm text-[var(--verde)] hover:underline">← Volver al Panel</a>
 </header>
@@ -66,7 +55,7 @@
   <!-- PACIENTES -->
   <section class="panel overflow-y-auto max-h-[85vh]">
     <h2 class="font-semibold text-[var(--verde)] mb-3 flex items-center gap-2"><i data-lucide="users"></i> Pacientes</h2>
-    <input id="buscador" placeholder="Buscar por nombre o diagnóstico..." oninput="filtrarPacientes()" class="w-full p-2 mb-3 border rounded-md">
+    <input id="buscador" placeholder="Buscar..." oninput="filtrarPacientes()" class="w-full p-2 mb-3 border rounded-md">
     <div id="listaPacientes"></div>
   </section>
 
@@ -80,15 +69,14 @@
 
 <script>
 lucide.createIcons();
+
 const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
 let pacientes = [];
 
 async function cargarPacientes() {
-  const { data, error } = await supabase.from("pacientes").select("*").limit(200);
-  if (error) return console.error(error);
+  const { data } = await supabase.from("pacientes").select("*").limit(200);
   pacientes = data;
   renderPacientes(data);
 }
@@ -119,6 +107,8 @@ async function verPaciente(id) {
 
   const promedioHb = avg(labs.data.map(x => x.HbA1c));
   const promedioTFG = avg(labs.data.map(x => x.TFG));
+  const colesterol = avg(labs.data.map(x => x.colesterol_total));
+  const creatinina = avg(labs.data.map(x => x.creatinina));
   const adherencia = avg(meds.data.map(x => x["adherencia_%"]));
   const riesgo = promedioHb>7||promedioTFG<60?"riesgo-alto":promedioHb>6?"riesgo-medio":"riesgo-bajo";
 
@@ -128,60 +118,45 @@ async function verPaciente(id) {
     <span class="chip ${riesgo}">${riesgo.replace("riesgo-","").toUpperCase()}</span>
   </div>
 
-  <div class="grid grid-cols-2 gap-4 mb-4">
+  <div class="grid grid-cols-2 gap-4 mb-4 text-sm">
     <div>
       <p><b>Edad:</b> ${p.edad}</p>
       <p><b>Sexo:</b> ${p.sexo}</p>
       <p><b>Actividad física:</b> ${p.actividad_física}</p>
-      <p><b>Nivel educativo:</b> ${p.nivel_educativo}</p>
+      <p><b>IMC:</b> ${p.IMC}</p>
     </div>
     <div>
       <p><b>Diagnóstico principal:</b> ${p.enfermedad_principal}</p>
       <p><b>Fumador:</b> ${p.fumador}</p>
       <p><b>Nivel socioeconómico:</b> ${p.nivel_socioeconómico}</p>
-      <p><b>IMC:</b> ${p.IMC}</p>
+      <p><b>Educación:</b> ${p.nivel_educativo}</p>
     </div>
   </div>
 
-  <div class="seccion border-t pt-3">
-    <h3><i data-lucide='thermometer'></i> Indicadores clínicos</h3>
-    <div class="grid grid-cols-3 gap-4 text-center">
-      <div class="panel"><p class="subtitulo">HbA1c media</p><p class="text-lg font-semibold">${promedioHb.toFixed(1)}%</p></div>
-      <div class="panel"><p class="subtitulo">TFG media</p><p class="text-lg font-semibold">${promedioTFG.toFixed(0)}</p></div>
-      <div class="panel"><p class="subtitulo">Adherencia media</p><p class="text-lg font-semibold">${adherencia.toFixed(1)}%</p></div>
+  <div class="overflow-x-auto">
+    <div class="flex gap-4">
+      <canvas id="graficoLabs" width="300" height="200"></canvas>
+      <canvas id="graficoExtra" width="300" height="200"></canvas>
     </div>
-    <canvas id="graficoLabs" class="mt-4"></canvas>
   </div>
 
-  <div class="seccion border-t pt-3 mt-4">
-    <h3><i data-lucide='pill'></i> Medicaciones</h3>
-    ${meds.data?.length ? `
-      <table class="w-full text-sm mt-2">
-        <tr class="text-gray-500 text-xs border-b"><th class="text-left">Fármaco</th><th>Dosis</th><th>Inicio</th><th>Adherencia</th></tr>
-        ${meds.data.map(m=>`
-          <tr class="border-b"><td>${m.principio_activo}</td><td>${m.dosis_diaria_mg} mg</td><td>${m.inicio_tratamiento||'-'}</td><td>${m["adherencia_%"]||'-'}%</td></tr>`).join("")}
-      </table>
-    `:"<p>No hay medicaciones registradas.</p>"}
-  </div>
-
-  <div class="seccion border-t pt-3 mt-4">
-    <h3><i data-lucide='clipboard-heart'></i> Diagnósticos</h3>
-    ${diags.data?.length?diags.data.map(d=>`
-      <p class="text-sm">📋 ${d.nombre_diagnóstico} (${d.CIE10_code}) — ${d.estado||'-'}, ${d.gravedad||'-'}</p>`).join(""):"<p>No hay diagnósticos registrados.</p>"}
-  </div>
-
-  <div class="seccion border-t pt-3 mt-4">
-    <h3><i data-lucide='book-open-text'></i> Notas clínicas</h3>
-    ${notas.data?.length?notas.data.slice(-5).map(n=>`
-      <div class="border p-2 rounded-md mb-2 bg-gray-50">
-        <p class="text-xs text-gray-500">${n.fecha_nota}</p>
-        <p>${n.texto_nota}</p>
-      </div>`).join(""):"<p>No hay notas recientes.</p>"}
+  <div class="mt-5">
+    <h3 class="font-semibold text-[var(--verde)] mb-2">Indicadores Clínicos</h3>
+    <div class="grid grid-cols-5 gap-3 text-center text-sm">
+      <div class="panel"><p class="text-gray-500">HbA1c media</p><p class="text-lg font-semibold">${promedioHb.toFixed(1)}%</p></div>
+      <div class="panel"><p class="text-gray-500">TFG media</p><p class="text-lg font-semibold">${promedioTFG.toFixed(0)}</p></div>
+      <div class="panel"><p class="text-gray-500">Colesterol</p><p class="text-lg font-semibold">${colesterol.toFixed(0)}</p></div>
+      <div class="panel"><p class="text-gray-500">Creatinina</p><p class="text-lg font-semibold">${creatinina.toFixed(2)}</p></div>
+      <div class="panel"><p class="text-gray-500">Adherencia</p><p class="text-lg font-semibold">${adherencia.toFixed(1)}%</p></div>
+    </div>
   </div>
   `;
 
   lucide.createIcons();
-  if(labs.data?.length) renderGraficoLabs(labs.data);
+  if(labs.data?.length) {
+    renderGraficoLabs(labs.data);
+    renderGraficoExtra(labs.data);
+  }
 }
 
 function avg(arr){return arr.filter(x=>x).reduce((a,b)=>a+b,0)/(arr.filter(x=>x).length||1)}
@@ -198,11 +173,25 @@ function renderGraficoLabs(data){
       ]
     },
     options:{
-      responsive:true,
-      scales:{
-        y:{title:{display:true,text:"HbA1c (%)"}},
-        y1:{position:"right",title:{display:true,text:"TFG (ml/min)"}}
-      },
+      scales:{ y:{title:{display:true,text:"HbA1c"}}, y1:{position:"right",title:{display:true,text:"TFG"}} },
+      plugins:{legend:{display:false}}
+    }
+  });
+}
+
+function renderGraficoExtra(data){
+  const ctx = document.getElementById("graficoExtra");
+  new Chart(ctx,{
+    type:"bar",
+    data:{
+      labels:data.map(l=>l.fecha_prueba),
+      datasets:[
+        {label:"Colesterol", data:data.map(l=>l.colesterol_total), backgroundColor:"#4aba84"},
+        {label:"Triglicéridos", data:data.map(l=>l.triglicéridos), backgroundColor:"#94a3b8"}
+      ]
+    },
+    options:{
+      scales:{ y:{title:{display:true,text:"mg/dL"}} },
       plugins:{legend:{position:"bottom"}}
     }
   });
