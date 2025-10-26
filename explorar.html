@@ -3,141 +3,77 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CohortIQ — Explorador Clínico</title>
+<title>CohortIQ — Historia Clínica Avanzada</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 
 <style>
   :root {
-    --verde: #2b7463;
-    --verde-claro: #45b08c;
-    --gris-fondo: #f5f7f6;
-    --gris-borde: #e5e7eb;
+    --verde: #2b7a58;
+    --verde-claro: #4aba84;
+    --gris-fondo: #f6f7f6;
   }
-
   body {
     font-family: "Inter", sans-serif;
     background-color: var(--gris-fondo);
   }
-
-  header {
+  .panel {
     background: white;
-    border-bottom: 1px solid var(--gris-borde);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-  }
-
-  .tab {
-    cursor: pointer;
-    padding: 0.8rem 1.4rem;
-    border-bottom: 3px solid transparent;
-    font-weight: 500;
+    border-radius: 1rem;
+    padding: 1.4rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     transition: 0.25s;
   }
-  .tab.active {
-    border-color: var(--verde);
-    color: var(--verde);
-    font-weight: 600;
+  .panel:hover {
+    transform: translateY(-1px);
   }
-
-  .card {
-    background: white;
-    border-radius: 0.8rem;
-    padding: 1.4rem;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    transition: all 0.25s;
-  }
-  .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 14px rgba(0,0,0,0.08);
-  }
-
-  .btn {
-    background: var(--verde);
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 0.4rem;
-    font-weight: 500;
-    transition: 0.2s;
-  }
-  .btn:hover {
-    background: var(--verde-claro);
-  }
-
-  .row:hover {
-    background-color: #eef4f2;
-  }
-
-  .badge {
+  .chip {
     display: inline-block;
     padding: 0.25rem 0.6rem;
-    border-radius: 0.4rem;
+    border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 500;
-    color: white;
   }
-  .badge.riesgo { background-color: #e35d5d; }
-  .badge.normal { background-color: var(--verde); }
-  .badge.alerta { background-color: #f0ad4e; }
-
-  .stat {
-    background: white;
-    border-radius: 0.8rem;
-    padding: 1rem 1.4rem;
-    text-align: center;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  .chip.riesgo-alto { background: #fee2e2; color: #991b1b; }
+  .chip.riesgo-medio { background: #fef9c3; color: #92400e; }
+  .chip.riesgo-bajo { background: #dcfce7; color: #166534; }
+  .seccion h3 {
+    font-weight: 600;
+    color: var(--verde);
+    margin-bottom: 0.4rem;
+  }
+  .subtitulo {
+    color: #6b7280;
+    font-size: 0.85rem;
   }
 </style>
 </head>
 
 <body>
-<header class="flex justify-between items-center px-8 py-4">
+<header class="bg-white border-b px-8 py-4 flex justify-between items-center shadow-sm">
   <div class="flex items-center gap-2">
     <i data-lucide="activity" class="text-[var(--verde)]"></i>
     <h1 class="text-xl font-semibold text-[var(--verde)]">CohortIQ</h1>
-    <span class="text-gray-500 text-sm">Explorador Clínico</span>
+    <span class="text-gray-500 text-sm">Historia Clínica Avanzada</span>
   </div>
   <a href="index.html" class="text-sm text-[var(--verde)] hover:underline">← Volver al Panel</a>
 </header>
 
-<div class="flex border-b bg-white sticky top-0 z-10">
-  <div class="tab active" onclick="cambiarTabla('pacientes')">Pacientes</div>
-  <div class="tab" onclick="cambiarTabla('laboratorios')">Laboratorios</div>
-  <div class="tab" onclick="cambiarTabla('medicaciones')">Medicaciones</div>
-  <div class="tab" onclick="cambiarTabla('notas_clinicas')">Notas Clínicas</div>
-</div>
-
-<main class="p-8 grid grid-cols-1 xl:grid-cols-3 gap-8">
-  <section class="col-span-1">
-    <div class="card mb-4">
-      <h2 class="font-semibold text-[var(--verde)] mb-3 flex items-center gap-2">
-        <i data-lucide="filter"></i> Filtros
-      </h2>
-      <div class="flex flex-col gap-3">
-        <input id="buscador" placeholder="Buscar nombre o diagnóstico..." oninput="filtrar()"
-          class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[var(--verde-claro)] outline-none">
-        <div id="filtroRangoEdad" class="hidden flex gap-2">
-          <input id="edadMin" type="number" placeholder="Edad mínima" class="w-1/2 border p-2 rounded-md" oninput="filtrar()">
-          <input id="edadMax" type="number" placeholder="Edad máxima" class="w-1/2 border p-2 rounded-md" oninput="filtrar()">
-        </div>
-        <div id="filtroFecha" class="hidden flex gap-2">
-          <input id="fechaInicio" type="date" class="border p-2 rounded-md w-1/2" onchange="filtrarNotas()">
-          <input id="fechaFin" type="date" class="border p-2 rounded-md w-1/2" onchange="filtrarNotas()">
-        </div>
-      </div>
-    </div>
-    <div id="lista" class="bg-white rounded-md shadow divide-y overflow-y-auto" style="max-height:70vh;"></div>
+<main class="grid grid-cols-1 xl:grid-cols-3 gap-8 p-6">
+  <!-- PACIENTES -->
+  <section class="panel overflow-y-auto max-h-[85vh]">
+    <h2 class="font-semibold text-[var(--verde)] mb-3 flex items-center gap-2"><i data-lucide="users"></i> Pacientes</h2>
+    <input id="buscador" placeholder="Buscar por nombre o diagnóstico..." oninput="filtrarPacientes()" class="w-full p-2 mb-3 border rounded-md">
+    <div id="listaPacientes"></div>
   </section>
 
-  <section class="col-span-2">
-    <div id="estadisticas" class="grid grid-cols-3 gap-4 mb-5 hidden"></div>
-    <div id="detalle" class="hidden card">
-      <h2 class="text-xl font-semibold mb-2 text-[var(--verde)]" id="tituloDetalle"></h2>
-      <div id="contenidoDetalle" class="text-sm text-gray-700"></div>
-    </div>
-    <div id="sinSeleccion" class="text-gray-400 italic text-center mt-20">
-      Selecciona un registro o aplica filtros para comenzar la exploración
+  <!-- HISTORIA CLÍNICA -->
+  <section class="xl:col-span-2 panel overflow-y-auto max-h-[85vh]">
+    <div id="detallePaciente" class="text-center text-gray-400 italic">
+      Selecciona un paciente para visualizar su historia clínica completa
     </div>
   </section>
 </main>
@@ -148,147 +84,131 @@ const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-let tablaActual = "pacientes";
-let registros = [];
+let pacientes = [];
 
-async function cambiarTabla(nombre) {
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-  document.querySelector(`.tab[onclick="cambiarTabla('${nombre}')"]`).classList.add("active");
-  tablaActual = nombre;
-  document.getElementById("filtroRangoEdad").classList.toggle("hidden", nombre !== "pacientes");
-  document.getElementById("filtroFecha").classList.toggle("hidden", nombre !== "notas_clinicas");
-  document.getElementById("detalle").classList.add("hidden");
-  document.getElementById("estadisticas").classList.add("hidden");
-  document.getElementById("sinSeleccion").classList.remove("hidden");
-  cargarLista();
+async function cargarPacientes() {
+  const { data, error } = await supabase.from("pacientes").select("*").limit(200);
+  if (error) return console.error(error);
+  pacientes = data;
+  renderPacientes(data);
 }
 
-async function cargarLista() {
-  const cont = document.getElementById("lista");
-  cont.innerHTML = "<p class='p-4 text-gray-400 italic'>Cargando...</p>";
-  const { data, error } = await supabase.from(tablaActual).select("*");
-  if (error) { cont.innerHTML = "<p class='p-4 text-red-600'>Error al cargar datos.</p>"; return; }
-  registros = data;
-  renderLista(registros);
+function renderPacientes(lista) {
+  const cont = document.getElementById("listaPacientes");
+  cont.innerHTML = lista.map(p => `
+    <div class="p-3 mb-2 border rounded-md hover:bg-gray-50 cursor-pointer" onclick="verPaciente('${p.patient_id}')">
+      <p class="font-medium">${p.nombre} ${p.apellido || ""}</p>
+      <p class="text-xs text-gray-500">${p.edad} años • ${p.enfermedad_principal || "Sin diagnóstico"}</p>
+      <span class="chip ${p.IMC>30?'riesgo-alto':p.IMC>25?'riesgo-medio':'riesgo-bajo'}">IMC ${p.IMC}</span>
+    </div>`).join("");
 }
 
-function renderLista(lista) {
-  const cont = document.getElementById("lista");
-  if (!lista.length) { cont.innerHTML = "<p class='p-4 text-gray-400 italic'>No hay registros.</p>"; return; }
-
-  if (tablaActual === "pacientes") {
-    cont.innerHTML = lista.map(p => `
-      <div class="row p-4 border-b cursor-pointer" onclick="mostrarDetalle('${p.patient_id}')">
-        <p class="font-medium">${p.nombre} ${p.apellido || ""}</p>
-        <p class="text-xs text-gray-500">${p.edad || "-"} años • ${p.enfermedad_principal || "Sin diagnóstico"}</p>
-        ${p.riesgo_social && p.riesgo_social !== 'Ninguno' ? `<span class='badge alerta'>${p.riesgo_social}</span>` : ""}
-      </div>`).join("");
-  }
-
-  if (tablaActual === "laboratorios") {
-    cont.innerHTML = lista.sort((a,b)=>new Date(b.fecha_prueba)-new Date(a.fecha_prueba))
-      .map(l => {
-        const alerta = l.flag_riesgo && l.flag_riesgo !== "Normal";
-        return `
-        <div class="row p-4 border-b cursor-pointer" onclick="mostrarDetalle('${l.lab_id}')">
-          <p class="font-medium">${l.fecha_prueba}</p>
-          <p class="text-xs text-gray-500">HbA1c: ${l.HbA1c || "-"} • TFG: ${l.TFG || "-"}</p>
-          ${alerta ? `<span class="badge riesgo">${l.flag_riesgo}</span>` : `<span class="badge normal">Normal</span>`}
-        </div>`;
-      }).join("");
-  }
-
-  if (tablaActual === "medicaciones") {
-    cont.innerHTML = lista.map(m => `
-      <div class="row p-4 border-b cursor-pointer" onclick="mostrarDetalle('${m.med_id}')">
-        <p class="font-medium">${m.principio_activo}</p>
-        <p class="text-xs text-gray-500">Adherencia: ${m.adherencia}% — ${m.control_clinico}</p>
-      </div>`).join("");
-  }
-
-  if (tablaActual === "notas_clinicas") {
-    cont.innerHTML = lista.sort((a,b)=>new Date(b.fecha_nota)-new Date(a.fecha_nota))
-      .map(n => `
-      <div class="row p-4 border-b cursor-pointer" onclick="mostrarDetalle('${n.note_id}')">
-        <p class="font-medium">${n.fecha_nota}</p>
-        <p class="text-xs text-gray-500">${(n.resumen_automatico || n.texto_nota || "").slice(0,60)}...</p>
-      </div>`).join("");
-  }
-}
-
-function filtrar() {
+function filtrarPacientes() {
   const q = document.getElementById("buscador").value.toLowerCase();
-  const edadMin = +document.getElementById("edadMin")?.value || 0;
-  const edadMax = +document.getElementById("edadMax")?.value || 150;
-  let filtrados = registros.filter(r => JSON.stringify(r).toLowerCase().includes(q));
-  if (tablaActual === "pacientes") filtrados = filtrados.filter(p => p.edad >= edadMin && p.edad <= edadMax);
-  renderLista(filtrados);
+  renderPacientes(pacientes.filter(p => JSON.stringify(p).toLowerCase().includes(q)));
 }
 
-async function mostrarDetalle(id) {
-  document.getElementById("detalle").classList.remove("hidden");
-  document.getElementById("sinSeleccion").classList.add("hidden");
-  const detalle = document.getElementById("contenidoDetalle");
-  const titulo = document.getElementById("tituloDetalle");
+async function verPaciente(id) {
+  const p = pacientes.find(x => x.patient_id === id);
+  const [labs, meds, notas, diags] = await Promise.all([
+    supabase.from("laboratorios").select("*").eq("patient_id", id),
+    supabase.from("medicaciones").select("*").eq("patient_id", id),
+    supabase.from("notas_clinicas").select("*").eq("patient_id", id),
+    supabase.from("diagnosticos").select("*").eq("patient_id", id)
+  ]);
 
-  if (tablaActual === "pacientes") {
-    const p = registros.find(x => x.patient_id === id);
-    titulo.textContent = `${p.nombre} ${p.apellido}`;
-    const [labs, meds] = await Promise.all([
-      supabase.from("laboratorios").select("*").eq("patient_id", id),
-      supabase.from("medicaciones").select("*").eq("patient_id", id)
-    ]);
-    detalle.innerHTML = `
-      <p><b>Edad:</b> ${p.edad} años</p>
+  const promedioHb = avg(labs.data.map(x => x.HbA1c));
+  const promedioTFG = avg(labs.data.map(x => x.TFG));
+  const adherencia = avg(meds.data.map(x => x["adherencia_%"]));
+  const riesgo = promedioHb>7||promedioTFG<60?"riesgo-alto":promedioHb>6?"riesgo-medio":"riesgo-bajo";
+
+  document.getElementById("detallePaciente").innerHTML = `
+  <div class="flex justify-between items-center mb-3">
+    <h2 class="text-xl font-semibold text-[var(--verde)]">${p.nombre} ${p.apellido}</h2>
+    <span class="chip ${riesgo}">${riesgo.replace("riesgo-","").toUpperCase()}</span>
+  </div>
+
+  <div class="grid grid-cols-2 gap-4 mb-4">
+    <div>
+      <p><b>Edad:</b> ${p.edad}</p>
       <p><b>Sexo:</b> ${p.sexo}</p>
-      <p><b>IMC:</b> ${p.IMC}</p>
+      <p><b>Actividad física:</b> ${p.actividad_física}</p>
+      <p><b>Nivel educativo:</b> ${p.nivel_educativo}</p>
+    </div>
+    <div>
       <p><b>Diagnóstico principal:</b> ${p.enfermedad_principal}</p>
-      <p><b>Riesgo social:</b> ${p.riesgo_social || "N/A"}</p>
-      <hr class="my-3">
-      <h3 class="font-semibold text-[var(--verde)] mb-2">Últimas pruebas</h3>
-      ${labs.data?.slice(0,3).map(l => `<p>${l.fecha_prueba}: HbA1c ${l.HbA1c}, TFG ${l.TFG}</p>`).join("") || "<p>No hay datos</p>"}
-      <hr class="my-3">
-      <h3 class="font-semibold text-[var(--verde)] mb-2">Tratamientos activos</h3>
-      ${meds.data?.map(m => `<p>${m.principio_activo} (${m.dosis_diaria_mg} mg/día) — <i>${m.control_clinico}</i></p>`).join("") || "<p>Sin medicaciones</p>"}
-    `;
-  }
+      <p><b>Fumador:</b> ${p.fumador}</p>
+      <p><b>Nivel socioeconómico:</b> ${p.nivel_socioeconómico}</p>
+      <p><b>IMC:</b> ${p.IMC}</p>
+    </div>
+  </div>
 
-  if (tablaActual === "laboratorios") {
-    const l = registros.find(x => x.lab_id === id);
-    titulo.textContent = `Laboratorio — ${l.fecha_prueba}`;
-    detalle.innerHTML = `
-      <p><b>HbA1c:</b> ${l.HbA1c}</p>
-      <p><b>Colesterol total:</b> ${l.colesterol_total}</p>
-      <p><b>LDL:</b> ${l.LDL}</p>
-      <p><b>HDL:</b> ${l.HDL}</p>
-      <p><b>TFG:</b> ${l.TFG}</p>
-      <p><b>Riesgo:</b> ${l.flag_riesgo}</p>
-    `;
-  }
+  <div class="seccion border-t pt-3">
+    <h3><i data-lucide='thermometer'></i> Indicadores clínicos</h3>
+    <div class="grid grid-cols-3 gap-4 text-center">
+      <div class="panel"><p class="subtitulo">HbA1c media</p><p class="text-lg font-semibold">${promedioHb.toFixed(1)}%</p></div>
+      <div class="panel"><p class="subtitulo">TFG media</p><p class="text-lg font-semibold">${promedioTFG.toFixed(0)}</p></div>
+      <div class="panel"><p class="subtitulo">Adherencia media</p><p class="text-lg font-semibold">${adherencia.toFixed(1)}%</p></div>
+    </div>
+    <canvas id="graficoLabs" class="mt-4"></canvas>
+  </div>
 
-  if (tablaActual === "medicaciones") {
-    const m = registros.find(x => x.med_id === id);
-    titulo.textContent = `${m.principio_activo}`;
-    detalle.innerHTML = `
-      <p><b>Dosis:</b> ${m.dosis_diaria_mg} mg</p>
-      <p><b>Inicio:</b> ${m.inicio_tratamiento}</p>
-      <p><b>Adherencia:</b> ${m.adherencia}%</p>
-      <p><b>Control:</b> ${m.control_clinico}</p>
-      <p><b>Motivo de ajuste:</b> ${m.motivo_ajuste}</p>
-    `;
-  }
+  <div class="seccion border-t pt-3 mt-4">
+    <h3><i data-lucide='pill'></i> Medicaciones</h3>
+    ${meds.data?.length ? `
+      <table class="w-full text-sm mt-2">
+        <tr class="text-gray-500 text-xs border-b"><th class="text-left">Fármaco</th><th>Dosis</th><th>Inicio</th><th>Adherencia</th></tr>
+        ${meds.data.map(m=>`
+          <tr class="border-b"><td>${m.principio_activo}</td><td>${m.dosis_diaria_mg} mg</td><td>${m.inicio_tratamiento||'-'}</td><td>${m["adherencia_%"]||'-'}%</td></tr>`).join("")}
+      </table>
+    `:"<p>No hay medicaciones registradas.</p>"}
+  </div>
 
-  if (tablaActual === "notas_clinicas") {
-    const n = registros.find(x => x.note_id === id);
-    titulo.textContent = `Nota clínica — ${n.fecha_nota}`;
-    detalle.innerHTML = `
-      <textarea class="w-full border rounded-md p-2 text-sm" rows="6">${n.texto_nota}</textarea>
-      <p class="text-xs text-gray-400 mt-2">Última revisión: ${n.fecha_nota}</p>
-    `;
-  }
+  <div class="seccion border-t pt-3 mt-4">
+    <h3><i data-lucide='clipboard-heart'></i> Diagnósticos</h3>
+    ${diags.data?.length?diags.data.map(d=>`
+      <p class="text-sm">📋 ${d.nombre_diagnóstico} (${d.CIE10_code}) — ${d.estado||'-'}, ${d.gravedad||'-'}</p>`).join(""):"<p>No hay diagnósticos registrados.</p>"}
+  </div>
+
+  <div class="seccion border-t pt-3 mt-4">
+    <h3><i data-lucide='book-open-text'></i> Notas clínicas</h3>
+    ${notas.data?.length?notas.data.slice(-5).map(n=>`
+      <div class="border p-2 rounded-md mb-2 bg-gray-50">
+        <p class="text-xs text-gray-500">${n.fecha_nota}</p>
+        <p>${n.texto_nota}</p>
+      </div>`).join(""):"<p>No hay notas recientes.</p>"}
+  </div>
+  `;
+
+  lucide.createIcons();
+  if(labs.data?.length) renderGraficoLabs(labs.data);
 }
 
-cargarLista();
+function avg(arr){return arr.filter(x=>x).reduce((a,b)=>a+b,0)/(arr.filter(x=>x).length||1)}
+
+function renderGraficoLabs(data){
+  const ctx = document.getElementById("graficoLabs");
+  new Chart(ctx,{
+    type:"line",
+    data:{
+      labels:data.map(l=>l.fecha_prueba),
+      datasets:[
+        {label:"HbA1c", data:data.map(l=>l.HbA1c), borderColor:"#f97316", tension:0.3},
+        {label:"TFG", data:data.map(l=>l.TFG), borderColor:"#2563eb", tension:0.3, yAxisID:"y1"}
+      ]
+    },
+    options:{
+      responsive:true,
+      scales:{
+        y:{title:{display:true,text:"HbA1c (%)"}},
+        y1:{position:"right",title:{display:true,text:"TFG (ml/min)"}}
+      },
+      plugins:{legend:{position:"bottom"}}
+    }
+  });
+}
+
+cargarPacientes();
 </script>
 </body>
 </html>
