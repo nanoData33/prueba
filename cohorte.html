@@ -1,182 +1,248 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CohortIQ — Cohorte</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CohortIQ — Cohorte dinámica</title>
 
+<!-- Estilos -->
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
   :root {
     --verde: #3d7658;
-    --gris-fondo: #f8faf8;
+    --verde-claro: #4ba67d;
+    --gris-fondo: #f8f9f8;
   }
-  body { font-family: 'Inter', sans-serif; background: var(--gris-fondo); }
-  .card { background: white; border-radius: 0.8rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 1rem; }
-  .carousel { position: relative; overflow: hidden; height: 240px; }
-  .carousel-inner { display: flex; transition: transform 0.4s ease; }
-  .carousel-item { flex: 0 0 100%; display: flex; justify-content: center; align-items: center; }
-  .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: white; border-radius: 9999px; padding: 0.3rem 0.6rem; box-shadow: 0 2px 6px rgba(0,0,0,0.1); cursor: pointer; }
-  #btnPrev { left: 0.5rem; } #btnNext { right: 0.5rem; }
+  body {
+    background: var(--gris-fondo);
+    font-family: "Inter", sans-serif;
+  }
+  .card {
+    background: white;
+    border-radius: 0.8rem;
+    padding: 1.2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+  canvas {
+    width: 100% !important;
+    height: 200px !important;
+  }
+  .arrow {
+    position: absolute;
+    top: 45%;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  #prevChart { left: -15px; }
+  #nextChart { right: -15px; }
 </style>
 </head>
 
-<body>
-<header class="flex justify-between items-center px-8 py-4 bg-white border-b shadow-sm">
-  <div class="flex items-center gap-2 text-[var(--verde)] font-semibold">
-    <i data-lucide="activity"></i>
-    <h1 class="text-xl">CohortIQ</h1>
-    <span class="text-gray-500 text-sm">Cohorte dinámica</span>
+<body class="p-6">
+
+<!-- HEADER -->
+<header class="flex justify-between items-center mb-6">
+  <div class="flex items-center gap-2">
+    <i class="text-[var(--verde)] text-xl">📊</i>
+    <h1 class="text-2xl font-semibold text-[var(--verde)]">CohortIQ</h1>
+    <span class="text-gray-600 text-sm">Cohorte dinámica</span>
   </div>
-  <a href="explorar.html" class="text-sm text-[var(--verde)] hover:underline">← Volver al panel</a>
+  <a href="index.html" class="text-[var(--verde)] text-sm hover:underline">← Volver al panel</a>
 </header>
 
-<main class="p-6 space-y-6">
-  <!-- KPIs -->
-  <section class="grid grid-cols-2 md:grid-cols-4 gap-3">
-    <div class="card text-center"><h3 class="text-sm text-gray-500">Pacientes</h3><p id="kpiPacientes" class="text-xl font-semibold text-[var(--verde)]">--</p></div>
-    <div class="card text-center"><h3 class="text-sm text-gray-500">Edad media</h3><p id="kpiEdad" class="text-xl font-semibold text-[var(--verde)]">--</p></div>
-    <div class="card text-center"><h3 class="text-sm text-gray-500">% Controlados</h3><p id="kpiControl" class="text-xl font-semibold text-[var(--verde)]">--</p></div>
-    <div class="card text-center"><h3 class="text-sm text-gray-500">% Adherencia</h3><p id="kpiAdh" class="text-xl font-semibold text-[var(--verde)]">--</p></div>
-  </section>
+<!-- MÉTRICAS SUPERIORES -->
+<section class="grid grid-cols-4 gap-4 mb-6">
+  <div class="card text-center">
+    <h3 class="text-gray-500 text-sm">Pacientes</h3>
+    <p id="numPacientes" class="text-2xl font-semibold text-[var(--verde)]">-</p>
+  </div>
+  <div class="card text-center">
+    <h3 class="text-gray-500 text-sm">Edad media</h3>
+    <p id="edadMedia" class="text-2xl font-semibold text-[var(--verde)]">-</p>
+  </div>
+  <div class="card text-center">
+    <h3 class="text-gray-500 text-sm">% Controlados</h3>
+    <p id="controlados" class="text-2xl font-semibold text-[var(--verde)]">-</p>
+  </div>
+  <div class="card text-center">
+    <h3 class="text-gray-500 text-sm">% Adherencia</h3>
+    <p id="adherencia" class="text-2xl font-semibold text-[var(--verde)]">-</p>
+  </div>
+</section>
 
-  <!-- PANEL DOBLE -->
-  <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <!-- IZQUIERDA: Gráficos -->
-    <div class="card">
-      <h2 class="text-[var(--verde)] font-semibold mb-2">Indicadores clínicos</h2>
-      <div class="carousel">
-        <div id="carouselInner" class="carousel-inner">
-          <div class="carousel-item"><canvas id="grafHbA1c"></canvas></div>
-          <div class="carousel-item"><canvas id="grafTFG"></canvas></div>
-          <div class="carousel-item"><canvas id="grafIMC"></canvas></div>
-          <div class="carousel-item"><canvas id="grafFueraRango"></canvas></div>
-          <div class="carousel-item"><canvas id="grafPersonalizado"></canvas></div>
-        </div>
-        <div id="btnPrev" class="carousel-btn">◀</div>
-        <div id="btnNext" class="carousel-btn">▶</div>
-      </div>
-
-      <div class="mt-4 flex gap-2">
-        <input id="consultaTexto" placeholder="Ej: evolución del colesterol medio en 2025"
-          class="flex-1 p-2 border rounded-md text-sm">
-        <button onclick="enviarConsulta()" class="bg-[var(--verde)] text-white px-3 rounded-md text-sm hover:bg-green-700">Generar</button>
-      </div>
-      <p id="statusConsulta" class="text-xs text-gray-500 mt-1"></p>
+<!-- CONTENEDOR PRINCIPAL -->
+<section class="grid grid-cols-2 gap-6">
+  <!-- IZQUIERDA: GRÁFICOS -->
+  <div class="relative card">
+    <h3 class="font-semibold mb-2 text-[var(--verde)]">Indicadores clínicos</h3>
+    <div class="relative">
+      <canvas id="chartClinico"></canvas>
+      <div id="prevChart" class="arrow">‹</div>
+      <div id="nextChart" class="arrow">›</div>
     </div>
-
-    <!-- DERECHA: Medicaciones -->
-    <div class="card">
-      <h2 class="text-[var(--verde)] font-semibold mb-3">Medicaciones en la cohorte</h2>
-      <canvas id="grafMedicaciones" class="mb-4"></canvas>
-      <div id="detalleMedicaciones" class="text-sm text-gray-700 space-y-1">
-        <p><b>Top 1:</b> Furosemida (84 pacientes)</p>
-        <p><b>Top 2:</b> Enalapril (73 pacientes)</p>
-        <p><b>Top 3:</b> Metformina (68 pacientes)</p>
-        <hr>
-        <p class="text-gray-500 italic text-xs">Haz clic en una barra para ver detalles.</p>
-      </div>
+    <div class="mt-4 flex gap-2">
+      <input id="inputGrafico" placeholder="Ej: evolución del colesterol medio en 2025"
+             class="flex-1 border border-gray-300 rounded-md p-2 text-sm">
+      <button id="btnGenerar"
+              class="bg-[var(--verde)] text-white px-4 py-2 rounded-md hover:bg-[var(--verde-claro)] text-sm">
+        Generar
+      </button>
     </div>
-  </section>
-</main>
+  </div>
+
+  <!-- DERECHA: MEDICACIONES -->
+  <div class="card">
+    <h3 class="font-semibold mb-2 text-[var(--verde)]">Medicaciones en la cohorte</h3>
+    <canvas id="chartMed"></canvas>
+    <div id="detalleMed" class="mt-3 text-sm text-gray-600 italic"></div>
+  </div>
+</section>
+
+<!-- TABLA PACIENTES -->
+<section class="mt-8 card">
+  <h3 class="font-semibold mb-3 text-[var(--verde)]">Pacientes de la cohorte</h3>
+  <table class="min-w-full text-sm">
+    <thead>
+      <tr class="bg-gray-100 text-gray-600">
+        <th class="p-2 text-left">ID</th>
+        <th class="p-2 text-left">Nombre</th>
+        <th class="p-2 text-left">Edad</th>
+        <th class="p-2 text-left">IMC</th>
+        <th class="p-2 text-left">Diagnóstico</th>
+      </tr>
+    </thead>
+    <tbody id="tablaPacientes"></tbody>
+  </table>
+</section>
 
 <script>
 const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-// Carrusel
-let currentSlide = 0;
-function showSlide(index){
-  const total=document.querySelectorAll(".carousel-item").length;
-  if(index<0)index=total-1;
-  if(index>=total)index=0;
-  currentSlide=index;
-  document.getElementById("carouselInner").style.transform=`translateX(-${index*100}%)`;
-}
-document.getElementById("btnPrev").onclick=()=>showSlide(currentSlide-1);
-document.getElementById("btnNext").onclick=()=>showSlide(currentSlide+1);
+let charts = [];
+let chartIndex = 0;
+
+const cohortName = new URLSearchParams(window.location.search).get("nombre") || "Cohorte";
+
+document.title = `CohortIQ — ${cohortName}`;
+document.querySelector("h1 + span").textContent = cohortName;
 
 // Cargar datos
-async function cargarDatos(){
-  const { data: pacientes } = await supabase.from("pacientes").select("*");
-  const { data: meds } = await supabase.from("medicaciones").select("*");
+(async function init() {
+  const { data: pacientes } = await supabase.from("pacientes").select("*").limit(500);
+  const { data: labs } = await supabase.from("laboratorios").select("*").limit(1000);
+  const { data: meds } = await supabase.from("medicaciones").select("*").limit(1000);
 
-  document.getElementById("kpiPacientes").textContent = pacientes.length;
-  document.getElementById("kpiEdad").textContent = `${(pacientes.reduce((a,b)=>a+b.edad,0)/pacientes.length).toFixed(1)} años`;
-  document.getElementById("kpiControl").textContent = `${(Math.random()*30+60).toFixed(1)}%`;
-  document.getElementById("kpiAdh").textContent = `${(Math.random()*20+70).toFixed(1)}%`;
+  if (!pacientes?.length) return;
 
-  renderGraficos(pacientes);
-  renderMedicaciones(meds);
-}
+  // Resumen
+  document.getElementById("numPacientes").textContent = pacientes.length;
+  document.getElementById("edadMedia").textContent = (pacientes.reduce((a,b)=>a+(b.edad||0),0)/pacientes.length).toFixed(1) + " años";
+  document.getElementById("controlados").textContent = (60 + Math.random()*25).toFixed(1) + "%";
+  document.getElementById("adherencia").textContent = (70 + Math.random()*20).toFixed(1) + "%";
 
-function renderGraficos(p){
-  new Chart(document.getElementById("grafHbA1c"),{
-    type:"line",
-    data:{labels:p.map((_,i)=>i),datasets:[{data:p.map(()=>5+Math.random()*3),borderColor:"#3d7658"}]},
-    options:{plugins:{legend:{display:false}},scales:{y:{title:{text:"HbA1c",display:true}}}}
-  });
+  // Tabla pacientes
+  const tbody = document.getElementById("tablaPacientes");
+  tbody.innerHTML = pacientes.slice(0,100).map(p=>`
+    <tr class="border-b hover:bg-gray-50 cursor-pointer" onclick="window.open('explorar.html?id=${p.patient_id}')">
+      <td class="p-2">${p.patient_id}</td>
+      <td class="p-2">${p.nombre} ${p.apellido||""}</td>
+      <td class="p-2">${p.edad||"-"}</td>
+      <td class="p-2">${p.IMC?.toFixed(1)||"-"}</td>
+      <td class="p-2">${p.enfermedad_principal||"-"}</td>
+    </tr>
+  `).join("");
 
-  new Chart(document.getElementById("grafTFG"),{
-    type:"line",
-    data:{labels:p.map((_,i)=>i),datasets:[{data:p.map(()=>90+Math.random()*20),borderColor:"#4ba67d"}]},
-    options:{plugins:{legend:{display:false}},scales:{y:{title:{text:"TFG",display:true}}}}
-  });
-
-  new Chart(document.getElementById("grafIMC"),{
-    type:"bar",
-    data:{labels:["<20","20–25","25–30",">30"],datasets:[{data:[5,28,45,22],backgroundColor:"#3d7658"}]},
-    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}
-  });
-
-  new Chart(document.getElementById("grafFueraRango"),{
-    type:"scatter",
-    data:{datasets:[{data:p.slice(0,40).map(x=>({x:x.edad,y:x.IMC})),backgroundColor:"#e89f3d"}]},
-    options:{plugins:{legend:{display:false}},scales:{x:{title:{text:"Edad",display:true}},y:{title:{text:"IMC",display:true}}}}
-  });
-}
-
-function renderMedicaciones(meds){
-  const resumen = meds.reduce((acc,m)=>{
-    acc[m.principio_activo] = (acc[m.principio_activo]||0)+1;
-    return acc;
-  },{});
-  const labels = Object.keys(resumen).slice(0,8);
-  const values = Object.values(resumen).slice(0,8);
-
-  new Chart(document.getElementById("grafMedicaciones"),{
-    type:"bar",
-    data:{labels:labels,datasets:[{data:values,backgroundColor:"#4ba67d"}]},
-    options:{plugins:{legend:{display:false}},onClick:(evt,el)=>{
-      if(el.length>0){
-        const idx=el[0].index;
-        const med=labels[idx];
-        alert(`Detalles de ${med} — ${values[idx]} pacientes`);
+  // --- Gráficos clínicos ---
+  const chartCtx = document.getElementById("chartClinico").getContext("2d");
+  const indicadores = [
+    { label: "HbA1c", data: labs.map(l=>l.HbA1c).filter(Boolean), color: "#3d7658" },
+    { label: "TFG", data: labs.map(l=>l.TFG).filter(Boolean), color: "#4ba67d" },
+    { label: "IMC", data: pacientes.map(p=>p.IMC).filter(Boolean), color: "#e0a700" },
+    { label: "Colesterol", data: labs.map(l=>l.colesterol_total).filter(Boolean), color: "#b74f4f" }
+  ];
+  indicadores.forEach(ind => {
+    charts.push(new Chart(chartCtx, {
+      type: "line",
+      data: {
+        labels: ind.data.map((_,i)=>i+1),
+        datasets: [{
+          label: ind.label,
+          data: ind.data,
+          borderColor: ind.color,
+          borderWidth: 1.5,
+          pointRadius: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: true, labels: { color: "#3d7658" } } },
+        scales: { x: { display: false }, y: { ticks: { color: "#3d7658" } } }
       }
-    }}
+    }));
   });
-}
+  charts.forEach((c,i)=>i>0 && c.canvas.parentNode.classList.add("hidden"));
 
-function enviarConsulta(){
-  const texto=document.getElementById("consultaTexto").value.trim();
-  if(!texto)return;
-  document.getElementById("statusConsulta").textContent="Procesando consulta...";
-  setTimeout(()=>{
-    new Chart(document.getElementById("grafPersonalizado"),{
-      type:"line",
-      data:{labels:["Ene","Feb","Mar","Abr"],datasets:[{data:[4,6,5,7],borderColor:"#3d7658"}]},
-      options:{plugins:{legend:{display:false}}}
+  document.getElementById("nextChart").onclick = () => changeChart(1);
+  document.getElementById("prevChart").onclick = () => changeChart(-1);
+
+  function changeChart(dir) {
+    charts[chartIndex].canvas.parentNode.classList.add("hidden");
+    chartIndex = (chartIndex + dir + charts.length) % charts.length;
+    charts[chartIndex].canvas.parentNode.classList.remove("hidden");
+  }
+
+  // --- Medicaciones ---
+  const ctxMed = document.getElementById("chartMed").getContext("2d");
+  const medsAgrupadas = {};
+  meds.forEach(m=>{
+    if(!m.principio_activo) return;
+    medsAgrupadas[m.principio_activo] = (medsAgrupadas[m.principio_activo]||0)+1;
+  });
+  const labels = Object.keys(medsAgrupadas);
+  const dataVals = Object.values(medsAgrupadas);
+  const chartMed = new Chart(ctxMed, {
+    type: "bar",
+    data: { labels, datasets: [{ label: "Pacientes", data: dataVals, backgroundColor: "#3d7658" }] },
+    options: {
+      onClick: (_, elements) => {
+        if (elements.length) {
+          const i = elements[0].index;
+          const med = labels[i];
+          const dosis = (meds.filter(m=>m.principio_activo===med).reduce((a,b)=>a+(b.dosis_diaria_mg||0),0)/medsAgrupadas[med]).toFixed(1);
+          document.getElementById("detalleMed").innerHTML = `<b>${med}</b>: dosis media ${dosis} mg/día, ${medsAgrupadas[med]} pacientes activos.`;
+        }
+      },
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: "#3d7658" } }, y: { ticks: { color: "#3d7658" } } }
+    }
+  });
+
+  // --- Campo gráfico personalizado (POST preparado) ---
+  document.getElementById("btnGenerar").onclick = async () => {
+    const prompt = document.getElementById("inputGrafico").value;
+    if (!prompt.trim()) return;
+    console.log("→ Enviar petición POST a webhook con prompt:", prompt);
+    await fetch("https://webhook-placeholder.com", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cohort: cohortName, prompt })
     });
-    document.getElementById("statusConsulta").textContent="Gráfico personalizado generado.";
-    showSlide(4);
-  },1200);
-}
+    alert("Tu solicitud de gráfico ha sido enviada.");
+  };
 
-cargarDatos();
+})();
 </script>
 </body>
 </html>
