@@ -210,20 +210,51 @@ function nextGrafico(){
   renderGraficoCohorte(window.pacientes, metricas[indexGrafico]);
 }
 function abrirPaciente(id){ window.location.href = `explorar.html?paciente=${id}`; }
-function generarGraficoPersonalizado(){
-  const query = document.getElementById("inputGrafico").value.trim();
-  if(!query) return;
-    fetch("https://nano33.app.n8n.cloud/webhook-test/grafico-cohorte", {
+async function pedirGraficoPersonalizado() {
+  const consulta = document.getElementById("inputConsultaGrafico").value;
+
+  // tablas y columnas disponibles
+  const columnas = {
+    pacientes: ["edad", "sexo", "IMC", "enfermedad_principal"],
+    laboratorios: ["fecha_prueba", "HbA1c", "TFG", "colesterol_total"],
+    medicaciones: ["principio_activo", "dosis_diaria_mg", "adherencia", "inicio_tratamiento", "fin_tratamiento"]
+  };
+
+  const res = await fetch("https://nano33.app.n8n.cloud/webhook-test/grafico-cohorte", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      query: "evolución de HbA1c promedio en los últimos 6 meses por grupo de edad"
+      query: consulta,
+      columns: JSON.stringify(columnas)
     })
-  })
-  .then(r => r.json())
-  .then(data => console.log(data));
+  });
 
-  console.log("Enviar descripción de gráfico:", query);
+  const data = await res.json();
+
+  // mostrar el resultado en consola o graficar
+  console.log("📊 SQL generada:", data.sql);
+  console.table(data.rows);
+
+  // Ejemplo de representación con Chart.js
+  const ctx = document.getElementById("graficoPersonalizado").getContext("2d");
+  new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: data.rows.map(r => r[0]),
+      datasets: [{
+        label: data.columns[1],
+        data: data.rows.map(r => r[1]),
+        borderColor: "#3d7658",
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+}
+
 }
 </script>
 </body>
