@@ -3,80 +3,141 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Explorador Clínico</title>
+<title>CohortIQ — Explorador Clínico</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 
 <style>
-  body { font-family:"Inter",sans-serif; background:#f6f5f3; color:#1f1f1f; }
-  header { background:#1c1c1b; color:white; padding:1rem 2rem; display:flex; justify-content:space-between; align-items:center; }
-  .tab { cursor:pointer; padding:0.8rem 1.2rem; border-bottom:3px solid transparent; font-weight:500; transition:0.2s; }
-  .tab.active { border-color:#4a8c3f; color:#4a8c3f; font-weight:600; }
-  .card { background:white; border-radius:0.8rem; padding:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.06); transition:transform .15s; }
-  .card:hover { transform:translateY(-2px); }
-  .row:hover { background-color:#f7f7f7; cursor:pointer; }
-  .btn { background:#4a8c3f; color:white; padding:0.5rem 1rem; border-radius:0.4rem; font-weight:500; }
-  .btn:hover { background:#3b7133; }
+  :root {
+    --verde: #3d7658;
+    --verde-claro: #4ba67d;
+    --gris-fondo: #f8f9f8;
+  }
+
+  body {
+    font-family: "Inter", sans-serif;
+    background-color: var(--gris-fondo);
+  }
+
+  header {
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  .tab {
+    cursor: pointer;
+    padding: 0.8rem 1.4rem;
+    border-bottom: 3px solid transparent;
+    font-weight: 500;
+    transition: 0.25s;
+  }
+
+  .tab.active {
+    border-color: var(--verde);
+    color: var(--verde);
+    font-weight: 600;
+  }
+
+  .card {
+    background: white;
+    border-radius: 0.8rem;
+    padding: 1.2rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    transition: all 0.25s;
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+  }
+
+  .btn {
+    background: var(--verde);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.4rem;
+    font-weight: 500;
+    transition: 0.2s;
+  }
+
+  .btn:hover {
+    background: var(--verde-claro);
+  }
+
+  .row:hover {
+    background-color: #f3f4f6;
+  }
+
+  .stat {
+    background: white;
+    border-radius: 0.8rem;
+    padding: 1rem 1.4rem;
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
 </style>
 </head>
 
 <body>
   <!-- HEADER -->
-  <header>
+  <header class="flex justify-between items-center px-8 py-4">
     <div class="flex items-center gap-2">
-      <i data-lucide="activity" class="text-lime-400"></i>
-      <h1 class="text-xl font-semibold">Explorador Clínico</h1>
+      <i data-lucide="activity" class="text-[var(--verde)]"></i>
+      <h1 class="text-xl font-semibold text-[var(--verde)]">CohortIQ</h1>
+      <span class="text-gray-500 text-sm">Explorador Clínico</span>
     </div>
-    <a href="index.html" class="text-sm underline text-lime-400 hover:text-lime-500">Volver al Panel</a>
+    <a href="index.html" class="text-sm text-[var(--verde)] hover:underline">← Volver al Panel</a>
   </header>
 
   <!-- PESTAÑAS -->
-  <div class="flex border-b px-6 bg-white sticky top-0 z-10">
+  <div class="flex border-b bg-white sticky top-0 z-10">
     <div class="tab active" onclick="cambiarTabla('pacientes')">Pacientes</div>
     <div class="tab" onclick="cambiarTabla('laboratorios')">Laboratorios</div>
     <div class="tab" onclick="cambiarTabla('medicaciones')">Medicaciones</div>
     <div class="tab" onclick="cambiarTabla('notas_clinicas')">Notas Clínicas</div>
   </div>
 
-  <main class="grid grid-cols-1 lg:grid-cols-3 gap-8 p-8">
-    <!-- COLUMNA IZQUIERDA -->
+  <main class="p-8 grid grid-cols-1 xl:grid-cols-3 gap-8">
+    <!-- FILTROS + LISTA -->
     <section class="col-span-1">
-      <div class="flex justify-between mb-3 items-center">
-        <input id="buscador" placeholder="Buscar..." oninput="filtrar()" class="w-full p-2 border border-stone-300 rounded-md">
-        <button class="btn ml-2" onclick="abrirFormulario()">+ Añadir</button>
+      <div class="card mb-4">
+        <h2 class="font-semibold text-[var(--verde)] mb-3 flex items-center gap-2">
+          <i data-lucide="filter"></i> Filtros rápidos
+        </h2>
+        <div class="flex flex-col gap-3">
+          <input id="buscador" placeholder="Buscar paciente, diagnóstico..." oninput="filtrar()"
+            class="w-full p-2 border border-gray-300 rounded-md">
+          <div id="filtroRangoEdad" class="hidden flex gap-2">
+            <input id="edadMin" type="number" placeholder="Edad mínima" class="w-1/2 border p-2 rounded-md" oninput="filtrar()">
+            <input id="edadMax" type="number" placeholder="Edad máxima" class="w-1/2 border p-2 rounded-md" oninput="filtrar()">
+          </div>
+          <div id="filtroFecha" class="hidden flex gap-2">
+            <input id="fechaInicio" type="date" class="border p-2 rounded-md w-1/2" onchange="filtrarNotas()">
+            <input id="fechaFin" type="date" class="border p-2 rounded-md w-1/2" onchange="filtrarNotas()">
+          </div>
+        </div>
       </div>
 
-      <div id="filtrosFecha" class="hidden mb-3 flex gap-2">
-        <input type="date" id="fechaInicio" class="border border-stone-300 rounded-md p-1 w-full" onchange="filtrarNotas()">
-        <input type="date" id="fechaFin" class="border border-stone-300 rounded-md p-1 w-full" onchange="filtrarNotas()">
-      </div>
-
-      <div id="lista" class="bg-white rounded-md shadow divide-y overflow-y-auto" style="max-height:75vh;"></div>
+      <div id="lista" class="bg-white rounded-md shadow divide-y overflow-y-auto" style="max-height:70vh;"></div>
     </section>
 
-    <!-- COLUMNA DERECHA -->
+    <!-- DETALLE Y ESTADÍSTICAS -->
     <section class="col-span-2">
+      <div id="estadisticas" class="grid grid-cols-3 gap-4 mb-5 hidden"></div>
+
       <div id="detalle" class="hidden card">
-        <h2 class="text-xl font-semibold mb-3" id="tituloDetalle"></h2>
-        <div id="contenidoDetalle" class="text-sm text-stone-700"></div>
+        <h2 class="text-xl font-semibold mb-2" id="tituloDetalle"></h2>
+        <div id="contenidoDetalle" class="text-sm text-gray-700"></div>
       </div>
-      <div id="sinSeleccion" class="text-stone-500 italic text-center mt-20">
-        Selecciona un registro para ver más detalles
+
+      <div id="sinSeleccion" class="text-gray-400 italic text-center mt-20">
+        Selecciona un registro o aplica filtros para comenzar la exploración
       </div>
     </section>
   </main>
-
-  <!-- MODAL FORMULARIO -->
-  <div id="modal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center">
-    <div class="bg-white rounded-lg shadow-lg w-96 p-6 relative">
-      <button onclick="cerrarModal()" class="absolute top-2 right-3 text-stone-400 hover:text-stone-700">✖</button>
-      <h3 id="tituloForm" class="text-lg font-semibold mb-4"></h3>
-      <form id="formulario" class="flex flex-col gap-3"></form>
-      <button onclick="guardarNuevo()" class="btn w-full mt-4">Guardar</button>
-    </div>
-  </div>
 
   <script>
   lucide.createIcons();
@@ -88,90 +149,81 @@
   let tablaActual = "pacientes";
   let registros = [];
 
-  // -------- CAMBIO DE TABLA ----------
   async function cambiarTabla(nombre) {
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
     document.querySelector(`.tab[onclick="cambiarTabla('${nombre}')"]`).classList.add("active");
     tablaActual = nombre;
-    document.getElementById("buscador").value = "";
+    document.getElementById("filtroRangoEdad").classList.toggle("hidden", nombre !== "pacientes");
+    document.getElementById("filtroFecha").classList.toggle("hidden", nombre !== "notas_clinicas");
     document.getElementById("detalle").classList.add("hidden");
+    document.getElementById("estadisticas").classList.add("hidden");
     document.getElementById("sinSeleccion").classList.remove("hidden");
-    document.getElementById("filtrosFecha").classList.toggle("hidden", nombre !== "notas_clinicas");
     cargarLista();
   }
 
-  // -------- CARGAR DATOS ----------
   async function cargarLista() {
     const cont = document.getElementById("lista");
-    cont.innerHTML = "<p class='p-4 text-stone-500 italic'>Cargando...</p>";
-
+    cont.innerHTML = "<p class='p-4 text-gray-400 italic'>Cargando...</p>";
     const { data, error } = await supabase.from(tablaActual).select("*");
-    if (error) {
-      cont.innerHTML = "<p class='p-4 text-red-600'>Error al cargar datos.</p>";
-      console.error(error);
-      return;
-    }
+    if (error) { cont.innerHTML = "<p class='p-4 text-red-600'>Error al cargar datos.</p>"; return; }
     registros = data;
-
-    if (tablaActual === "medicaciones") {
-      const agrupado = {};
-      for (const r of data) {
-        const key = r.principio_activo || "Sin nombre";
-        if (!agrupado[key]) agrupado[key] = [];
-        agrupado[key].push(r);
-      }
-      registros = Object.entries(agrupado).map(([med, pacientes]) => ({ nombre: med, pacientes }));
-    }
-
     renderLista(registros);
   }
 
-  // -------- RENDER LISTA ----------
   function renderLista(lista) {
     const cont = document.getElementById("lista");
     if (!lista.length) {
-      cont.innerHTML = "<p class='p-4 text-stone-500 italic'>No hay registros.</p>";
+      cont.innerHTML = "<p class='p-4 text-gray-400 italic'>No hay registros.</p>";
       return;
     }
 
     if (tablaActual === "pacientes") {
       cont.innerHTML = lista.map(p => `
-        <div class="row p-4" onclick="mostrarDetalle('${p.patient_id}')">
+        <div class="row p-4 border-b" onclick="mostrarDetalle('${p.patient_id}')">
           <p class="font-medium">${p.nombre} ${p.apellido || ""}</p>
-          <p class="text-xs text-stone-500">${p.edad || "-"} años • ${p.enfermedad_principal || "Sin diagnóstico"}</p>
+          <p class="text-xs text-gray-500">${p.edad || "-"} años • ${p.enfermedad_principal || "Sin diagnóstico"}</p>
         </div>`).join("");
     }
 
     if (tablaActual === "laboratorios") {
       cont.innerHTML = lista.map(l => `
-        <div class="row p-4" onclick="mostrarDetalle('${l.lab_id}')">
+        <div class="row p-4 border-b" onclick="mostrarDetalle('${l.lab_id}')">
           <p class="font-medium">${l.fecha_prueba}</p>
-          <p class="text-xs text-stone-500">HbA1c: ${l.HbA1c || "-"} | TFG: ${l.TFG || "-"}</p>
+          <p class="text-xs text-gray-500">HbA1c: ${l.HbA1c || "-"} • TFG: ${l.TFG || "-"}</p>
         </div>`).join("");
     }
 
     if (tablaActual === "medicaciones") {
-      cont.innerHTML = lista.map(m => `
-        <div class="row p-4" onclick="mostrarDetalle('${m.nombre}')">
-          <p class="font-medium">${m.nombre}</p>
-          <p class="text-xs text-stone-500">${m.pacientes.length} pacientes</p>
+      const agrupadas = {};
+      lista.forEach(m => {
+        const med = m.principio_activo || "Desconocido";
+        if (!agrupadas[med]) agrupadas[med] = [];
+        agrupadas[med].push(m);
+      });
+      cont.innerHTML = Object.entries(agrupadas).map(([med, arr]) => `
+        <div class="row p-4 border-b" onclick="mostrarDetalle('${med}')">
+          <p class="font-medium">${med}</p>
+          <p class="text-xs text-gray-500">${arr.length} pacientes</p>
         </div>`).join("");
     }
 
     if (tablaActual === "notas_clinicas") {
-      const ordenadas = lista.sort((a,b)=> new Date(b.fecha_nota) - new Date(a.fecha_nota));
-      cont.innerHTML = ordenadas.map(n => `
-        <div class="row p-4" onclick="mostrarDetalle('${n.note_id}')">
+      cont.innerHTML = lista.sort((a,b)=>new Date(b.fecha_nota)-new Date(a.fecha_nota))
+        .map(n => `
+        <div class="row p-4 border-b" onclick="mostrarDetalle('${n.note_id}')">
           <p class="font-medium">${n.fecha_nota}</p>
-          <p class="text-xs text-stone-500">${(n.texto_nota || "").slice(0,60)}...</p>
+          <p class="text-xs text-gray-500">${(n.texto_nota||"").slice(0,60)}...</p>
         </div>`).join("");
     }
   }
 
-  // -------- FILTROS ----------
   function filtrar() {
     const q = document.getElementById("buscador").value.toLowerCase();
-    renderLista(registros.filter(r => JSON.stringify(r).toLowerCase().includes(q)));
+    const edadMin = +document.getElementById("edadMin")?.value || 0;
+    const edadMax = +document.getElementById("edadMax")?.value || 150;
+    let filtrados = registros.filter(r => JSON.stringify(r).toLowerCase().includes(q));
+    if (tablaActual === "pacientes") filtrados = filtrados.filter(p => p.edad >= edadMin && p.edad <= edadMax);
+    renderLista(filtrados);
   }
 
   function filtrarNotas() {
@@ -184,99 +236,60 @@
     renderLista(filtradas);
   }
 
-  // -------- MOSTRAR DETALLE ----------
   async function mostrarDetalle(id) {
-    const detalle = document.getElementById("detalle");
-    const sinSel = document.getElementById("sinSeleccion");
-    detalle.classList.remove("hidden");
-    sinSel.classList.add("hidden");
-    const cont = document.getElementById("contenidoDetalle");
+    document.getElementById("detalle").classList.remove("hidden");
+    document.getElementById("sinSeleccion").classList.add("hidden");
 
-    // PACIENTE: mostrar toda su info asociada
+    const detalle = document.getElementById("contenidoDetalle");
+    const titulo = document.getElementById("tituloDetalle");
+    const stats = document.getElementById("estadisticas");
+
     if (tablaActual === "pacientes") {
       const p = registros.find(x => x.patient_id === id);
-      document.getElementById("tituloDetalle").textContent = `${p.nombre} ${p.apellido}`;
-      const [labs, notas, meds] = await Promise.all([
+      titulo.textContent = `${p.nombre} ${p.apellido}`;
+      const [labs, meds] = await Promise.all([
         supabase.from("laboratorios").select("*").eq("patient_id", id),
-        supabase.from("notas_clinicas").select("*").eq("patient_id", id),
         supabase.from("medicaciones").select("*").eq("patient_id", id)
       ]);
-
-      cont.innerHTML = `
-        <div class="mb-4">
-          <p><b>Edad:</b> ${p.edad}</p>
-          <p><b>Sexo:</b> ${p.sexo}</p>
-          <p><b>IMC:</b> ${p.IMC}</p>
-          <p><b>Actividad física:</b> ${p.actividad_física}</p>
-        </div>
-        <div class="mb-4"><h3 class="font-semibold text-stone-700 mb-2">Laboratorios recientes</h3>
-          ${labs.data?.slice(0,3).map(l => `<p>📅 ${l.fecha_prueba} — HbA1c: ${l.HbA1c}, TFG: ${l.TFG}</p>`).join("") || "<p>No hay datos</p>"}
-        </div>
-        <div class="mb-4"><h3 class="font-semibold text-stone-700 mb-2">Medicaciones activas</h3>
-          ${meds.data?.map(m => `<p>${m.principio_activo} (${m.dosis_diaria_mg} mg/día)</p>`).join("") || "<p>No hay tratamientos</p>"}
-        </div>
-        <div><h3 class="font-semibold text-stone-700 mb-2">Notas clínicas</h3>
-          ${notas.data?.map(n => `<p><i>${n.fecha_nota}:</i> ${n.texto_nota}</p>`).join("") || "<p>Sin notas</p>"}
-        </div>`;
+      detalle.innerHTML = `
+        <p><b>Edad:</b> ${p.edad} años</p>
+        <p><b>Sexo:</b> ${p.sexo}</p>
+        <p><b>IMC:</b> ${p.IMC}</p>
+        <p><b>Diagnóstico principal:</b> ${p.enfermedad_principal}</p>
+        <hr class="my-3">
+        <h3 class="font-semibold text-[var(--verde)] mb-2">Últimas pruebas</h3>
+        ${labs.data?.slice(0,3).map(l => `<p>${l.fecha_prueba}: HbA1c ${l.HbA1c}, TFG ${l.TFG}</p>`).join("") || "<p>No hay datos</p>"}
+        <hr class="my-3">
+        <h3 class="font-semibold text-[var(--verde)] mb-2">Tratamientos activos</h3>
+        ${meds.data?.map(m => `<p>${m.principio_activo} (${m.dosis_diaria_mg} mg)</p>`).join("") || "<p>Sin medicaciones</p>"}
+      `;
     }
 
     if (tablaActual === "laboratorios") {
-      const r = registros.find(l => l.lab_id === id);
-      document.getElementById("tituloDetalle").textContent = "Resultados de Laboratorio";
-      cont.innerHTML = Object.entries(r).map(([k,v]) =>
-        `<p><b>${k.replaceAll("_"," ")}:</b> ${v ?? "-"}</p>`).join("");
+      const lista = registros;
+      const mediaHb = (lista.reduce((a,b)=>a+(+b.HbA1c||0),0)/lista.length).toFixed(2);
+      const mediaTFG = (lista.reduce((a,b)=>a+(+b.TFG||0),0)/lista.length).toFixed(1);
+      stats.innerHTML = `
+        <div class="stat"><h4 class="text-sm text-gray-500">Media HbA1c</h4><p class="text-lg font-semibold text-[var(--verde)]">${mediaHb}</p></div>
+        <div class="stat"><h4 class="text-sm text-gray-500">Media TFG</h4><p class="text-lg font-semibold text-[var(--verde)]">${mediaTFG}</p></div>
+        <div class="stat"><h4 class="text-sm text-gray-500">Pruebas totales</h4><p class="text-lg font-semibold text-[var(--verde)]">${lista.length}</p></div>`;
+      stats.classList.remove("hidden");
+      titulo.textContent = "Resumen de Laboratorios";
+      detalle.innerHTML = lista.slice(0,10).map(l => `
+        <p>📅 ${l.fecha_prueba} — HbA1c: ${l.HbA1c}, TFG: ${l.TFG}</p>`).join("");
     }
 
     if (tablaActual === "medicaciones") {
-      const m = registros.find(x => x.nombre === id);
-      document.getElementById("tituloDetalle").textContent = `Pacientes con ${m.nombre}`;
-      cont.innerHTML = m.pacientes.map(p =>
-        `<p>${p.patient_id} — ${p.dosis_diaria_mg} mg/día (${p.adherencia_% || "-"}%)</p>`).join("");
+      const grupo = registros.filter(m => m.principio_activo === id);
+      titulo.textContent = `Pacientes tratados con ${id}`;
+      detalle.innerHTML = grupo.map(p => `<p>${p.patient_id} — ${p.dosis_diaria_mg} mg/día</p>`).join("");
     }
 
     if (tablaActual === "notas_clinicas") {
       const n = registros.find(x => x.note_id === id);
-      document.getElementById("tituloDetalle").textContent = `Nota Clínica - ${n.fecha_nota}`;
-      cont.innerHTML = `<p>${n.texto_nota}</p>`;
+      titulo.textContent = `Nota clínica - ${n.fecha_nota}`;
+      detalle.innerHTML = `<p>${n.texto_nota}</p>`;
     }
-  }
-
-  // -------- FORMULARIO AÑADIR ----------
-  function abrirFormulario() {
-    const modal = document.getElementById("modal");
-    modal.classList.remove("hidden");
-    document.getElementById("tituloForm").textContent = `Nuevo registro (${tablaActual})`;
-
-    const form = document.getElementById("formulario");
-    form.innerHTML = "";
-
-    if (tablaActual === "notas_clinicas") {
-      form.innerHTML = `
-        <input id="patient_id" placeholder="ID Paciente" class="border p-2 rounded-md">
-        <input id="fecha_nota" type="date" class="border p-2 rounded-md">
-        <textarea id="texto_nota" placeholder="Texto de la nota..." class="border p-2 rounded-md"></textarea>`;
-    } else if (tablaActual === "laboratorios") {
-      form.innerHTML = `
-        <input id="patient_id" placeholder="ID Paciente" class="border p-2 rounded-md">
-        <input id="fecha_prueba" type="date" class="border p-2 rounded-md">
-        <input id="HbA1c" placeholder="HbA1c" class="border p-2 rounded-md">
-        <input id="TFG" placeholder="TFG" class="border p-2 rounded-md">`;
-    } else if (tablaActual === "medicaciones") {
-      form.innerHTML = `
-        <input id="patient_id" placeholder="ID Paciente" class="border p-2 rounded-md">
-        <input id="principio_activo" placeholder="Principio activo" class="border p-2 rounded-md">
-        <input id="dosis_diaria_mg" placeholder="Dosis (mg)" class="border p-2 rounded-md">`;
-    }
-  }
-
-  function cerrarModal(){ document.getElementById("modal").classList.add("hidden"); }
-
-  async function guardarNuevo(){
-    const form = document.getElementById("formulario");
-    const campos = Array.from(form.querySelectorAll("input,textarea")).reduce((acc,e)=>{acc[e.id]=e.value;return acc;}, {});
-    const { error } = await supabase.from(tablaActual).insert([campos]);
-    if (error) alert("Error al guardar");
-    else { cerrarModal(); cargarLista(); }
   }
 
   cargarLista();
