@@ -83,7 +83,6 @@ pre.debug{background:#222;color:#e3e3e3;padding:10px;border-radius:8px;overflow:
 <script>
 lucide.createIcons();
 
-// Endpoints n8n y Supabase (tus claves)
 const webhookText   = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
 const webhookGraf   = "https://rubaseval.app.n8n.cloud/webhook-test/grafico";
 const webhookData   = "https://rubaseval.app.n8n.cloud/webhook-test/dataset";
@@ -91,14 +90,16 @@ const supabaseUrl   = "https://tmolxeszsgkffurhrcxy.supabase.co";
 const supabaseKey   = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
 const supabase      = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-// Estado
-let ultimaConsultaSQL = "";
 let chartInstance = null;
+let ultimaConsultaSQL = "";
+let ultimaConsulta = "";
+let ultimaX = "";
+let ultimaY = "";
 
-// Almacén de trabajos de gráfico para no meter SQL en el DOM
-const chartJobs = new Map(); // id -> { sql, x, y, consulta }
+document.getElementById("sendBtn").addEventListener("click", sendText);
+document.getElementById("userInput").addEventListener("keydown", e => { if (e.key === "Enter") sendText(); });
+document.getElementById("closeModal").addEventListener("click", () => document.getElementById("chartModal").style.display = "none");
 
-// Utilidades
 function appendMessage(sender, text, html=false){
   const msg = document.createElement("div");
   msg.className = "msg " + sender;
@@ -107,18 +108,7 @@ function appendMessage(sender, text, html=false){
   box.appendChild(msg);
   box.scrollTop = box.scrollHeight;
 }
-function debugBlock(title, obj){
-  const pretty = JSON.stringify(obj, null, 2);
-  appendMessage("bot", `<div><strong>${title}</strong></div><pre class="debug">${pretty}</pre>`, true);
-  console.log(title, obj);
-}
 
-// Eventos
-document.getElementById("sendBtn").addEventListener("click", sendText);
-document.getElementById("userInput").addEventListener("keydown", e => { if (e.key === "Enter") sendText(); });
-document.getElementById("closeModal").addEventListener("click", () => document.getElementById("chartModal").style.display = "none");
-
-// Flujo chat → n8n
 async function sendText(){
   const input = document.getElementById("userInput");
   const text  = input.value.trim();
@@ -128,46 +118,33 @@ async function sendText(){
   appendMessage("bot", "Procesando...");
 
   try{
-    const payload = { type:"text", content:text };
-    console.log("POST -> webhookText", payload);
-    const res  = await fetch(webhookText, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
+    const res  = await fetch(webhookText, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type:"text", content:text })
+    });
     const data = await res.json();
-    document.querySelector(".msg.bot:last-child")?.remove();
+    document.querySelector(".msg.bot:last-child").remove();
 
-    // Si recibimos tabla en markdown (con pipes), la renderizamos
-    if (typeof data.respuesta === "string" && data.respuesta.includes("|")){
+    if (data.respuesta && data.respuesta.includes("|")){
       renderMarkdownTable(data.respuesta);
       ultimaConsultaSQL = data.sql || "";
-      if (data.recomendacion){
-        renderChartButtonsInChat({
-          sql: data.sql || "",
-          recType: data.recomendacion,
-          x: data.x || "",
-          y: data.y || "",
-          consulta: data.consulta || ""
-        });
-      }
+      ultimaConsulta    = data.consulta || "";
+      ultimaX           = data.x || "";
+      ultimaY           = data.y || "";
+      renderChartButtonsInChat();
     } else {
-      // No es tabla ⇒ mostramos todo para depurar
-      debugBlock("Respuesta agente (no-tabla)", data);
-      if (data.sql || data.chart_type || data.x || data.y){
-        // Si por casualidad ya viene un pedido de gráfico directo:
-        renderChartFromSQL(data.sql, data.chart_type, data.x, data.y);
-      } else if (data.respuesta){
-        appendMessage("bot", data.respuesta);
-      }
+      appendMessage("bot", data.respuesta || "Sin respuesta del agente.");
     }
   }catch(err){
-    appendMessage("bot", "Error de conexión con el agente.");
-    console.error(err);
+    appendMessage("bot","Error de conexión con el agente.");
   }
 }
 
-// Tabla markdown + botón dataset
 function renderMarkdownTable(text){
-  const lines   = text.trim().split("\n").filter(l => l.includes("|"));
+  const lines = text.trim().split("\n").filter(l => l.includes("|"));
   const headers = lines[0].split("|").map(h => h.trim()).filter(Boolean);
-  const rows    = lines.slice(2).map(l => l.split("|").map(c => c.trim()).filter(Boolean));
+  const rows = lines.slice(2).map(l => l.split("|").map(c => c.trim()).filter(Boolean));
 
   let html = "<table><thead><tr>";
   headers.forEach(h => html += `<th>${h}</th>`);
@@ -175,194 +152,106 @@ function renderMarkdownTable(text){
   rows.forEach(r => html += "<tr>" + r.map(c => `<td>${c}</td>`).join("") + "</tr>");
   html += "</tbody></table>";
   html += `<button id="verDatasetBtn">Ver resultado completo</button>`;
-  const cont = document.getElementById("tablaContainer");
-  cont.innerHTML = html;
+
+  document.getElementById("tablaContainer").innerHTML = html;
   document.getElementById("verDatasetBtn").addEventListener("click", enviarDataset);
 }
 
-// Botones de gráfico
-function renderChartButtonsInChat({ sql, recType, x, y, consulta }){
+function renderChartButtonsInChat(){
   const tipos = ["bar","line","scatter","pie","histogram"];
-  const clean = (recType || "bar").replace(/[()]/g,"").trim();
+  let html = `<p><strong>El agente sugiere:</strong> prueba distintos tipos de gráfico.</p><div class="btn-group">`;
 
-  // Guardamos el trabajo con id
-  const jobId = String(Date.now()) + "_" + Math.random().toString(36).slice(2,8);
-  chartJobs.set(jobId, { sql, x, y, consulta });
-
-  let html = `<p><strong>El agente sugiere:</strong> gráfico <strong>${clean}</strong>. Otros tipos:</p><div class="btn-group">`;
-  tipos.forEach(t => {
-    const cls = t===clean ? "btn-rec" : "btn-alt";
-    html += `<button class="btn-chart ${cls}" data-id="${jobId}" data-tipo="${t}">${t}</button>`;
+  tipos.forEach(t=>{
+    html += `<button class="btn-chart btn-alt" data-tipo="${t}">${t}</button>`;
   });
   html += "</div>";
 
   appendMessage("bot", html, true);
-
-  // Listeners
-  document.querySelectorAll(`.btn-chart[data-id="${jobId}"]`).forEach(btn => {
-    btn.addEventListener("click", () => enviarDecisionYGraficar(btn));
-  });
+  document.querySelectorAll(".btn-chart").forEach(btn => btn.addEventListener("click", ()=> manejarGrafico(btn.dataset.tipo)));
 }
 
-// Enviar a n8n (consulta/sql/decision) y graficar con la SQL completa
-async function enviarDecisionYGraficar(btn){
-  const tipo  = btn.dataset.tipo;
-  const jobId = btn.dataset.id;
-  const job   = chartJobs.get(jobId); // { sql, x, y, consulta }
-
-  if (!job || !job.sql){
-    appendMessage("bot", "No hay SQL disponible para graficar.");
-    return;
-  }
-
-  const outbound = { consulta: job.consulta || "Consulta del usuario", sql: job.sql, decision: tipo };
-  debugBlock("POST -> webhookGraf (payload)", outbound);
+async function manejarGrafico(tipo){
+  appendMessage("bot", `Enviando decisión '${tipo}' al agente...`);
 
   try{
-    const resp = await fetch(webhookGraf, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(outbound) });
-    let ack = null;
-    try { ack = await resp.json(); } catch { ack = { status: resp.status, ok: resp.ok }; }
-    debugBlock("ACK webhookGraf", ack);
-    appendMessage("bot", `Decisión '${tipo}' enviada al agente.`);
-
-    // Ahora graficamos
-    await renderChartFromSQL(job.sql, tipo, job.x, job.y);
+    await fetch(webhookGraf,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        consulta: ultimaConsulta,
+        sql: ultimaConsultaSQL,
+        decision: tipo
+      })
+    });
+    appendMessage("bot", `Confirmado: decisión '${tipo}' enviada al agente.`);
+    renderChartFromSQL(ultimaConsultaSQL,tipo,ultimaX,ultimaY);
   }catch(err){
     appendMessage("bot","Error al conectar con n8n.");
-    console.error(err);
   }
 }
 
-// Ejecutar SQL en Supabase y dibujar
 async function renderChartFromSQL(sql, chartType, xField, yField){
-  debugBlock("SQL a ejecutar (Supabase)", { chartType, xField, yField, sql });
-
   try{
-    const { data, error } = await supabase.rpc("execute_sql_query", { query: sql });
-    if (error){
-      debugBlock("Error Supabase", error);
-      appendMessage("bot","Error al ejecutar la consulta en Supabase.");
-      return;
-    }
-    if (!data || !data.length){
+    const { data, error } = await supabase.rpc("execute_sql_query",{ query: sql });
+    if(error || !data || !data.length){
       appendMessage("bot","Sin datos para graficar.");
       return;
     }
 
-    // Aplanado por si hay anidación tipo { result: {...} }
-    let rows = data.map(r => (r && typeof r === "object" && "result" in r) ? r.result : r);
-    // Muestra 5 filas para debug
-    debugBlock("Muestra datos (primeras 5 filas)", rows.slice(0,5));
+    let rows = data.map(r => (r.result ? r.result : r));
 
-    // Elegir campos si no vienen
-    const keys = Object.keys(rows[0] || {});
-    if (!xField || !(xField in rows[0])) xField = keys[0];
-    if (!yField || !(yField in rows[0])) yField = keys[1];
+    // Filtrar valores válidos
+    const validRows = rows.filter(r => r[xField] !== null && r[yField] !== null && !isNaN(r[yField]));
+    if(!validRows.length){ appendMessage("bot","Datos insuficientes para graficar."); return; }
 
-    // Preparar datos según tipo
-    let labels = [];
-    let values = [];
+    const labels = validRows.map(r => r[xField]);
+    const values = validRows.map(r => parseFloat(r[yField]));
 
-    if (chartType === "scatter"){
-      labels = rows.map((_r, i) => i+1);
-      values = rows.map(r => ({ x: r[xField], y: Number(r[yField]) }));
-    } else if (chartType === "pie"){
-      // Agrupar por categoría x, sumar y
-      const map = new Map();
-      rows.forEach(r=>{
-        const k = String(r[xField]);
-        const v = Number(r[yField]);
-        map.set(k, (map.get(k)||0) + (isNaN(v)?0:v));
-      });
-      labels = Array.from(map.keys());
-      values = Array.from(map.values());
-    } else if (chartType === "histogram"){
-      // Histograma de y por categoría x (conteo por categoría si y no es numérico)
-      const isNum = rows.every(r => !isNaN(Number(r[yField])));
-      if (isNum){
-        // Conteo por categoría X (cuántas observaciones por cada valor de X)
-        const map = new Map();
-        rows.forEach(r=>{
-          const k = String(r[xField]);
-          map.set(k, (map.get(k)||0) + 1);
-        });
-        labels = Array.from(map.keys());
-        values = Array.from(map.values());
-      }else{
-        // Fallback: conteo simple de X
-        const map = new Map();
-        rows.forEach(r=>{
-          const k = String(r[xField]);
-          map.set(k, (map.get(k)||0) + 1);
-        });
-        labels = Array.from(map.keys());
-        values = Array.from(map.values());
-      }
-      chartType = "bar";
-    } else {
-      // bar / line: media de y por categoría x si y es numérica; si no, conteo
-      const isNum = rows.every(r => !isNaN(Number(r[yField])));
-      const map = new Map();
-      const cnt = new Map();
-      rows.forEach(r=>{
-        const k = String(r[xField]);
-        const v = Number(r[yField]);
-        if (isNum){
-          map.set(k, (map.get(k)||0) + (isNaN(v)?0:v));
-          cnt.set(k, (cnt.get(k)||0) + 1);
-        } else {
-          map.set(k, (map.get(k)||0) + 1);
-        }
-      });
-      labels = Array.from(map.keys());
-      values = isNum ? labels.map(k => map.get(k)/cnt.get(k)) : Array.from(map.values());
-    }
+    document.getElementById("chartModal").style.display="flex";
+    const ctx=document.getElementById("chartCanvas").getContext("2d");
+    if(chartInstance) chartInstance.destroy();
 
-    // Dibujar modal
-    document.getElementById("chartModal").style.display = "flex";
-    const ctx = document.getElementById("chartCanvas").getContext("2d");
-    if (chartInstance) chartInstance.destroy();
-
-    const ds = (chartType === "scatter")
-      ? [{ label:`${yField} vs ${xField}`, data: values, parsing:false, backgroundColor:"rgba(47,110,62,0.6)", borderColor:"rgba(47,110,62,1)"}]
-      : [{ label:`${yField} vs ${xField}`, data: values, backgroundColor:"rgba(47,110,62,0.6)", borderColor:"rgba(47,110,62,1)", borderWidth:1 }];
-
-    chartInstance = new Chart(ctx, {
-      type: chartType === "scatter" ? "scatter" : chartType,
-      data: { labels, datasets: ds },
-      options: {
-        responsive:true, maintainAspectRatio:false,
-        scales: {
-          y: { beginAtZero:true, title:{ display:true, text:yField } },
-          x: { title:{ display:true, text:xField } }
+    let type = chartType==="histogram" ? "bar" : chartType;
+    chartInstance = new Chart(ctx,{
+      type: type,
+      data:{
+        labels,
+        datasets:[{
+          label: `${yField} por ${xField}`,
+          data: values,
+          backgroundColor: "rgba(47,110,62,0.6)",
+          borderColor: "rgba(47,110,62,1)",
+          borderWidth: 1
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        scales:{
+          y:{ beginAtZero:true, title:{ display:true, text:yField }},
+          x:{ title:{ display:true, text:xField }}
         }
       }
     });
-
   }catch(err){
-    console.error(err);
-    appendMessage("bot","Error al generar el gráfico.");
+    appendMessage("bot","Error al generar gráfico.");
   }
 }
 
-// Dataset completo
 async function enviarDataset(){
-  if (!ultimaConsultaSQL){
-    appendMessage("bot","No hay SQL para enviar.");
-    return;
-  }
-  const payload = { sql: ultimaConsultaSQL };
-  debugBlock("POST -> webhookData (payload)", payload);
-
+  if(!ultimaConsultaSQL){ appendMessage("bot","No hay SQL para enviar."); return; }
+  appendMessage("bot","Solicitando dataset completo...");
   try{
-    const res  = await fetch(webhookData, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
-    const data = await res.json();
-    debugBlock("ACK webhookData", data);
-    localStorage.setItem("datasetData", JSON.stringify(data));
+    const res=await fetch(webhookData,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ sql: ultimaConsultaSQL })
+    });
+    const data=await res.json();
+    localStorage.setItem("datasetData",JSON.stringify(data));
     window.open("dataset.html","_blank");
   }catch(err){
-    appendMessage("bot","Error al conectar con n8n (dataset).");
-    console.error(err);
+    appendMessage("bot","Error al conectar con n8n.");
   }
 }
 </script>
