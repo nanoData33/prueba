@@ -281,14 +281,12 @@ async function sendText() {
 
     if (data.respuesta && !data.respuesta.includes("|")) appendMessage("bot", data.respuesta);
 
+    // Si devuelve tabla
     if (typeof data.respuesta === "string" && data.respuesta.includes("|")) {
       renderMarkdownTable(data.respuesta);
-    }
-
-    if (data.sql && data.x && data.y) {
-      const cleanType = (data.chart_type || "bar").replace(/[()]/g, "").trim();
-      renderChartButtons(data.sql, cleanType, data.x, data.y, data.consulta);
-      renderChartFromSQL(data.sql, cleanType, data.x, data.y);
+      if (data.recomendacion) {
+        renderChartButtons(data.sql, data.recomendacion, data.x, data.y, data.consulta);
+      }
     }
   } catch (err) {
     console.error(err);
@@ -313,26 +311,33 @@ function renderMarkdownTable(text) {
 
 function renderChartButtons(sql, recType, x, y, consulta) {
   const div = document.getElementById("chartButtons");
+  const tipos = ["bar", "line", "scatter", "pie", "histogram"];
+  const cleanType = recType.replace(/[()]/g,"").trim();
+
   div.innerHTML = `
-    <p><b>Recomendación del agente:</b> gráfico ${recType}</p>
+    <p><strong>Recomendación del agente:</strong> gráfico ${cleanType}</p>
     <div class="btn-group">
-      <button class="btn-chart btn-rec" onclick="enviarDecision('${sql}', '${consulta}', '${recType}')">Recomendado (${recType})</button>
-      ${["bar", "line", "scatter", "pie", "histogram"].filter(t => t !== recType)
-        .map(t => `<button class="btn-chart btn-alt" onclick="enviarDecision('${sql}', '${consulta}', '${t}')">Usar ${t}</button>`).join("")}
+      ${tipos.map(t => `
+        <button class="btn-chart ${t===cleanType ? "btn-rec" : "btn-alt"}"
+          onclick="enviarGrafico('${sql}','${t}','${x}','${y}','${consulta}','${t===cleanType}')">
+          ${t===cleanType ? `Recomendado (${t})` : t}
+        </button>`).join("")}
     </div>
   `;
 }
 
-async function enviarDecision(sql, consulta, tipo) {
+async function enviarGrafico(sql, tipo, x, y, consulta, recomendado) {
   try {
     await fetch(webhookGrafico, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ sql, consulta, tipo })
+      body: JSON.stringify({
+        sql, chart_type: tipo, x, y, consulta, recomendado
+      })
     });
-    renderChartFromSQL(sql, tipo, "enfermedad_principal", "edad");
+    renderChartFromSQL(sql, tipo, x, y);
   } catch (err) {
-    console.error("Error enviando decisión a n8n:", err);
+    console.error("Error enviando a n8n:", err);
   }
 }
 
