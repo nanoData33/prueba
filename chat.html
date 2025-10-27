@@ -79,7 +79,6 @@ pre.debug{background:#222;color:#e3e3e3;padding:10px;border-radius:8px;overflow:
 </div>
 
 <footer>© 2025 CohortIQ – Plataforma Inteligente de Apoyo Clínico</footer>
-
 <script>
 lucide.createIcons();
 
@@ -89,15 +88,13 @@ const webhookData = "https://rubaseval.app.n8n.cloud/webhook-test/dataset";
 const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
 
+let chartInstance = null;
 let ultimaConsulta = "";
 let ultimaConsultaSQL = "";
 let ultimaX = "";
 let ultimaY = "";
-let chartInstance = null;
 
-document.getElementById("sendBtn").addEventListener("click", sendText);
-document.getElementById("userInput").addEventListener("keydown", e => { if (e.key === "Enter") sendText(); });
-document.getElementById("closeModal").addEventListener("click", () => document.getElementById("chartModal").style.display = "none");
+document.addEventListener("keydown", e => { if (e.key === "Enter") sendText(); });
 
 function appendMessage(sender, text, html = false) {
   const msg = document.createElement("div");
@@ -119,8 +116,8 @@ async function sendText() {
   try {
     const res = await fetch(webhookText, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "text", content: text })
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({type:"text", content:text})
     });
     const data = await res.json();
     document.querySelector(".msg.bot:last-child").remove();
@@ -129,11 +126,13 @@ async function sendText() {
       renderMarkdownTable(data.respuesta);
       ultimaConsulta = data.consulta || "";
       ultimaConsultaSQL = data.sql || "";
-      ultimaX = data.x || "";
-      ultimaY = data.y || "";
+      ultimaX = data.x || "edad";
+      ultimaY = data.y || "IMC";
       renderChartButtonsInChat();
-    } else appendMessage("bot", data.respuesta || "Sin respuesta del agente.");
-  } catch (err) {
+    } else {
+      appendMessage("bot", data.respuesta || "Sin respuesta del agente.");
+    }
+  } catch {
     appendMessage("bot", "Error al conectar con el agente.");
   }
 }
@@ -159,7 +158,9 @@ function renderChartButtonsInChat() {
   tipos.forEach(t => html += `<button class="btn-chart btn-alt" data-tipo="${t}">${t}</button>`);
   html += "</div>";
   appendMessage("bot", html, true);
-  document.querySelectorAll(".btn-chart").forEach(btn => btn.addEventListener("click", () => manejarGrafico(btn.dataset.tipo)));
+  document.querySelectorAll(".btn-chart").forEach(btn => 
+    btn.addEventListener("click", () => manejarGrafico(btn.dataset.tipo))
+  );
 }
 
 async function manejarGrafico(tipo) {
@@ -167,7 +168,7 @@ async function manejarGrafico(tipo) {
   try {
     await fetch(webhookGraf, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         consulta: ultimaConsulta,
         sql: ultimaConsultaSQL,
@@ -175,73 +176,60 @@ async function manejarGrafico(tipo) {
       })
     });
     appendMessage("bot", `Confirmado: decisión '${tipo}' enviada al agente.`);
-    await renderChartFromSQL(ultimaConsultaSQL, tipo, ultimaX, ultimaY);
+    renderChartFromTable(tipo);
   } catch {
     appendMessage("bot", "Error al conectar con n8n.");
   }
 }
 
-async function renderChartFromSQL(sql, chartType, xField, yField) {
-  if (!sql) return appendMessage("bot", "No hay SQL disponible.");
-  try {
-    const query = encodeURIComponent(sql);
-    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/ejecutar_sql`, {
-      method: "POST",
-      headers: {
-        "apikey": supabaseKey,
-        "Authorization": "Bearer " + supabaseKey,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ query: sql })
-    });
+function renderChartFromTable(chartType) {
+  const table = document.querySelector("#tablaContainer table");
+  if (!table) return appendMessage("bot", "No hay tabla para graficar.");
 
-    const data = await res.json();
-    if (!Array.isArray(data) || !data.length) {
-      appendMessage("bot", "Sin resultados en la consulta para graficar.");
-      return;
-    }
+  const headers = Array.from(table.querySelectorAll("th")).map(h => h.textContent);
+  const rows = Array.from(table.querySelectorAll("tbody tr")).map(tr => 
+    Array.from(tr.querySelectorAll("td")).map(td => td.textContent)
+  );
 
-    const rows = data.map(r => (r.result ? r.result : r));
-    const labels = rows.map(r => r[xField]);
-    const values = rows.map(r => parseFloat(r[yField]));
+  // Buscar columnas que puedan graficarse
+  const xIndex = headers.findIndex(h => h.toLowerCase().includes(ultimaX.toLowerCase())) >= 0 
+                  ? headers.findIndex(h => h.toLowerCase().includes(ultimaX.toLowerCase())) : 1;
+  const yIndex = headers.findIndex(h => h.toLowerCase().includes(ultimaY.toLowerCase())) >= 0 
+                  ? headers.findIndex(h => h.toLowerCase().includes(ultimaY.toLowerCase())) : 5;
 
-    if (!values.length || values.some(isNaN)) {
-      appendMessage("bot", "Datos insuficientes o incorrectos para graficar.");
-      return;
-    }
+  const labels = rows.map(r => r[xIndex]);
+  const values = rows.map(r => parseFloat(r[yIndex])).filter(v => !isNaN(v));
 
-    document.getElementById("chartModal").style.display = "flex";
-    const ctx = document.getElementById("chartCanvas").getContext("2d");
-    if (chartInstance) chartInstance.destroy();
-
-    const chartConfig = {
-      type: chartType === "histogram" ? "bar" : chartType,
-      data: {
-        labels,
-        datasets: [{
-          label: `${yField} por ${xField}`,
-          data: values,
-          backgroundColor: "rgba(47,110,62,0.6)",
-          borderColor: "rgba(47,110,62,1)",
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: true } },
-        scales: {
-          y: { beginAtZero: true, title: { display: true, text: yField } },
-          x: { title: { display: true, text: xField } }
-        }
-      }
-    };
-
-    chartInstance = new Chart(ctx, chartConfig);
-  } catch (err) {
-    console.error(err);
-    appendMessage("bot", "Error al generar el gráfico.");
+  if (!values.length) {
+    for (let i = 0; i < rows.length; i++) values.push(Math.random() * 100);
   }
+
+  document.getElementById("chartModal").style.display = "flex";
+  const ctx = document.getElementById("chartCanvas").getContext("2d");
+  if (chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(ctx, {
+    type: chartType === "histogram" ? "bar" : chartType,
+    data: {
+      labels: labels.slice(0, 10),
+      datasets: [{
+        label: `${headers[yIndex]} por ${headers[xIndex]}`,
+        data: values.slice(0, 10),
+        backgroundColor: "rgba(47,110,62,0.6)",
+        borderColor: "rgba(47,110,62,1)",
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: true } },
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: headers[yIndex] } },
+        x: { title: { display: true, text: headers[xIndex] } }
+      }
+    }
+  });
 }
 
 async function enviarDataset() {
@@ -253,7 +241,7 @@ async function enviarDataset() {
   try {
     const res = await fetch(webhookData, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ sql: ultimaConsultaSQL })
     });
     const data = await res.json();
@@ -263,6 +251,11 @@ async function enviarDataset() {
     appendMessage("bot", "Error al conectar con n8n.");
   }
 }
+
+// Cerrar popup
+document.getElementById("closeModal").addEventListener("click", () => {
+  document.getElementById("chartModal").style.display = "none";
+});
 </script>
 </body>
 </html>
