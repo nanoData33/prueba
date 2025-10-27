@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CohortIQ – Visualizador Clínico</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --verde:#2f6e3e;--verde-oscuro:#245831;--gris:#3b3b3b;--fondo:#f5f7f5;--card:#fff;--sombra:rgba(0,0,0,0.1);
@@ -53,7 +55,7 @@ footer{text-align:center;background:var(--card);padding:8px;color:#555;font-size
     <h2>Chat con el Agente</h2>
     <div id="messages" class="messages"></div>
     <div class="input-area">
-      <input id="userInput" placeholder="Escribe tu mensaje..." />
+      <input id="userInput" placeholder="Escribe tu mensaje...">
       <button class="action" id="sendBtn">Enviar</button>
     </div>
   </div>
@@ -61,6 +63,7 @@ footer{text-align:center;background:var(--card);padding:8px;color:#555;font-size
   <div class="tabla-box">
     <h2>Resultados</h2>
     <div id="tablaContainer">Esperando resultados...</div>
+    <canvas id="chartCanvas"></canvas>
   </div>
 </main>
 
@@ -73,6 +76,7 @@ const webhook="https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
 const webhookGrafico="https://rubaseval.app.n8n.cloud/webhook-test/grafico";
 const webhookDataset="https://rubaseval.app.n8n.cloud/webhook-test/dataset";
 let ultimaConsultaSQL="";
+let chartInstance=null;
 
 document.getElementById("sendBtn").addEventListener("click",sendText);
 document.getElementById("userInput").addEventListener("keydown",e=>{if(e.key==="Enter")sendText();});
@@ -128,26 +132,62 @@ function renderChartButtonsInChat(sql,recType,x,y,consulta){
   html+="</div>";
   appendMessage("bot",html,true);
 
+  // ahora activamos los botones
   document.querySelectorAll(".btn-chart").forEach(btn=>{
-    btn.addEventListener("click",async()=>{
-      const tipo=btn.dataset.tipo;
-      appendMessage("bot","Enviando gráfico "+tipo+" a n8n...");
-      try{
-        const res=await fetch(webhookGrafico,{
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({
-            sql:btn.dataset.sql,
-            chart_type:tipo,
-            x:btn.dataset.x,
-            y:btn.dataset.y,
-            consulta:btn.dataset.consulta
-          })
-        });
-        if(res.ok) appendMessage("bot","Confirmado: gráfico "+tipo+" enviado correctamente.");
-        else appendMessage("bot","Error al enviar gráfico a n8n.");
-      }catch{appendMessage("bot","Error de conexión con n8n.");}
+    btn.addEventListener("click",()=>manejarGrafico(btn));
+  });
+}
+
+async function manejarGrafico(btn){
+  const tipo=btn.dataset.tipo;
+  const payload={sql:btn.dataset.sql,chart_type:tipo,x:btn.dataset.x,y:btn.dataset.y};
+  appendMessage("bot",`Enviando gráfico ${tipo} a n8n...`);
+  try{
+    const res=await fetch(webhookGrafico,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload)
     });
+    if(res.ok){
+      appendMessage("bot",`Confirmado: gráfico ${tipo} enviado correctamente.`);
+      // usar el mismo payload para renderizar gráfico local
+      renderLocalChart(payload);
+    }else{
+      appendMessage("bot","Error al enviar gráfico a n8n.");
+    }
+  }catch{
+    appendMessage("bot","Error de conexión con n8n.");
+  }
+}
+
+function renderLocalChart({chart_type,x,y}){
+  const ctx=document.getElementById("chartCanvas").getContext("2d");
+  if(chartInstance) chartInstance.destroy();
+
+  // datos simulados (hasta que lleguen reales desde supabase/n8n)
+  const labels=["A","B","C","D","E"];
+  const values=labels.map(()=>Math.floor(Math.random()*20)+5);
+
+  let type=chart_type;
+  if(chart_type==="histogram") type="bar";
+
+  chartInstance=new Chart(ctx,{
+    type:type,
+    data:{
+      labels:labels,
+      datasets:[{
+        label:`${y} vs ${x}`,
+        data:values,
+        backgroundColor:"rgba(47,110,62,0.6)",
+        borderColor:"rgba(47,110,62,1)",
+        borderWidth:1
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      scales:{y:{beginAtZero:true}}
+    }
   });
 }
 
