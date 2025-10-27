@@ -76,7 +76,6 @@ footer{text-align:center;background:var(--card);padding:8px;color:#555;font-size
 </div>
 
 <footer>© 2025 CohortIQ – Plataforma Inteligente de Apoyo Clínico</footer>
-
 <script>
 lucide.createIcons();
 
@@ -87,9 +86,8 @@ const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-let ultimaConsultaSQL = "";
 let chartInstance = null;
-let sqlStore = {};  // <---- nuevo diccionario para guardar SQLs sin corromperlas
+let ultimaConsultaSQL = "";
 
 document.getElementById("sendBtn").addEventListener("click", sendText);
 document.getElementById("userInput").addEventListener("keydown", e => { if (e.key === "Enter") sendText(); });
@@ -119,6 +117,7 @@ async function sendText() {
     });
     const data = await res.json();
     document.querySelector(".msg.bot:last-child").remove();
+
     if (data.respuesta && data.respuesta.includes("|")) {
       renderMarkdownTable(data.respuesta);
       ultimaConsultaSQL = data.sql || "";
@@ -146,58 +145,84 @@ function renderMarkdownTable(text) {
 function renderChartButtonsInChat(sql, recType, x, y, consulta) {
   const tipos = ["bar","line","scatter","pie","histogram"];
   const cleanType = (recType||"bar").replace(/[()]/g,"").trim();
-  const sqlId = Date.now().toString();
-  sqlStore[sqlId] = sql;  // guardar SQL completa
   let html = `<p><strong>El agente sugiere:</strong> gráfico <strong>${cleanType}</strong>. Otros tipos:</p><div class="btn-group">`;
   tipos.forEach(t=>{
     const clase=t===cleanType?"btn-rec":"btn-alt";
-    html += `<button class="btn-chart ${clase}" data-tipo="${t}" data-id="${sqlId}" data-consulta='${consulta||""}'>${t}</button>`;
+    html += `<button class="btn-chart ${clase}" data-tipo="${t}" data-sql='${encodeURIComponent(sql)}' data-x="${x||''}" data-y="${y||''}" data-consulta='${consulta||""}'>${t}</button>`;
   });
   html += "</div>";
   appendMessage("bot", html, true);
-  document.querySelectorAll(".btn-chart").forEach(btn=>{
-    btn.addEventListener("click", ()=> manejarGrafico(btn));
-  });
+  document.querySelectorAll(".btn-chart").forEach(btn=> btn.addEventListener("click", ()=> manejarGrafico(btn)));
 }
 
 async function manejarGrafico(btn){
   const tipo = btn.dataset.tipo;
-  const sqlId = btn.dataset.id;
-  const sql = sqlStore[sqlId];  // recuperar SQL completa sin truncar
+  const sql = decodeURIComponent(btn.dataset.sql);
   const consulta = btn.dataset.consulta || "Consulta del usuario";
+  const x = btn.dataset.x || "";
+  const y = btn.dataset.y || "";
   appendMessage("bot", `Enviando decisión '${tipo}' al agente...`);
-  try {
-    await fetch(webhookGrafico, {
+
+  try{
+    await fetch(webhookGrafico,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ consulta: consulta, sql: sql, decision: tipo })
+      body:JSON.stringify({
+        consulta: consulta,
+        sql: sql,
+        decision: tipo
+      })
     });
     appendMessage("bot", `Confirmado: decisión '${tipo}' enviada al agente.`);
-    renderChartFromSQL(sql, tipo);
-  } catch {
-    appendMessage("bot", "Error al conectar con n8n.");
+    renderChartFromSQL(sql,tipo,x,y);
+  }catch{
+    appendMessage("bot","Error al conectar con n8n.");
   }
 }
 
-async function renderChartFromSQL(sql, chartType) {
+async function renderChartFromSQL(sql, chartType, xField, yField) {
   try {
     const { data, error } = await supabase.rpc("execute_sql_query",{ query: sql });
     if (error || !data || !data.length) {
       appendMessage("bot","Sin datos para graficar.");
       return;
     }
-    const keys=Object.keys(data[0]);
-    const xField=keys[0], yField=keys[1];
-    const labels=data.map(r=>r[xField]);
-    const values=data.map(r=>r[yField]);
+
+    let rows = data.map(row => (row.result ? row.result : row));
+    if (rows[0].result) rows = rows.map(r => r.result);
+
+    if (!xField || !rows[0][xField]) xField = Object.keys(rows[0])[0];
+    if (!yField || !rows[0][yField]) yField = Object.keys(rows[0])[1];
+
+    const labels = rows.map(r => r[xField]);
+    const values = rows.map(r => parseFloat(r[yField]));
+
     document.getElementById("chartModal").style.display="flex";
     const ctx=document.getElementById("chartCanvas").getContext("2d");
     if(chartInstance) chartInstance.destroy();
-    let type=chartType==="histogram"?"bar":chartType;
-    chartInstance=new Chart(ctx,{
-      type:type,
-      data:{labels,datasets:[{label:`${yField} vs ${xField}`,data:values,backgroundColor:"rgba(47,110,62,0.6)",borderColor:"rgba(47,110,62,1)",borderWidth:1}]},
-      options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}}}
+
+    let type = chartType==="histogram" ? "bar" : chartType;
+
+    chartInstance = new Chart(ctx,{
+      type: type,
+      data:{
+        labels,
+        datasets:[{
+          label: `${yField} por ${xField}`,
+          data: values,
+          backgroundColor: "rgba(47,110,62,0.6)",
+          borderColor: "rgba(47,110,62,1)",
+          borderWidth: 1
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        scales:{
+          y:{ beginAtZero:true, title:{ display:true, text:yField }},
+          x:{ title:{ display:true, text:xField }}
+        }
+      }
     });
   } catch {
     appendMessage("bot","Error al generar gráfico.");
