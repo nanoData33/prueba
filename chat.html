@@ -148,14 +148,10 @@ button.action {
 }
 button.action:hover { background: var(--verde-oscuro); }
 
-#tablaContainer {
-  overflow-x: auto;
-  margin-bottom: 20px;
-}
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 15px;
+  margin-top: 10px;
   font-size: 0.9rem;
 }
 th, td {
@@ -167,12 +163,13 @@ th {
   background: var(--verde);
   color: white;
 }
+tr:nth-child(even) { background: #f5f7f5; }
 
 .btn-group {
   display: flex;
   gap: 8px;
-  margin-bottom: 10px;
   flex-wrap: wrap;
+  margin-top: 10px;
 }
 .btn-chart {
   padding: 8px 12px;
@@ -219,7 +216,6 @@ footer {
   <div class="tabla-box">
     <h2>Resultados</h2>
     <div id="tablaContainer">Esperando resultados...</div>
-    <div id="chartButtons"></div>
     <canvas id="chart"></canvas>
   </div>
 </main>
@@ -240,10 +236,10 @@ document.getElementById("userInput").addEventListener("keydown", (e) => {
   if (e.key === "Enter") sendText();
 });
 
-function appendMessage(sender, text) {
+function appendMessage(sender, text, html=false) {
   const msg = document.createElement("div");
   msg.className = "msg " + sender;
-  msg.innerText = text;
+  msg.innerHTML = html ? text : text.replace(/\n/g, "<br>");
   const box = document.getElementById("messages");
   box.appendChild(msg);
   box.scrollTop = box.scrollHeight;
@@ -281,15 +277,13 @@ async function sendText() {
 
     if (data.respuesta && !data.respuesta.includes("|")) appendMessage("bot", data.respuesta);
 
-    // Si devuelve tabla
     if (typeof data.respuesta === "string" && data.respuesta.includes("|")) {
       renderMarkdownTable(data.respuesta);
       if (data.recomendacion) {
-        renderChartButtons(data.sql, data.recomendacion, data.x, data.y, data.consulta);
+        renderChartButtonsInChat(data.sql, data.recomendacion, data.x, data.y, data.consulta);
       }
     }
-  } catch (err) {
-    console.error(err);
+  } catch {
     removeTyping();
     appendMessage("bot", "Error al conectar con el agente.");
   }
@@ -309,21 +303,22 @@ function renderMarkdownTable(text) {
   document.getElementById("tablaContainer").innerHTML = html;
 }
 
-function renderChartButtons(sql, recType, x, y, consulta) {
-  const div = document.getElementById("chartButtons");
+function renderChartButtonsInChat(sql, recType, x, y, consulta) {
   const tipos = ["bar", "line", "scatter", "pie", "histogram"];
   const cleanType = recType.replace(/[()]/g,"").trim();
 
-  div.innerHTML = `
-    <p><strong>Recomendación del agente:</strong> gráfico ${cleanType}</p>
-    <div class="btn-group">
-      ${tipos.map(t => `
-        <button class="btn-chart ${t===cleanType ? "btn-rec" : "btn-alt"}"
-          onclick="enviarGrafico('${sql}','${t}','${x}','${y}','${consulta}','${t===cleanType}')">
-          ${t===cleanType ? `Recomendado (${t})` : t}
-        </button>`).join("")}
-    </div>
-  `;
+  let html = `<p><strong>El agente sugiere:</strong> podríamos visualizarlo con un gráfico <strong>${cleanType}</strong>. 
+  Si quieres, puedes probar otro tipo:</p><div class="btn-group">`;
+
+  tipos.forEach(t => {
+    const clase = t===cleanType ? "btn-rec" : "btn-alt";
+    html += `<button class="btn-chart ${clase}" onclick="enviarGrafico('${sql}','${t}','${x}','${y}','${consulta}','${t===cleanType}')">
+              ${t===cleanType ? 'Recomendado ('+t+')' : t}
+             </button>`;
+  });
+  html += "</div>";
+
+  appendMessage("bot", html, true);
 }
 
 async function enviarGrafico(sql, tipo, x, y, consulta, recomendado) {
@@ -331,13 +326,13 @@ async function enviarGrafico(sql, tipo, x, y, consulta, recomendado) {
     await fetch(webhookGrafico, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        sql, chart_type: tipo, x, y, consulta, recomendado
-      })
+      body: JSON.stringify({ sql, chart_type: tipo, x, y, consulta, recomendado })
     });
+    appendMessage("bot", `Decisión enviada: gráfico ${tipo}`);
     renderChartFromSQL(sql, tipo, x, y);
   } catch (err) {
-    console.error("Error enviando a n8n:", err);
+    console.error(err);
+    appendMessage("bot","Error al enviar la decisión al servidor.");
   }
 }
 
@@ -369,6 +364,7 @@ async function renderChartFromSQL(sql, chartType, xField, yField) {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: { legend: { display: true } },
         scales: { y: { beginAtZero: true } }
       }
