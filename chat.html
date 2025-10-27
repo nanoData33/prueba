@@ -9,25 +9,26 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root {--verde:#2f6e3e;--verde-oscuro:#245831;--gris:#3b3b3b;--fondo:#f5f7f5;--card:#fff;--sombra:rgba(0,0,0,0.1);}
-body{font-family:"Poppins",sans-serif;margin:0;background:var(--fondo);color:var(--gris);}
+:root { --verde:#2f6e3e; --verde-oscuro:#245831; --gris:#3b3b3b; --fondo:#f5f7f5; --card:#fff; --sombra:rgba(0,0,0,0.1);}
+*{box-sizing:border-box}
+body{font-family:"Poppins",sans-serif;margin:0;background:var(--fondo);color:var(--gris);height:100vh;display:flex;flex-direction:column;}
 header{background:var(--card);display:flex;justify-content:space-between;align-items:center;padding:15px 40px;box-shadow:0 2px 8px var(--sombra);}
 header h1{color:var(--verde);display:flex;align-items:center;gap:8px;font-size:1.1rem;}
 header button{background:var(--verde);color:white;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;}
 header button:hover{background:var(--verde-oscuro);}
-main{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:20px;}
-.chat-box,.tabla-box{background:var(--card);border-radius:12px;box-shadow:0 4px 10px var(--sombra);padding:20px;display:flex;flex-direction:column;}
-h2{text-align:center;color:var(--verde);}
-.messages{flex:1;overflow-y:auto;background:#f8faf8;border-radius:10px;padding:15px;margin-bottom:10px;}
-.msg{margin-bottom:12px;padding:12px 15px;border-radius:12px;max-width:85%;}
+main{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:20px;min-height:0;}
+.chat-box,.tabla-box{background:var(--card);border-radius:12px;box-shadow:0 4px 10px var(--sombra);padding:20px;display:flex;flex-direction:column;min-height:0;}
+h2{text-align:center;color:var(--verde);margin:0 0 10px;}
+.messages{flex:1;overflow:auto;background:#f8faf8;border-radius:10px;padding:15px;margin-bottom:10px;}
+.msg{margin-bottom:12px;padding:12px 15px;border-radius:12px;max-width:100%;}
 .msg.user{background:var(--verde);color:white;align-self:flex-end;}
-.msg.bot{background:#e8f3e8;align-self:flex-start;}
+.msg.bot{background:#e8f3e8;white-space:pre-wrap;}
 .input-area{display:flex;gap:10px;}
 input{flex:1;padding:10px;border:1px solid #ccc;border-radius:10px;}
 button.action{background:var(--verde);color:white;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;}
 button.action:hover{background:var(--verde-oscuro);}
-table{width:100%;border-collapse:collapse;margin-top:10px;}
-th,td{border:1px solid #ddd;padding:8px;text-align:left;}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:0.9rem;}
+th,td{border:1px solid #ddd;padding:10px;text-align:left;}
 th{background:var(--verde);color:white;}
 tr:nth-child(even){background:#f5f7f5;}
 .btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
@@ -38,10 +39,12 @@ tr:nth-child(even){background:#f5f7f5;}
 #verDatasetBtn{margin-top:12px;background:var(--verde);color:white;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;width:100%;}
 #verDatasetBtn:hover{background:var(--verde-oscuro);}
 #chartModal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:9999;}
-#chartModalContent{background:white;padding:20px;border-radius:10px;width:80%;max-width:800px;box-shadow:0 0 10px rgba(0,0,0,0.3);}
-#closeModal{background:var(--verde);color:white;border:none;padding:8px 12px;border-radius:6px;float:right;cursor:pointer;}
-canvas{width:100%!important;height:400px!important;}
+#chartModalContent{background:white;padding:20px;border-radius:10px;width:90%;max-width:900px;box-shadow:0 0 10px rgba(0,0,0,0.3);}
+#closeModal{background:var(--verde);color:white;border:none;padding:8px 12px;border-radius:6px;float:right;cursor:pointer;margin-bottom:10px;}
+#chartWrap{width:100%;height:440px;}
+#chartWrap canvas{width:100%!important;height:100%!important;}
 footer{text-align:center;background:var(--card);padding:8px;color:#555;font-size:0.85rem;}
+pre.debug{background:#222;color:#e3e3e3;padding:10px;border-radius:8px;overflow:auto}
 </style>
 </head>
 
@@ -71,178 +74,295 @@ footer{text-align:center;background:var(--card);padding:8px;color:#555;font-size
 <div id="chartModal">
   <div id="chartModalContent">
     <button id="closeModal">Cerrar</button>
-    <canvas id="chartCanvas"></canvas>
+    <div id="chartWrap"><canvas id="chartCanvas"></canvas></div>
   </div>
 </div>
 
 <footer>© 2025 CohortIQ – Plataforma Inteligente de Apoyo Clínico</footer>
+
 <script>
 lucide.createIcons();
 
-const webhook = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
-const webhookGrafico = "https://rubaseval.app.n8n.cloud/webhook-test/grafico";
-const webhookDataset = "https://rubaseval.app.n8n.cloud/webhook-test/dataset";
-const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+// Endpoints n8n y Supabase (tus claves)
+const webhookText   = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
+const webhookGraf   = "https://rubaseval.app.n8n.cloud/webhook-test/grafico";
+const webhookData   = "https://rubaseval.app.n8n.cloud/webhook-test/dataset";
+const supabaseUrl   = "https://tmolxeszsgkffurhrcxy.supabase.co";
+const supabaseKey   = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
+const supabase      = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-let chartInstance = null;
+// Estado
 let ultimaConsultaSQL = "";
+let chartInstance = null;
 
-document.getElementById("sendBtn").addEventListener("click", sendText);
-document.getElementById("userInput").addEventListener("keydown", e => { if (e.key === "Enter") sendText(); });
-document.getElementById("closeModal").addEventListener("click", () => document.getElementById("chartModal").style.display = "none");
+// Almacén de trabajos de gráfico para no meter SQL en el DOM
+const chartJobs = new Map(); // id -> { sql, x, y, consulta }
 
-function appendMessage(sender, text, html=false) {
+// Utilidades
+function appendMessage(sender, text, html=false){
   const msg = document.createElement("div");
   msg.className = "msg " + sender;
-  msg.innerHTML = html ? text : text.replace(/\n/g, "<br>");
+  msg.innerHTML = html ? text : text.replace(/\n/g,"<br>");
   const box = document.getElementById("messages");
   box.appendChild(msg);
   box.scrollTop = box.scrollHeight;
 }
+function debugBlock(title, obj){
+  const pretty = JSON.stringify(obj, null, 2);
+  appendMessage("bot", `<div><strong>${title}</strong></div><pre class="debug">${pretty}</pre>`, true);
+  console.log(title, obj);
+}
 
-async function sendText() {
+// Eventos
+document.getElementById("sendBtn").addEventListener("click", sendText);
+document.getElementById("userInput").addEventListener("keydown", e => { if (e.key === "Enter") sendText(); });
+document.getElementById("closeModal").addEventListener("click", () => document.getElementById("chartModal").style.display = "none");
+
+// Flujo chat → n8n
+async function sendText(){
   const input = document.getElementById("userInput");
-  const text = input.value.trim();
-  if (!text) return;
+  const text  = input.value.trim();
+  if(!text) return;
   appendMessage("user", text);
   input.value = "";
   appendMessage("bot", "Procesando...");
-  try {
-    const res = await fetch(webhook, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "text", content: text })
-    });
-    const data = await res.json();
-    document.querySelector(".msg.bot:last-child").remove();
 
-    if (data.respuesta && data.respuesta.includes("|")) {
+  try{
+    const payload = { type:"text", content:text };
+    console.log("POST -> webhookText", payload);
+    const res  = await fetch(webhookText, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
+    const data = await res.json();
+    document.querySelector(".msg.bot:last-child")?.remove();
+
+    // Si recibimos tabla en markdown (con pipes), la renderizamos
+    if (typeof data.respuesta === "string" && data.respuesta.includes("|")){
       renderMarkdownTable(data.respuesta);
       ultimaConsultaSQL = data.sql || "";
-      renderChartButtonsInChat(data.sql, data.recomendacion, data.x, data.y, data.consulta);
-    } else appendMessage("bot", data.respuesta || "Sin respuesta del agente.");
-  } catch {
+      if (data.recomendacion){
+        renderChartButtonsInChat({
+          sql: data.sql || "",
+          recType: data.recomendacion,
+          x: data.x || "",
+          y: data.y || "",
+          consulta: data.consulta || ""
+        });
+      }
+    } else {
+      // No es tabla ⇒ mostramos todo para depurar
+      debugBlock("Respuesta agente (no-tabla)", data);
+      if (data.sql || data.chart_type || data.x || data.y){
+        // Si por casualidad ya viene un pedido de gráfico directo:
+        renderChartFromSQL(data.sql, data.chart_type, data.x, data.y);
+      } else if (data.respuesta){
+        appendMessage("bot", data.respuesta);
+      }
+    }
+  }catch(err){
     appendMessage("bot", "Error de conexión con el agente.");
+    console.error(err);
   }
 }
 
-function renderMarkdownTable(text) {
-  const lines = text.trim().split("\n").filter(l => l.includes("|"));
+// Tabla markdown + botón dataset
+function renderMarkdownTable(text){
+  const lines   = text.trim().split("\n").filter(l => l.includes("|"));
   const headers = lines[0].split("|").map(h => h.trim()).filter(Boolean);
-  const rows = lines.slice(2).map(l => l.split("|").map(c => c.trim()).filter(Boolean));
+  const rows    = lines.slice(2).map(l => l.split("|").map(c => c.trim()).filter(Boolean));
+
   let html = "<table><thead><tr>";
   headers.forEach(h => html += `<th>${h}</th>`);
   html += "</tr></thead><tbody>";
   rows.forEach(r => html += "<tr>" + r.map(c => `<td>${c}</td>`).join("") + "</tr>");
   html += "</tbody></table>";
   html += `<button id="verDatasetBtn">Ver resultado completo</button>`;
-  document.getElementById("tablaContainer").innerHTML = html;
+  const cont = document.getElementById("tablaContainer");
+  cont.innerHTML = html;
   document.getElementById("verDatasetBtn").addEventListener("click", enviarDataset);
 }
 
-function renderChartButtonsInChat(sql, recType, x, y, consulta) {
+// Botones de gráfico
+function renderChartButtonsInChat({ sql, recType, x, y, consulta }){
   const tipos = ["bar","line","scatter","pie","histogram"];
-  const cleanType = (recType||"bar").replace(/[()]/g,"").trim();
-  let html = `<p><strong>El agente sugiere:</strong> gráfico <strong>${cleanType}</strong>. Otros tipos:</p><div class="btn-group">`;
-  tipos.forEach(t=>{
-    const clase=t===cleanType?"btn-rec":"btn-alt";
-    html += `<button class="btn-chart ${clase}" data-tipo="${t}" data-sql='${encodeURIComponent(sql)}' data-x="${x||''}" data-y="${y||''}" data-consulta='${consulta||""}'>${t}</button>`;
+  const clean = (recType || "bar").replace(/[()]/g,"").trim();
+
+  // Guardamos el trabajo con id
+  const jobId = String(Date.now()) + "_" + Math.random().toString(36).slice(2,8);
+  chartJobs.set(jobId, { sql, x, y, consulta });
+
+  let html = `<p><strong>El agente sugiere:</strong> gráfico <strong>${clean}</strong>. Otros tipos:</p><div class="btn-group">`;
+  tipos.forEach(t => {
+    const cls = t===clean ? "btn-rec" : "btn-alt";
+    html += `<button class="btn-chart ${cls}" data-id="${jobId}" data-tipo="${t}">${t}</button>`;
   });
   html += "</div>";
+
   appendMessage("bot", html, true);
-  document.querySelectorAll(".btn-chart").forEach(btn=> btn.addEventListener("click", ()=> manejarGrafico(btn)));
+
+  // Listeners
+  document.querySelectorAll(`.btn-chart[data-id="${jobId}"]`).forEach(btn => {
+    btn.addEventListener("click", () => enviarDecisionYGraficar(btn));
+  });
 }
 
-async function manejarGrafico(btn){
-  const tipo = btn.dataset.tipo;
-  const sql = decodeURIComponent(btn.dataset.sql);
-  const consulta = btn.dataset.consulta || "Consulta del usuario";
-  const x = btn.dataset.x || "";
-  const y = btn.dataset.y || "";
-  appendMessage("bot", `Enviando decisión '${tipo}' al agente...`);
+// Enviar a n8n (consulta/sql/decision) y graficar con la SQL completa
+async function enviarDecisionYGraficar(btn){
+  const tipo  = btn.dataset.tipo;
+  const jobId = btn.dataset.id;
+  const job   = chartJobs.get(jobId); // { sql, x, y, consulta }
+
+  if (!job || !job.sql){
+    appendMessage("bot", "No hay SQL disponible para graficar.");
+    return;
+  }
+
+  const outbound = { consulta: job.consulta || "Consulta del usuario", sql: job.sql, decision: tipo };
+  debugBlock("POST -> webhookGraf (payload)", outbound);
 
   try{
-    await fetch(webhookGrafico,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        consulta: consulta,
-        sql: sql,
-        decision: tipo
-      })
-    });
-    appendMessage("bot", `Confirmado: decisión '${tipo}' enviada al agente.`);
-    renderChartFromSQL(sql,tipo,x,y);
-  }catch{
+    const resp = await fetch(webhookGraf, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(outbound) });
+    let ack = null;
+    try { ack = await resp.json(); } catch { ack = { status: resp.status, ok: resp.ok }; }
+    debugBlock("ACK webhookGraf", ack);
+    appendMessage("bot", `Decisión '${tipo}' enviada al agente.`);
+
+    // Ahora graficamos
+    await renderChartFromSQL(job.sql, tipo, job.x, job.y);
+  }catch(err){
     appendMessage("bot","Error al conectar con n8n.");
+    console.error(err);
   }
 }
 
-async function renderChartFromSQL(sql, chartType, xField, yField) {
-  try {
-    const { data, error } = await supabase.rpc("execute_sql_query",{ query: sql });
-    if (error || !data || !data.length) {
+// Ejecutar SQL en Supabase y dibujar
+async function renderChartFromSQL(sql, chartType, xField, yField){
+  debugBlock("SQL a ejecutar (Supabase)", { chartType, xField, yField, sql });
+
+  try{
+    const { data, error } = await supabase.rpc("execute_sql_query", { query: sql });
+    if (error){
+      debugBlock("Error Supabase", error);
+      appendMessage("bot","Error al ejecutar la consulta en Supabase.");
+      return;
+    }
+    if (!data || !data.length){
       appendMessage("bot","Sin datos para graficar.");
       return;
     }
 
-    let rows = data.map(row => (row.result ? row.result : row));
-    if (rows[0].result) rows = rows.map(r => r.result);
+    // Aplanado por si hay anidación tipo { result: {...} }
+    let rows = data.map(r => (r && typeof r === "object" && "result" in r) ? r.result : r);
+    // Muestra 5 filas para debug
+    debugBlock("Muestra datos (primeras 5 filas)", rows.slice(0,5));
 
-    if (!xField || !rows[0][xField]) xField = Object.keys(rows[0])[0];
-    if (!yField || !rows[0][yField]) yField = Object.keys(rows[0])[1];
+    // Elegir campos si no vienen
+    const keys = Object.keys(rows[0] || {});
+    if (!xField || !(xField in rows[0])) xField = keys[0];
+    if (!yField || !(yField in rows[0])) yField = keys[1];
 
-    const labels = rows.map(r => r[xField]);
-    const values = rows.map(r => parseFloat(r[yField]));
+    // Preparar datos según tipo
+    let labels = [];
+    let values = [];
 
-    document.getElementById("chartModal").style.display="flex";
-    const ctx=document.getElementById("chartCanvas").getContext("2d");
-    if(chartInstance) chartInstance.destroy();
+    if (chartType === "scatter"){
+      labels = rows.map((_r, i) => i+1);
+      values = rows.map(r => ({ x: r[xField], y: Number(r[yField]) }));
+    } else if (chartType === "pie"){
+      // Agrupar por categoría x, sumar y
+      const map = new Map();
+      rows.forEach(r=>{
+        const k = String(r[xField]);
+        const v = Number(r[yField]);
+        map.set(k, (map.get(k)||0) + (isNaN(v)?0:v));
+      });
+      labels = Array.from(map.keys());
+      values = Array.from(map.values());
+    } else if (chartType === "histogram"){
+      // Histograma de y por categoría x (conteo por categoría si y no es numérico)
+      const isNum = rows.every(r => !isNaN(Number(r[yField])));
+      if (isNum){
+        // Conteo por categoría X (cuántas observaciones por cada valor de X)
+        const map = new Map();
+        rows.forEach(r=>{
+          const k = String(r[xField]);
+          map.set(k, (map.get(k)||0) + 1);
+        });
+        labels = Array.from(map.keys());
+        values = Array.from(map.values());
+      }else{
+        // Fallback: conteo simple de X
+        const map = new Map();
+        rows.forEach(r=>{
+          const k = String(r[xField]);
+          map.set(k, (map.get(k)||0) + 1);
+        });
+        labels = Array.from(map.keys());
+        values = Array.from(map.values());
+      }
+      chartType = "bar";
+    } else {
+      // bar / line: media de y por categoría x si y es numérica; si no, conteo
+      const isNum = rows.every(r => !isNaN(Number(r[yField])));
+      const map = new Map();
+      const cnt = new Map();
+      rows.forEach(r=>{
+        const k = String(r[xField]);
+        const v = Number(r[yField]);
+        if (isNum){
+          map.set(k, (map.get(k)||0) + (isNaN(v)?0:v));
+          cnt.set(k, (cnt.get(k)||0) + 1);
+        } else {
+          map.set(k, (map.get(k)||0) + 1);
+        }
+      });
+      labels = Array.from(map.keys());
+      values = isNum ? labels.map(k => map.get(k)/cnt.get(k)) : Array.from(map.values());
+    }
 
-    let type = chartType==="histogram" ? "bar" : chartType;
+    // Dibujar modal
+    document.getElementById("chartModal").style.display = "flex";
+    const ctx = document.getElementById("chartCanvas").getContext("2d");
+    if (chartInstance) chartInstance.destroy();
 
-    chartInstance = new Chart(ctx,{
-      type: type,
-      data:{
-        labels,
-        datasets:[{
-          label: `${yField} por ${xField}`,
-          data: values,
-          backgroundColor: "rgba(47,110,62,0.6)",
-          borderColor: "rgba(47,110,62,1)",
-          borderWidth: 1
-        }]
-      },
-      options:{
-        responsive:true,
-        maintainAspectRatio:false,
-        scales:{
-          y:{ beginAtZero:true, title:{ display:true, text:yField }},
-          x:{ title:{ display:true, text:xField }}
+    const ds = (chartType === "scatter")
+      ? [{ label:`${yField} vs ${xField}`, data: values, parsing:false, backgroundColor:"rgba(47,110,62,0.6)", borderColor:"rgba(47,110,62,1)"}]
+      : [{ label:`${yField} vs ${xField}`, data: values, backgroundColor:"rgba(47,110,62,0.6)", borderColor:"rgba(47,110,62,1)", borderWidth:1 }];
+
+    chartInstance = new Chart(ctx, {
+      type: chartType === "scatter" ? "scatter" : chartType,
+      data: { labels, datasets: ds },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        scales: {
+          y: { beginAtZero:true, title:{ display:true, text:yField } },
+          x: { title:{ display:true, text:xField } }
         }
       }
     });
-  } catch {
-    appendMessage("bot","Error al generar gráfico.");
+
+  }catch(err){
+    console.error(err);
+    appendMessage("bot","Error al generar el gráfico.");
   }
 }
 
-async function enviarDataset() {
-  if(!ultimaConsultaSQL){appendMessage("bot","No hay SQL para enviar.");return;}
-  appendMessage("bot","Solicitando dataset completo...");
-  try {
-    const res=await fetch(webhookDataset,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({sql:ultimaConsultaSQL})
-    });
-    const data=await res.json();
-    localStorage.setItem("datasetData",JSON.stringify(data));
+// Dataset completo
+async function enviarDataset(){
+  if (!ultimaConsultaSQL){
+    appendMessage("bot","No hay SQL para enviar.");
+    return;
+  }
+  const payload = { sql: ultimaConsultaSQL };
+  debugBlock("POST -> webhookData (payload)", payload);
+
+  try{
+    const res  = await fetch(webhookData, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
+    const data = await res.json();
+    debugBlock("ACK webhookData", data);
+    localStorage.setItem("datasetData", JSON.stringify(data));
     window.open("dataset.html","_blank");
-  } catch {
-    appendMessage("bot","Error al conectar con n8n.");
+  }catch(err){
+    appendMessage("bot","Error al conectar con n8n (dataset).");
+    console.error(err);
   }
 }
 </script>
