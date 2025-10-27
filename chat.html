@@ -153,15 +153,17 @@ table {
   border-collapse: collapse;
   margin-top: 10px;
   font-size: 0.9rem;
+  table-layout: auto;
 }
 th, td {
   border: 1px solid #ddd;
-  padding: 8px;
+  padding: 10px;
   text-align: left;
 }
 th {
   background: var(--verde);
   color: white;
+  font-weight: 500;
 }
 tr:nth-child(even) { background: #f5f7f5; }
 
@@ -183,6 +185,22 @@ tr:nth-child(even) { background: #f5f7f5; }
 .btn-alt { background: #e6e8e6; color: var(--gris); }
 .btn-alt:hover { background: #d3d5d3; }
 .btn-rec:hover { background: var(--verde-oscuro); }
+
+#verDatasetBtn {
+  margin-top: 12px;
+  background: var(--verde);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.2s;
+  width: 100%;
+}
+#verDatasetBtn:hover {
+  background: var(--verde-oscuro);
+}
 
 canvas { width: 100% !important; height: 380px !important; }
 
@@ -227,10 +245,12 @@ lucide.createIcons();
 
 const webhook = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
 const webhookGrafico = "https://rubaseval.app.n8n.cloud/webhook-test/grafico";
+const webhookDataset = "https://rubaseval.app.n8n.cloud/webhook-test/dataset";
 const supabaseUrl = "https://TU_URL_SUPABASE.supabase.co";
 const supabaseKey = "TU_API_KEY";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 let chartInstance = null;
+let ultimaConsultaSQL = "";
 
 document.getElementById("userInput").addEventListener("keydown", (e) => {
   if (e.key === "Enter") sendText();
@@ -279,6 +299,7 @@ async function sendText() {
 
     if (typeof data.respuesta === "string" && data.respuesta.includes("|")) {
       renderMarkdownTable(data.respuesta);
+      ultimaConsultaSQL = data.sql || "";
       if (data.recomendacion) {
         renderChartButtonsInChat(data.sql, data.recomendacion, data.x, data.y, data.consulta);
       }
@@ -300,6 +321,7 @@ function renderMarkdownTable(text) {
   html += "</tr></thead><tbody>";
   rows.forEach(r => html += "<tr>" + r.map(c => `<td>${c}</td>`).join("") + "</tr>");
   html += "</tbody></table>";
+  html += `<button id="verDatasetBtn" onclick="enviarDataset()">Ver resultado completo</button>`;
   document.getElementById("tablaContainer").innerHTML = html;
 }
 
@@ -312,27 +334,53 @@ function renderChartButtonsInChat(sql, recType, x, y, consulta) {
 
   tipos.forEach(t => {
     const clase = t===cleanType ? "btn-rec" : "btn-alt";
-    html += `<button class="btn-chart ${clase}" onclick="enviarGrafico('${sql}','${t}','${x}','${y}','${consulta}','${t===cleanType}')">
+    html += `<button class="btn-chart ${clase}" 
+              onclick="enviarGrafico('${sql}','${t}','${x}','${y}','${consulta}')">
               ${t===cleanType ? 'Recomendado ('+t+')' : t}
              </button>`;
   });
   html += "</div>";
-
   appendMessage("bot", html, true);
 }
 
-async function enviarGrafico(sql, tipo, x, y, consulta, recomendado) {
+async function enviarGrafico(sql, tipo, x, y, consulta) {
+  appendMessage("bot", "Procesando gráfico...");
   try {
-    await fetch(webhookGrafico, {
+    const res = await fetch(webhookGrafico, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ sql, chart_type: tipo, x, y, consulta, recomendado })
+      body: JSON.stringify({ sql, chart_type: tipo, x, y, consulta })
     });
-    appendMessage("bot", `Decisión enviada: gráfico ${tipo}`);
-    renderChartFromSQL(sql, tipo, x, y);
-  } catch (err) {
-    console.error(err);
-    appendMessage("bot","Error al enviar la decisión al servidor.");
+    if (res.ok) {
+      appendMessage("bot", `Gráfico "${tipo}" enviado correctamente.`);
+      renderChartFromSQL(sql, tipo, x, y);
+    } else {
+      appendMessage("bot", "Error al enviar el gráfico.");
+    }
+  } catch {
+    appendMessage("bot","Error al conectar con n8n.");
+  }
+}
+
+async function enviarDataset() {
+  if (!ultimaConsultaSQL) {
+    appendMessage("bot", "No hay una consulta disponible para enviar.");
+    return;
+  }
+  appendMessage("bot", "Enviando solicitud de dataset completo...");
+  try {
+    const res = await fetch("https://rubaseval.app.n8n.cloud/webhook-test/dataset", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ sql: ultimaConsultaSQL })
+    });
+    if (res.ok) {
+      appendMessage("bot", "Solicitud enviada correctamente al servidor de dataset.");
+    } else {
+      appendMessage("bot", "Error al enviar la consulta al servidor.");
+    }
+  } catch {
+    appendMessage("bot", "Error al conectar con n8n.");
   }
 }
 
@@ -370,7 +418,6 @@ async function renderChartFromSQL(sql, chartType, xField, yField) {
       }
     });
   } catch (err) {
-    console.error(err);
     document.getElementById("tablaContainer").innerHTML = "Error al generar el gráfico.";
   }
 }
