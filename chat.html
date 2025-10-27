@@ -9,10 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root {
-  --verde:#2f6e3e;--verde-oscuro:#245831;--gris:#3b3b3b;
-  --fondo:#f5f7f5;--card:#fff;--sombra:rgba(0,0,0,0.1);
-}
+:root {--verde:#2f6e3e;--verde-oscuro:#245831;--gris:#3b3b3b;--fondo:#f5f7f5;--card:#fff;--sombra:rgba(0,0,0,0.1);}
 body{font-family:"Poppins",sans-serif;margin:0;background:var(--fondo);color:var(--gris);}
 header{background:var(--card);display:flex;justify-content:space-between;align-items:center;padding:15px 40px;box-shadow:0 2px 8px var(--sombra);}
 header h1{color:var(--verde);display:flex;align-items:center;gap:8px;font-size:1.1rem;}
@@ -83,7 +80,6 @@ footer{text-align:center;background:var(--card);padding:8px;color:#555;font-size
 <script>
 lucide.createIcons();
 
-// ---------------- CONFIGURACIÓN ----------------
 const webhook = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
 const webhookGrafico = "https://rubaseval.app.n8n.cloud/webhook-test/grafico";
 const webhookDataset = "https://rubaseval.app.n8n.cloud/webhook-test/dataset";
@@ -91,22 +87,21 @@ const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-// ---------------- VARIABLES GLOBALES ----------------
 let ultimaConsultaSQL = "";
 let chartInstance = null;
+let sqlStore = {};  // <---- nuevo diccionario para guardar SQLs sin corromperlas
 
-// ---------------- EVENTOS ----------------
 document.getElementById("sendBtn").addEventListener("click", sendText);
 document.getElementById("userInput").addEventListener("keydown", e => { if (e.key === "Enter") sendText(); });
 document.getElementById("closeModal").addEventListener("click", () => document.getElementById("chartModal").style.display = "none");
 
-// ---------------- FUNCIONES ----------------
 function appendMessage(sender, text, html=false) {
   const msg = document.createElement("div");
   msg.className = "msg " + sender;
   msg.innerHTML = html ? text : text.replace(/\n/g, "<br>");
-  document.getElementById("messages").appendChild(msg);
-  document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+  const box = document.getElementById("messages");
+  box.appendChild(msg);
+  box.scrollTop = box.scrollHeight;
 }
 
 async function sendText() {
@@ -116,7 +111,6 @@ async function sendText() {
   appendMessage("user", text);
   input.value = "";
   appendMessage("bot", "Procesando...");
-
   try {
     const res = await fetch(webhook, {
       method: "POST",
@@ -125,7 +119,6 @@ async function sendText() {
     });
     const data = await res.json();
     document.querySelector(".msg.bot:last-child").remove();
-
     if (data.respuesta && data.respuesta.includes("|")) {
       renderMarkdownTable(data.respuesta);
       ultimaConsultaSQL = data.sql || "";
@@ -153,14 +146,15 @@ function renderMarkdownTable(text) {
 function renderChartButtonsInChat(sql, recType, x, y, consulta) {
   const tipos = ["bar","line","scatter","pie","histogram"];
   const cleanType = (recType||"bar").replace(/[()]/g,"").trim();
+  const sqlId = Date.now().toString();
+  sqlStore[sqlId] = sql;  // guardar SQL completa
   let html = `<p><strong>El agente sugiere:</strong> gráfico <strong>${cleanType}</strong>. Otros tipos:</p><div class="btn-group">`;
   tipos.forEach(t=>{
     const clase=t===cleanType?"btn-rec":"btn-alt";
-    html += `<button class="btn-chart ${clase}" data-tipo="${t}" data-sql='${encodeURIComponent(sql)}' data-consulta='${consulta||""}'>${t}</button>`;
+    html += `<button class="btn-chart ${clase}" data-tipo="${t}" data-id="${sqlId}" data-consulta='${consulta||""}'>${t}</button>`;
   });
   html += "</div>";
   appendMessage("bot", html, true);
-
   document.querySelectorAll(".btn-chart").forEach(btn=>{
     btn.addEventListener("click", ()=> manejarGrafico(btn));
   });
@@ -168,66 +162,63 @@ function renderChartButtonsInChat(sql, recType, x, y, consulta) {
 
 async function manejarGrafico(btn){
   const tipo = btn.dataset.tipo;
-  const sql = decodeURIComponent(btn.dataset.sql);
+  const sqlId = btn.dataset.id;
+  const sql = sqlStore[sqlId];  // recuperar SQL completa sin truncar
   const consulta = btn.dataset.consulta || "Consulta del usuario";
   appendMessage("bot", `Enviando decisión '${tipo}' al agente...`);
-
-  try{
-    await fetch(webhookGrafico,{
+  try {
+    await fetch(webhookGrafico, {
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        consulta: consulta,
-        sql: sql,
-        decision: tipo
-      })
+      body:JSON.stringify({ consulta: consulta, sql: sql, decision: tipo })
     });
     appendMessage("bot", `Confirmado: decisión '${tipo}' enviada al agente.`);
-    renderChartFromSQL(sql,tipo);
-  }catch{
-    appendMessage("bot","Error al conectar con n8n.");
+    renderChartFromSQL(sql, tipo);
+  } catch {
+    appendMessage("bot", "Error al conectar con n8n.");
   }
 }
 
-async function renderChartFromSQL(sql,chartType){
-  try{
-    const { data,error } = await supabase.rpc("execute_sql_query",{ query: sql });
-    if(error || !data || !data.length){
+async function renderChartFromSQL(sql, chartType) {
+  try {
+    const { data, error } = await supabase.rpc("execute_sql_query",{ query: sql });
+    if (error || !data || !data.length) {
       appendMessage("bot","Sin datos para graficar.");
       return;
     }
-
     const keys=Object.keys(data[0]);
     const xField=keys[0], yField=keys[1];
     const labels=data.map(r=>r[xField]);
     const values=data.map(r=>r[yField]);
-
     document.getElementById("chartModal").style.display="flex";
     const ctx=document.getElementById("chartCanvas").getContext("2d");
     if(chartInstance) chartInstance.destroy();
     let type=chartType==="histogram"?"bar":chartType;
-
     chartInstance=new Chart(ctx,{
       type:type,
-      data:{labels,datasets:[{label:`${yField} vs ${xField}`,data:values,
-        backgroundColor:"rgba(47,110,62,0.6)",borderColor:"rgba(47,110,62,1)",borderWidth:1}]},
+      data:{labels,datasets:[{label:`${yField} vs ${xField}`,data:values,backgroundColor:"rgba(47,110,62,0.6)",borderColor:"rgba(47,110,62,1)",borderWidth:1}]},
       options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}}}
     });
-  }catch{appendMessage("bot","Error al generar gráfico.");}
+  } catch {
+    appendMessage("bot","Error al generar gráfico.");
+  }
 }
 
-async function enviarDataset(){
+async function enviarDataset() {
   if(!ultimaConsultaSQL){appendMessage("bot","No hay SQL para enviar.");return;}
   appendMessage("bot","Solicitando dataset completo...");
-  try{
+  try {
     const res=await fetch(webhookDataset,{
-      method:"POST",headers:{"Content-Type":"application/json"},
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
       body:JSON.stringify({sql:ultimaConsultaSQL})
     });
     const data=await res.json();
     localStorage.setItem("datasetData",JSON.stringify(data));
     window.open("dataset.html","_blank");
-  }catch{appendMessage("bot","Error al conectar con n8n.");}
+  } catch {
+    appendMessage("bot","Error al conectar con n8n.");
+  }
 }
 </script>
 </body>
