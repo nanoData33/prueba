@@ -1,424 +1,220 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CohortIQ – Visualizador Clínico</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <style>
 :root {
-  --fondo: #f5f7f5;
-  --card: #ffffff;
-  --verde: #2f6e3e;
-  --verde-oscuro: #245831;
-  --gris: #3b3b3b;
-  --sombra: rgba(0,0,0,0.1);
+  --verde:#2f6e3e;
+  --verde-oscuro:#245831;
+  --gris:#3b3b3b;
+  --fondo:#f5f7f5;
+  --card:#fff;
+  --sombra:rgba(0,0,0,0.1);
 }
 body {
-  font-family: "Poppins", sans-serif;
-  background: var(--fondo);
-  color: var(--gris);
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
+  margin:0;
+  font-family:"Poppins",sans-serif;
+  background:var(--fondo);
+  color:var(--gris);
+  display:flex;
+  flex-direction:column;
+  height:100vh;
 }
 header {
-  background: var(--card);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 40px;
-  box-shadow: 0 2px 8px var(--sombra);
+  background:var(--card);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:15px 40px;
+  box-shadow:0 2px 8px var(--sombra);
 }
-header h1 {
-  font-size: 1.2rem;
-  color: var(--verde);
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-header button {
-  background: var(--verde);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-weight: 500;
-  cursor: pointer;
-}
-header button:hover { background: var(--verde-oscuro); }
-
+header h1 {color:var(--verde);font-size:1.2rem;display:flex;align-items:center;gap:8px;}
+header button {background:var(--verde);color:white;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;}
+header button:hover {background:var(--verde-oscuro);}
 main {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  padding: 20px;
+  flex:1;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+  padding:20px;
 }
-
-.chat-box, .tabla-box {
-  background: var(--card);
-  border-radius: 12px;
-  box-shadow: 0 4px 10px var(--sombra);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
+.chat-box,.tabla-box {
+  background:var(--card);
+  border-radius:12px;
+  box-shadow:0 4px 10px var(--sombra);
+  padding:20px;
+  display:flex;
+  flex-direction:column;
 }
-
-h2 {
-  text-align: center;
-  color: var(--verde);
-  margin-bottom: 10px;
-  font-weight: 600;
-}
-
+h2 {text-align:center;color:var(--verde);}
 .messages {
-  flex: 1;
-  overflow-y: auto;
-  background: #f8faf8;
-  border-radius: 10px;
-  padding: 15px;
-  margin-bottom: 10px;
-  box-shadow: inset 0 0 6px rgba(0,0,0,0.05);
+  flex:1;overflow-y:auto;background:#f8faf8;border-radius:10px;padding:15px;margin-bottom:10px;
 }
-
-.msg {
-  margin-bottom: 12px;
-  padding: 12px 15px;
-  border-radius: 12px;
-  line-height: 1.5;
-  max-width: 85%;
-  word-wrap: break-word;
+.msg {margin-bottom:12px;padding:12px 15px;border-radius:12px;max-width:85%;}
+.msg.user {background:var(--verde);color:white;align-self:flex-end;}
+.msg.bot {background:#e8f3e8;align-self:flex-start;}
+.input-area {display:flex;gap:10px;}
+input {flex:1;padding:10px;border:1px solid #ccc;border-radius:10px;}
+button.action {background:var(--verde);color:white;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;}
+button.action:hover{background:var(--verde-oscuro);}
+table {width:100%;border-collapse:collapse;margin-top:10px;font-size:0.9rem;}
+th,td{border:1px solid #ddd;padding:10px;text-align:left;}
+th{background:var(--verde);color:white;}
+tr:nth-child(even){background:#f5f7f5;}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.btn-chart{padding:8px 12px;border:none;border-radius:6px;cursor:pointer;}
+.btn-rec{background:var(--verde);color:white;}
+.btn-alt{background:#e6e8e6;}
+.btn-alt:hover{background:#d3d5d3;}
+#verDatasetBtn{
+  margin-top:12px;background:var(--verde);color:white;border:none;border-radius:8px;padding:10px 16px;
+  cursor:pointer;width:100%;
 }
-.msg.user {
-  background: var(--verde);
-  color: white;
-  align-self: flex-end;
-  border-bottom-right-radius: 0;
-}
-.msg.bot {
-  background: #e8f3e8;
-  color: var(--gris);
-  align-self: flex-start;
-  border-bottom-left-radius: 0;
-}
-
-.typing {
-  display: flex;
-  gap: 5px;
-  margin-top: 5px;
-  padding-left: 5px;
-}
-.dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--verde);
-  animation: blink 1.2s infinite;
-}
-.dot:nth-child(2){ animation-delay: 0.2s; }
-.dot:nth-child(3){ animation-delay: 0.4s; }
-@keyframes blink {
-  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
-  40% { opacity: 1; transform: scale(1); }
-}
-
-.input-area {
-  display: flex;
-  gap: 10px;
-}
-input {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-}
-button.action {
-  background: var(--verde);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 14px;
-  cursor: pointer;
-}
-button.action:hover { background: var(--verde-oscuro); }
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-  font-size: 0.9rem;
-  table-layout: auto;
-}
-th, td {
-  border: 1px solid #ddd;
-  padding: 10px;
-  text-align: left;
-}
-th {
-  background: var(--verde);
-  color: white;
-  font-weight: 500;
-}
-tr:nth-child(even) { background: #f5f7f5; }
-
-.btn-group {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-}
-.btn-chart {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: 0.2s;
-}
-.btn-rec { background: var(--verde); color: white; }
-.btn-alt { background: #e6e8e6; color: var(--gris); }
-.btn-alt:hover { background: #d3d5d3; }
-.btn-rec:hover { background: var(--verde-oscuro); }
-
-#verDatasetBtn {
-  margin-top: 12px;
-  background: var(--verde);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 16px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: 0.2s;
-  width: 100%;
-}
-#verDatasetBtn:hover {
-  background: var(--verde-oscuro);
-}
-
-canvas { width: 100% !important; height: 380px !important; }
-
-footer {
-  background: var(--card);
-  text-align: center;
-  padding: 8px;
-  font-size: 0.85rem;
-  color: #555;
-  box-shadow: 0 -2px 6px var(--sombra);
-}
+#verDatasetBtn:hover{background:var(--verde-oscuro);}
+canvas{width:100%!important;height:380px!important;}
+footer{background:var(--card);text-align:center;padding:8px;font-size:0.85rem;color:#555;}
 </style>
 </head>
-
 <body>
 <header>
   <h1><i data-lucide="stethoscope"></i> CohortIQ – Asistente Clínico</h1>
   <button onclick="window.location.href='index.html'">Volver al Inicio</button>
 </header>
-
 <main>
   <div class="chat-box">
     <h2>Chat con el Agente</h2>
     <div id="messages" class="messages"></div>
     <div class="input-area">
-      <input id="userInput" placeholder="Escribe tu mensaje..." />
+      <input id="userInput" placeholder="Escribe tu mensaje...">
       <button class="action" onclick="sendText()">Enviar</button>
     </div>
   </div>
-
   <div class="tabla-box">
     <h2>Resultados</h2>
     <div id="tablaContainer">Esperando resultados...</div>
     <canvas id="chart"></canvas>
   </div>
 </main>
-
 <footer>© 2025 CohortIQ – Plataforma Inteligente de Apoyo Clínico</footer>
 
 <script>
 lucide.createIcons();
 
-const webhook = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
-const webhookGrafico = "https://rubaseval.app.n8n.cloud/webhook-test/grafico";
-const webhookDataset = "https://rubaseval.app.n8n.cloud/webhook-test/dataset";
-const supabaseUrl = "https://TU_URL_SUPABASE.supabase.co";
-const supabaseKey = "TU_API_KEY";
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-let chartInstance = null;
-let ultimaConsultaSQL = "";
+const webhook="https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
+const webhookGrafico="https://rubaseval.app.n8n.cloud/webhook-test/grafico";
+const webhookDataset="https://rubaseval.app.n8n.cloud/webhook-test/dataset";
+let chartInstance=null;
+let ultimaConsultaSQL="";
 
-document.getElementById("userInput").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") sendText();
+document.getElementById("userInput").addEventListener("keydown",e=>{
+  if(e.key==="Enter") sendText();
 });
 
-function appendMessage(sender, text, html=false) {
-  const msg = document.createElement("div");
-  msg.className = "msg " + sender;
-  msg.innerHTML = html ? text : text.replace(/\n/g, "<br>");
-  const box = document.getElementById("messages");
+function appendMessage(sender,text,html=false){
+  const msg=document.createElement("div");
+  msg.className="msg "+sender;
+  msg.innerHTML=html?text:text.replace(/\n/g,"<br>");
+  const box=document.getElementById("messages");
   box.appendChild(msg);
-  box.scrollTop = box.scrollHeight;
+  box.scrollTop=box.scrollHeight;
 }
 
-function showTyping() {
-  if (document.getElementById("typing")) return;
-  const div = document.createElement("div");
-  div.id = "typing";
-  div.className = "typing";
-  div.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
-  document.getElementById("messages").appendChild(div);
-}
-function removeTyping() {
-  const t = document.getElementById("typing");
-  if (t) t.remove();
-}
-
-async function sendText() {
-  const input = document.getElementById("userInput");
-  const text = input.value.trim();
-  if (!text) return;
-  appendMessage("user", text);
-  input.value = "";
-  showTyping();
-
-  try {
-    const res = await fetch(webhook, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({type:"text", content:text})
+async function sendText(){
+  const input=document.getElementById("userInput");
+  const text=input.value.trim();
+  if(!text)return;
+  appendMessage("user",text);
+  input.value="";
+  appendMessage("bot","Procesando...");
+  try{
+    const res=await fetch(webhook,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({type:"text",content:text})
     });
-    const data = await res.json();
-    removeTyping();
-
-    if (data.respuesta && !data.respuesta.includes("|")) appendMessage("bot", data.respuesta);
-
-    if (typeof data.respuesta === "string" && data.respuesta.includes("|")) {
+    const data=await res.json();
+    document.querySelector(".msg.bot:last-child").remove();
+    if(data.respuesta&&data.respuesta.includes("|")){
       renderMarkdownTable(data.respuesta);
-      ultimaConsultaSQL = data.sql || "";
-      if (data.recomendacion) {
-        renderChartButtonsInChat(data.sql, data.recomendacion, data.x, data.y, data.consulta);
+      ultimaConsultaSQL=data.sql||"";
+      if(data.recomendacion){
+        renderChartButtonsInChat(data.sql,data.recomendacion,data.x,data.y,data.consulta);
       }
+    }else if(data.respuesta){
+      appendMessage("bot",data.respuesta);
     }
-  } catch {
-    removeTyping();
-    appendMessage("bot", "Error al conectar con el agente.");
+  }catch(err){
+    appendMessage("bot","Error al conectar con el agente.");
   }
 }
 
-function renderMarkdownTable(text) {
-  const lines = text.trim().split("\n").filter(l => l.includes("|"));
-  if (lines.length < 2) return;
-  const headers = lines[0].split("|").map(h => h.trim()).filter(Boolean);
-  const rows = lines.slice(2).map(line => line.split("|").map(c => c.trim()).filter(Boolean));
-
-  let html = "<table><thead><tr>";
-  headers.forEach(h => html += `<th>${h}</th>`);
-  html += "</tr></thead><tbody>";
-  rows.forEach(r => html += "<tr>" + r.map(c => `<td>${c}</td>`).join("") + "</tr>");
-  html += "</tbody></table>";
-  html += `<button id="verDatasetBtn" onclick="enviarDataset()">Ver resultado completo</button>`;
-  document.getElementById("tablaContainer").innerHTML = html;
+function renderMarkdownTable(text){
+  const lines=text.trim().split("\n").filter(l=>l.includes("|"));
+  const headers=lines[0].split("|").map(h=>h.trim()).filter(Boolean);
+  const rows=lines.slice(2).map(line=>line.split("|").map(c=>c.trim()).filter(Boolean));
+  let html="<table><thead><tr>";
+  headers.forEach(h=>html+=`<th>${h}</th>`);
+  html+="</tr></thead><tbody>";
+  rows.forEach(r=>html+="<tr>"+r.map(c=>`<td>${c}</td>`).join("")+"</tr>");
+  html+="</tbody></table>";
+  html+=`<button id="verDatasetBtn" onclick="enviarDataset()">Ver resultado completo</button>`;
+  document.getElementById("tablaContainer").innerHTML=html;
 }
 
-function renderChartButtonsInChat(sql, recType, x, y, consulta) {
-  const tipos = ["bar", "line", "scatter", "pie", "histogram"];
-  const cleanType = recType.replace(/[()]/g,"").trim();
-
-  let html = `<p><strong>El agente sugiere:</strong> podríamos visualizarlo con un gráfico <strong>${cleanType}</strong>. 
-  Si quieres, puedes probar otro tipo:</p><div class="btn-group">`;
-
-  tipos.forEach(t => {
-    const clase = t===cleanType ? "btn-rec" : "btn-alt";
-    html += `<button class="btn-chart ${clase}" 
-              onclick="enviarGrafico('${sql}','${t}','${x}','${y}','${consulta}')">
-              ${t===cleanType ? 'Recomendado ('+t+')' : t}
-             </button>`;
+function renderChartButtonsInChat(sql,recType,x,y,consulta){
+  const tipos=["bar","line","scatter","pie","histogram"];
+  const cleanType=recType.replace(/[()]/g,"").trim();
+  let html=`<p><strong>El agente sugiere:</strong> gráfico <strong>${cleanType}</strong>. Otros tipos:</p><div class="btn-group">`;
+  tipos.forEach(t=>{
+    const clase=t===cleanType?"btn-rec":"btn-alt";
+    html+=`<button class="btn-chart ${clase}" onclick="enviarGrafico('${sql}','${t}','${x}','${y}','${consulta}')">${t}</button>`;
   });
-  html += "</div>";
-  appendMessage("bot", html, true);
+  html+="</div>";
+  appendMessage("bot",html,true);
 }
 
-async function enviarGrafico(sql, tipo, x, y, consulta) {
-  appendMessage("bot", "Procesando gráfico...");
-  try {
-    const res = await fetch(webhookGrafico, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ sql, chart_type: tipo, x, y, consulta })
+async function enviarGrafico(sql,tipo,x,y,consulta){
+  appendMessage("bot","Enviando gráfico "+tipo+" a n8n...");
+  try{
+    const res=await fetch(webhookGrafico,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({sql,chart_type:tipo,x,y,consulta})
     });
-    if (res.ok) {
-      appendMessage("bot", `Gráfico "${tipo}" enviado correctamente.`);
-      renderChartFromSQL(sql, tipo, x, y);
-    } else {
-      appendMessage("bot", "Error al enviar el gráfico.");
+    if(res.ok){
+      appendMessage("bot","Confirmado: gráfico "+tipo+" enviado a n8n.");
+    }else{
+      appendMessage("bot","Error al enviar gráfico a n8n.");
     }
-  } catch {
-    appendMessage("bot","Error al conectar con n8n.");
+  }catch(err){
+    appendMessage("bot","Error de conexión con n8n.");
   }
 }
 
-async function enviarDataset() {
-  if (!ultimaConsultaSQL) {
-    appendMessage("bot", "No hay una consulta disponible para enviar.");
+async function enviarDataset(){
+  if(!ultimaConsultaSQL){
+    appendMessage("bot","No hay SQL disponible.");
     return;
   }
-  appendMessage("bot", "Enviando solicitud de dataset completo...");
-  try {
-    const res = await fetch("https://rubaseval.app.n8n.cloud/webhook-test/dataset", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ sql: ultimaConsultaSQL })
+  appendMessage("bot","Solicitando dataset completo...");
+  try{
+    const res=await fetch(webhookDataset,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({sql:ultimaConsultaSQL})
     });
-    if (res.ok) {
-      appendMessage("bot", "Solicitud enviada correctamente al servidor de dataset.");
-    } else {
-      appendMessage("bot", "Error al enviar la consulta al servidor.");
-    }
-  } catch {
-    appendMessage("bot", "Error al conectar con n8n.");
-  }
-}
-
-async function renderChartFromSQL(sql, chartType, xField, yField) {
-  try {
-    const { data, error } = await supabase.rpc("execute_sql_query", { query: sql });
-    if (error) throw error;
-    if (!data?.length) {
-      document.getElementById("tablaContainer").innerHTML = "Sin datos para graficar.";
-      return;
-    }
-
-    const labels = data.map(row => row[xField]);
-    const values = data.map(row => row[yField]);
-
-    const ctx = document.getElementById("chart").getContext("2d");
-    if (chartInstance) chartInstance.destroy();
-    chartInstance = new Chart(ctx, {
-      type: chartType,
-      data: {
-        labels,
-        datasets: [{
-          label: `${yField} vs ${xField}`,
-          data: values,
-          backgroundColor: "rgba(47,110,62,0.6)",
-          borderColor: "rgba(47,110,62,1)",
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: true } },
-        scales: { y: { beginAtZero: true } }
-      }
-    });
-  } catch (err) {
-    document.getElementById("tablaContainer").innerHTML = "Error al generar el gráfico.";
+    if(!res.ok){appendMessage("bot","Error al solicitar dataset.");return;}
+    const data=await res.json();
+    localStorage.setItem("datasetData",JSON.stringify(data));
+    window.open("dataset.html","_blank");
+  }catch{
+    appendMessage("bot","Error al conectar con n8n.");
   }
 }
 </script>
