@@ -1,70 +1,33 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>CohortIQ – Visualizador Clínico</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
-  --verde:#2f6e3e;
-  --verde-oscuro:#245831;
-  --gris:#3b3b3b;
-  --fondo:#f5f7f5;
-  --card:#fff;
-  --sombra:rgba(0,0,0,0.1);
+  --verde:#2f6e3e;--verde-oscuro:#245831;--gris:#3b3b3b;--fondo:#f5f7f5;--card:#fff;--sombra:rgba(0,0,0,0.1);
 }
-body {
-  margin:0;
-  font-family:"Poppins",sans-serif;
-  background:var(--fondo);
-  color:var(--gris);
-  display:flex;
-  flex-direction:column;
-  height:100vh;
-}
-header {
-  background:var(--card);
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:15px 40px;
-  box-shadow:0 2px 8px var(--sombra);
-}
-header h1 {color:var(--verde);font-size:1.2rem;display:flex;align-items:center;gap:8px;}
-header button {background:var(--verde);color:white;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;}
-header button:hover {background:var(--verde-oscuro);}
-main {
-  flex:1;
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:20px;
-  padding:20px;
-}
-.chat-box,.tabla-box {
-  background:var(--card);
-  border-radius:12px;
-  box-shadow:0 4px 10px var(--sombra);
-  padding:20px;
-  display:flex;
-  flex-direction:column;
-}
-h2 {text-align:center;color:var(--verde);}
-.messages {
-  flex:1;overflow-y:auto;background:#f8faf8;border-radius:10px;padding:15px;margin-bottom:10px;
-}
-.msg {margin-bottom:12px;padding:12px 15px;border-radius:12px;max-width:85%;}
-.msg.user {background:var(--verde);color:white;align-self:flex-end;}
-.msg.bot {background:#e8f3e8;align-self:flex-start;}
-.input-area {display:flex;gap:10px;}
-input {flex:1;padding:10px;border:1px solid #ccc;border-radius:10px;}
-button.action {background:var(--verde);color:white;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;}
+body{font-family:"Poppins",sans-serif;margin:0;background:var(--fondo);color:var(--gris);}
+header{background:var(--card);display:flex;justify-content:space-between;align-items:center;padding:15px 40px;box-shadow:0 2px 8px var(--sombra);}
+header h1{color:var(--verde);display:flex;align-items:center;gap:8px;}
+header button{background:var(--verde);color:white;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;}
+header button:hover{background:var(--verde-oscuro);}
+main{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:20px;}
+.chat-box,.tabla-box{background:var(--card);border-radius:12px;box-shadow:0 4px 10px var(--sombra);padding:20px;display:flex;flex-direction:column;}
+h2{text-align:center;color:var(--verde);}
+.messages{flex:1;overflow-y:auto;background:#f8faf8;border-radius:10px;padding:15px;margin-bottom:10px;}
+.msg{margin-bottom:12px;padding:12px 15px;border-radius:12px;max-width:85%;}
+.msg.user{background:var(--verde);color:white;align-self:flex-end;}
+.msg.bot{background:#e8f3e8;align-self:flex-start;}
+.input-area{display:flex;gap:10px;}
+input{flex:1;padding:10px;border:1px solid #ccc;border-radius:10px;}
+button.action{background:var(--verde);color:white;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;}
 button.action:hover{background:var(--verde-oscuro);}
-table {width:100%;border-collapse:collapse;margin-top:10px;font-size:0.9rem;}
-th,td{border:1px solid #ddd;padding:10px;text-align:left;}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+th,td{border:1px solid #ddd;padding:8px;text-align:left;}
 th{background:var(--verde);color:white;}
 tr:nth-child(even){background:#f5f7f5;}
 .btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
@@ -72,35 +35,35 @@ tr:nth-child(even){background:#f5f7f5;}
 .btn-rec{background:var(--verde);color:white;}
 .btn-alt{background:#e6e8e6;}
 .btn-alt:hover{background:#d3d5d3;}
-#verDatasetBtn{
-  margin-top:12px;background:var(--verde);color:white;border:none;border-radius:8px;padding:10px 16px;
-  cursor:pointer;width:100%;
-}
+#verDatasetBtn{margin-top:12px;background:var(--verde);color:white;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;width:100%;}
 #verDatasetBtn:hover{background:var(--verde-oscuro);}
 canvas{width:100%!important;height:380px!important;}
-footer{background:var(--card);text-align:center;padding:8px;font-size:0.85rem;color:#555;}
+footer{text-align:center;background:var(--card);padding:8px;color:#555;font-size:0.85rem;}
 </style>
 </head>
+
 <body>
 <header>
   <h1><i data-lucide="stethoscope"></i> CohortIQ – Asistente Clínico</h1>
   <button onclick="window.location.href='index.html'">Volver al Inicio</button>
 </header>
+
 <main>
   <div class="chat-box">
     <h2>Chat con el Agente</h2>
     <div id="messages" class="messages"></div>
     <div class="input-area">
-      <input id="userInput" placeholder="Escribe tu mensaje...">
-      <button class="action" onclick="sendText()">Enviar</button>
+      <input id="userInput" placeholder="Escribe tu mensaje..." />
+      <button class="action" id="sendBtn">Enviar</button>
     </div>
   </div>
+
   <div class="tabla-box">
     <h2>Resultados</h2>
     <div id="tablaContainer">Esperando resultados...</div>
-    <canvas id="chart"></canvas>
   </div>
 </main>
+
 <footer>© 2025 CohortIQ – Plataforma Inteligente de Apoyo Clínico</footer>
 
 <script>
@@ -109,20 +72,16 @@ lucide.createIcons();
 const webhook="https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
 const webhookGrafico="https://rubaseval.app.n8n.cloud/webhook-test/grafico";
 const webhookDataset="https://rubaseval.app.n8n.cloud/webhook-test/dataset";
-let chartInstance=null;
 let ultimaConsultaSQL="";
 
-document.getElementById("userInput").addEventListener("keydown",e=>{
-  if(e.key==="Enter") sendText();
-});
+document.getElementById("sendBtn").addEventListener("click",sendText);
+document.getElementById("userInput").addEventListener("keydown",e=>{if(e.key==="Enter")sendText();});
 
 function appendMessage(sender,text,html=false){
   const msg=document.createElement("div");
   msg.className="msg "+sender;
   msg.innerHTML=html?text:text.replace(/\n/g,"<br>");
-  const box=document.getElementById("messages");
-  box.appendChild(msg);
-  box.scrollTop=box.scrollHeight;
+  document.getElementById("messages").appendChild(msg);
 }
 
 async function sendText(){
@@ -133,89 +92,74 @@ async function sendText(){
   input.value="";
   appendMessage("bot","Procesando...");
   try{
-    const res=await fetch(webhook,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({type:"text",content:text})
-    });
+    const res=await fetch(webhook,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"text",content:text})});
     const data=await res.json();
     document.querySelector(".msg.bot:last-child").remove();
-    if(data.respuesta&&data.respuesta.includes("|")){
+    if(data.respuesta && data.respuesta.includes("|")){
       renderMarkdownTable(data.respuesta);
       ultimaConsultaSQL=data.sql||"";
-      if(data.recomendacion){
-        renderChartButtonsInChat(data.sql,data.recomendacion,data.x,data.y,data.consulta);
-      }
-    }else if(data.respuesta){
-      appendMessage("bot",data.respuesta);
-    }
-  }catch(err){
-    appendMessage("bot","Error al conectar con el agente.");
-  }
+      renderChartButtonsInChat(data.sql,data.recomendacion,data.x,data.y,data.consulta);
+    }else appendMessage("bot",data.respuesta||"Sin respuesta del agente.");
+  }catch(e){appendMessage("bot","Error de conexión con el agente.");}
 }
 
 function renderMarkdownTable(text){
   const lines=text.trim().split("\n").filter(l=>l.includes("|"));
   const headers=lines[0].split("|").map(h=>h.trim()).filter(Boolean);
-  const rows=lines.slice(2).map(line=>line.split("|").map(c=>c.trim()).filter(Boolean));
+  const rows=lines.slice(2).map(l=>l.split("|").map(c=>c.trim()).filter(Boolean));
   let html="<table><thead><tr>";
   headers.forEach(h=>html+=`<th>${h}</th>`);
   html+="</tr></thead><tbody>";
   rows.forEach(r=>html+="<tr>"+r.map(c=>`<td>${c}</td>`).join("")+"</tr>");
   html+="</tbody></table>";
-  html+=`<button id="verDatasetBtn" onclick="enviarDataset()">Ver resultado completo</button>`;
+  html+=`<button id="verDatasetBtn">Ver resultado completo</button>`;
   document.getElementById("tablaContainer").innerHTML=html;
+  document.getElementById("verDatasetBtn").addEventListener("click",enviarDataset);
 }
 
 function renderChartButtonsInChat(sql,recType,x,y,consulta){
   const tipos=["bar","line","scatter","pie","histogram"];
-  const cleanType=recType.replace(/[()]/g,"").trim();
+  const cleanType=(recType||"bar").replace(/[()]/g,"").trim();
   let html=`<p><strong>El agente sugiere:</strong> gráfico <strong>${cleanType}</strong>. Otros tipos:</p><div class="btn-group">`;
   tipos.forEach(t=>{
     const clase=t===cleanType?"btn-rec":"btn-alt";
-    html+=`<button class="btn-chart ${clase}" onclick="enviarGrafico('${sql}','${t}','${x}','${y}','${consulta}')">${t}</button>`;
+    html+=`<button class="btn-chart ${clase}" data-tipo="${t}" data-sql='${sql}' data-x='${x}' data-y='${y}' data-consulta='${consulta}'>${t}</button>`;
   });
   html+="</div>";
   appendMessage("bot",html,true);
-}
 
-async function enviarGrafico(sql,tipo,x,y,consulta){
-  appendMessage("bot","Enviando gráfico "+tipo+" a n8n...");
-  try{
-    const res=await fetch(webhookGrafico,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({sql,chart_type:tipo,x,y,consulta})
+  document.querySelectorAll(".btn-chart").forEach(btn=>{
+    btn.addEventListener("click",async()=>{
+      const tipo=btn.dataset.tipo;
+      appendMessage("bot","Enviando gráfico "+tipo+" a n8n...");
+      try{
+        const res=await fetch(webhookGrafico,{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            sql:btn.dataset.sql,
+            chart_type:tipo,
+            x:btn.dataset.x,
+            y:btn.dataset.y,
+            consulta:btn.dataset.consulta
+          })
+        });
+        if(res.ok) appendMessage("bot","Confirmado: gráfico "+tipo+" enviado correctamente.");
+        else appendMessage("bot","Error al enviar gráfico a n8n.");
+      }catch{appendMessage("bot","Error de conexión con n8n.");}
     });
-    if(res.ok){
-      appendMessage("bot","Confirmado: gráfico "+tipo+" enviado a n8n.");
-    }else{
-      appendMessage("bot","Error al enviar gráfico a n8n.");
-    }
-  }catch(err){
-    appendMessage("bot","Error de conexión con n8n.");
-  }
+  });
 }
 
 async function enviarDataset(){
-  if(!ultimaConsultaSQL){
-    appendMessage("bot","No hay SQL disponible.");
-    return;
-  }
+  if(!ultimaConsultaSQL){appendMessage("bot","No hay SQL para enviar.");return;}
   appendMessage("bot","Solicitando dataset completo...");
   try{
-    const res=await fetch(webhookDataset,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({sql:ultimaConsultaSQL})
-    });
-    if(!res.ok){appendMessage("bot","Error al solicitar dataset.");return;}
+    const res=await fetch(webhookDataset,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({sql:ultimaConsultaSQL})});
     const data=await res.json();
     localStorage.setItem("datasetData",JSON.stringify(data));
     window.open("dataset.html","_blank");
-  }catch{
-    appendMessage("bot","Error al conectar con n8n.");
-  }
+  }catch{appendMessage("bot","Error al conectar con n8n.");}
 }
 </script>
 </body>
