@@ -9,9 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root {
-  --verde:#2f6e3e;--verde-oscuro:#245831;--gris:#3b3b3b;--fondo:#f5f7f5;--card:#fff;--sombra:rgba(0,0,0,0.1);
-}
+:root { --verde:#2f6e3e; --verde-oscuro:#245831; --gris:#3b3b3b; --fondo:#f5f7f5; --card:#fff; --sombra:rgba(0,0,0,0.1);}
 body{font-family:"Poppins",sans-serif;margin:0;background:var(--fondo);color:var(--gris);}
 header{background:var(--card);display:flex;justify-content:space-between;align-items:center;padding:15px 40px;box-shadow:0 2px 8px var(--sombra);}
 header h1{color:var(--verde);display:flex;align-items:center;gap:8px;}
@@ -39,7 +37,10 @@ tr:nth-child(even){background:#f5f7f5;}
 .btn-alt:hover{background:#d3d5d3;}
 #verDatasetBtn{margin-top:12px;background:var(--verde);color:white;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;width:100%;}
 #verDatasetBtn:hover{background:var(--verde-oscuro);}
-canvas{width:100%!important;height:380px!important;}
+#chartModal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:9999;}
+#chartModalContent{background:white;padding:20px;border-radius:10px;width:80%;max-width:800px;box-shadow:0 0 10px rgba(0,0,0,0.3);}
+#closeModal{background:var(--verde);color:white;border:none;padding:8px 12px;border-radius:6px;float:right;cursor:pointer;}
+canvas{width:100%!important;height:400px!important;}
 footer{text-align:center;background:var(--card);padding:8px;color:#555;font-size:0.85rem;}
 </style>
 </head>
@@ -63,9 +64,16 @@ footer{text-align:center;background:var(--card);padding:8px;color:#555;font-size
   <div class="tabla-box">
     <h2>Resultados</h2>
     <div id="tablaContainer">Esperando resultados...</div>
-    <canvas id="chartCanvas"></canvas>
   </div>
 </main>
+
+<!-- Modal para gráficos -->
+<div id="chartModal">
+  <div id="chartModalContent">
+    <button id="closeModal">Cerrar</button>
+    <canvas id="chartCanvas"></canvas>
+  </div>
+</div>
 
 <footer>© 2025 CohortIQ – Plataforma Inteligente de Apoyo Clínico</footer>
 
@@ -75,11 +83,16 @@ lucide.createIcons();
 const webhook="https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
 const webhookGrafico="https://rubaseval.app.n8n.cloud/webhook-test/grafico";
 const webhookDataset="https://rubaseval.app.n8n.cloud/webhook-test/dataset";
+const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
+";
+const supabase=window.supabase.createClient(supabaseUrl,supabaseKey);
 let ultimaConsultaSQL="";
 let chartInstance=null;
 
 document.getElementById("sendBtn").addEventListener("click",sendText);
 document.getElementById("userInput").addEventListener("keydown",e=>{if(e.key==="Enter")sendText();});
+document.getElementById("closeModal").addEventListener("click",()=>{document.getElementById("chartModal").style.display="none";});
 
 function appendMessage(sender,text,html=false){
   const msg=document.createElement("div");
@@ -127,12 +140,11 @@ function renderChartButtonsInChat(sql,recType,x,y,consulta){
   let html=`<p><strong>El agente sugiere:</strong> gráfico <strong>${cleanType}</strong>. Otros tipos:</p><div class="btn-group">`;
   tipos.forEach(t=>{
     const clase=t===cleanType?"btn-rec":"btn-alt";
-    html+=`<button class="btn-chart ${clase}" data-tipo="${t}" data-sql='${sql}' data-x='${x}' data-y='${y}' data-consulta='${consulta}'>${t}</button>`;
+    html+=`<button class="btn-chart ${clase}" data-tipo="${t}" data-sql='${encodeURIComponent(sql)}' data-consulta='${consulta||""}'>${t}</button>`;
   });
   html+="</div>";
   appendMessage("bot",html,true);
 
-  // ahora activamos los botones
   document.querySelectorAll(".btn-chart").forEach(btn=>{
     btn.addEventListener("click",()=>manejarGrafico(btn));
   });
@@ -140,55 +152,66 @@ function renderChartButtonsInChat(sql,recType,x,y,consulta){
 
 async function manejarGrafico(btn){
   const tipo=btn.dataset.tipo;
-  const payload={sql:btn.dataset.sql,chart_type:tipo,x:btn.dataset.x,y:btn.dataset.y};
-  appendMessage("bot",`Enviando gráfico ${tipo} a n8n...`);
+  const sql=decodeURIComponent(btn.dataset.sql);
+  const consulta=btn.dataset.consulta||"Consulta del usuario";
+  appendMessage("bot",`Enviando decisión '${tipo}' al agente...`);
+
+  // Enviar al agente n8n
   try{
-    const res=await fetch(webhookGrafico,{
+    await fetch(webhookGrafico,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(payload)
+      body:JSON.stringify({
+        consulta:consulta,
+        sql:sql,
+        decision:tipo
+      })
     });
-    if(res.ok){
-      appendMessage("bot",`Confirmado: gráfico ${tipo} enviado correctamente.`);
-      // usar el mismo payload para renderizar gráfico local
-      renderLocalChart(payload);
-    }else{
-      appendMessage("bot","Error al enviar gráfico a n8n.");
-    }
-  }catch{
-    appendMessage("bot","Error de conexión con n8n.");
+    appendMessage("bot",`Confirmado: decisión '${tipo}' enviada al agente.`);
+
+    // generar gráfico con datos reales
+    renderChartFromSQL(sql,tipo);
+  }catch(e){
+    appendMessage("bot","Error al conectar con n8n.");
   }
 }
 
-function renderLocalChart({chart_type,x,y}){
-  const ctx=document.getElementById("chartCanvas").getContext("2d");
-  if(chartInstance) chartInstance.destroy();
+async function renderChartFromSQL(sql,chartType){
+  try{
+    const { data,error } = await supabase.rpc("execute_sql_query",{ query: sql });
+    if(error || !data || data.length===0){appendMessage("bot","Sin datos para graficar.");return;}
 
-  // datos simulados (hasta que lleguen reales desde supabase/n8n)
-  const labels=["A","B","C","D","E"];
-  const values=labels.map(()=>Math.floor(Math.random()*20)+5);
+    const keys=Object.keys(data[0]);
+    const xField=keys[0], yField=keys[1];
+    const labels=data.map(r=>r[xField]);
+    const values=data.map(r=>r[yField]);
 
-  let type=chart_type;
-  if(chart_type==="histogram") type="bar";
+    document.getElementById("chartModal").style.display="flex";
+    const ctx=document.getElementById("chartCanvas").getContext("2d");
+    if(chartInstance) chartInstance.destroy();
 
-  chartInstance=new Chart(ctx,{
-    type:type,
-    data:{
-      labels:labels,
-      datasets:[{
-        label:`${y} vs ${x}`,
-        data:values,
-        backgroundColor:"rgba(47,110,62,0.6)",
-        borderColor:"rgba(47,110,62,1)",
-        borderWidth:1
-      }]
-    },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      scales:{y:{beginAtZero:true}}
-    }
-  });
+    let type=chartType;
+    if(chartType==="histogram") type="bar";
+
+    chartInstance=new Chart(ctx,{
+      type:type,
+      data:{
+        labels,
+        datasets:[{
+          label:`${yField} vs ${xField}`,
+          data:values,
+          backgroundColor:"rgba(47,110,62,0.6)",
+          borderColor:"rgba(47,110,62,1)",
+          borderWidth:1
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        scales:{y:{beginAtZero:true}}
+      }
+    });
+  }catch(e){appendMessage("bot","Error al generar gráfico.");}
 }
 
 async function enviarDataset(){
