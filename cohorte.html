@@ -101,7 +101,7 @@ body {
         <div class="arrow" onclick="nextGrafico()">›</div>
       </div>
       <div class="flex mt-2 gap-2">
-        <input id="inputGrafico" placeholder="Ej: histograma de edad de los pacientes"
+        <input id="inputGrafico" placeholder="Ej: histograma de edad por sexo"
           class="flex-grow border border-gray-300 rounded-md p-2 text-sm">
         <button onclick="abrirModal()" class="bg-[var(--verde)] text-white px-4 rounded-md">Generar</button>
       </div>
@@ -116,7 +116,7 @@ body {
 
   <section class="card">
     <h2 class="text-[var(--verde)] font-semibold mb-3">Pacientes de la cohorte</h2>
-    <table id="tablaPacientes" class="w-full border-collapse">
+    <table id="tablaPacientes" class="w-full border-collapse text-sm">
       <thead><tr><th>ID</th><th>Nombre</th><th>Edad</th><th>IMC</th><th>Diagnóstico</th><th></th></tr></thead>
       <tbody></tbody>
     </table>
@@ -129,6 +129,21 @@ body {
     <div class="spinner mx-auto mb-4"></div>
     <p class="text-gray-600">Generando gráfico...</p>
     <button onclick="cerrarModal()" class="mt-4 bg-[var(--verde)] text-white px-4 py-1 rounded-md">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal del gráfico personalizado -->
+<div id="graficoModal" class="modal hidden">
+  <div class="bg-white p-6 rounded-lg shadow-lg w-[80%] max-w-3xl h-[70%] flex flex-col">
+    <div class="flex justify-between items-center mb-2">
+      <h3 id="tituloGrafico" class="text-lg font-semibold text-[var(--verde)]">Gráfico personalizado</h3>
+      <div class="flex gap-2">
+        <button onclick="descargarPNG()" class="text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300">Descargar PNG</button>
+        <button onclick="descargarCSV()" class="text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300">Descargar CSV</button>
+        <button onclick="cerrarGraficoModal()" class="bg-[var(--verde)] text-white px-3 py-1 rounded-md text-sm">Cerrar</button>
+      </div>
+    </div>
+    <canvas id="canvasGrafico" class="flex-grow"></canvas>
   </div>
 </div>
 
@@ -212,23 +227,68 @@ function abrirChat(){window.open("chat.html","_blank");}
 function abrirModal(){document.getElementById("modal").classList.remove("hidden");pedirGraficoPersonalizado();}
 function cerrarModal(){document.getElementById("modal").classList.add("hidden");}
 
+let graficoPersonalizado=null, resultadosGrafico=null;
+
 async function pedirGraficoPersonalizado(){
-  const consulta=document.getElementById("inputGrafico").value;
+  const consulta=document.getElementById("inputGrafico").value.trim();
+  if(!consulta)return alert("Describe el gráfico que quieres generar.");
+
+  document.getElementById("modal").classList.remove("hidden");
+
   const columnas={
-    pacientes:["edad","sexo","IMC","enfermedad_principal"],
+    pacientes:["edad","sexo","IMC","enfermedad_principal","nivel_educativo"],
     laboratorios:["fecha_prueba","HbA1c","TFG","colesterol_total"],
     medicaciones:["principio_activo","dosis_diaria_mg","adherencia","inicio_tratamiento","fin_tratamiento"]
   };
+
   try{
-    const res=await fetch("https://nano33.app.n8n.cloud/webhook-test/grafico-cohorte",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({query:consulta,columns})
+    const res=await fetch("https://nano33.app.n8n.cloud/webhook-test/graficos-consulta",{
+      method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({query:consulta,columns})
     });
-    const raw=await res.text();
+    const data=await res.json();
+    if(!data.sql||!data.x||!data.y){cerrarModal();alert("n8n no devolvió datos suficientes.");return;}
+
+    const { data: resultados, error } = await supabase.rpc("execute_sql_query",{query:data.sql});
+    if(error||!resultados?.length){cerrarModal();alert("Sin resultados en Supabase.");return;}
+
+    resultadosGrafico=resultados;
+    const etiquetas=resultados.map(r=>r[data.x]);
+    const valores=resultados.map(r=>parseFloat(r[data.y]));
     cerrarModal();
-    alert("Respuesta recibida:\n\n"+raw);
-  }catch(e){cerrarModal();alert("Error al contactar con n8n.");}
+    abrirGraficoModal(data.titulo||consulta,etiquetas,valores,data.chart_type,data.x,data.y);
+  }catch(e){cerrarModal();alert("Error al contactar con n8n o Supabase.");}
+}
+
+function abrirGraficoModal(titulo,labels,values,tipo,xLabel,yLabel){
+  const modal=document.getElementById("graficoModal");
+  modal.classList.remove("hidden");
+  document.getElementById("tituloGrafico").textContent=titulo;
+  const ctx=document.getElementById("canvasGrafico").getContext("2d");
+  if(graficoPersonalizado)graficoPersonalizado.destroy();
+  graficoPersonalizado=new Chart(ctx,{
+    type:tipo==="histogram"?"bar":tipo,
+    data:{labels,datasets:[{label:`${yLabel} por ${xLabel}`,data:values,backgroundColor:"rgba(61,118,88,0.7)",borderColor:"rgba(61,118,88,1)",borderWidth:1}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,title:{display:true,text:yLabel}},x:{title:{display:true,text:xLabel}}}}
+  });
+}
+
+function cerrarGraficoModal(){document.getElementById("graficoModal").classList.add("hidden");}
+
+function descargarPNG(){
+  const link=document.createElement("a");
+  link.download="grafico.png";
+  link.href=graficoPersonalizado.toBase64Image();
+  link.click();
+}
+
+function descargarCSV(){
+  if(!resultadosGrafico)return;
+  const csv=[Object.keys(resultadosGrafico[0]).join(","),...resultadosGrafico.map(r=>Object.values(r).join(","))].join("\n");
+  const blob=new Blob([csv],{type:"text/csv"});
+  const link=document.createElement("a");
+  link.href=URL.createObjectURL(blob);
+  link.download="grafico.csv";
+  link.click();
 }
 </script>
 </body>
