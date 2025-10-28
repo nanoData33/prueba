@@ -288,7 +288,8 @@ async function handleGmailGeneration(consulta) {
       
       // 5. Le añadimos el listener para llamar a la nueva función
       if (sendButton) {
-        sendButton.addEventListener("click", () => handleSendGmail(uniqueButtonId));
+        // Le pasamos el ID y el cuerpo del email (data.gmail)
+        sendButton.addEventListener("click", () => handleSendGmail(uniqueButtonId, data.gmail));
       } else {
         console.error("Error: No se pudo encontrar el #sendButton");
       }
@@ -304,28 +305,34 @@ async function handleGmailGeneration(consulta) {
   }
 }
 
-async function handleSendGmail(buttonId) {
+async function handleSendGmail(buttonId, emailBody) { // <--- Acepta el nuevo parámetro
   const btn = document.getElementById(buttonId);
-  if (!btn || btn.disabled) return; // Si no existe o ya se pulsó
+  if (!btn || btn.disabled) return;
 
   btn.disabled = true;
   btn.textContent = "Enviando...";
 
   try {
-    // 1. Llamamos al webhook de envío con GET (no necesita body)
+    // 1. Preparamos el payload que pide el webhook
+    const payload = { "output": emailBody };
+
+    // 2. Llamamos al webhook con POST y el body JSON
     const res = await fetch(webhookEnviarGmail, {
-      method: "GET"
+      method: "POST", // <-- CAMBIADO A POST
+      headers: {
+        "Content-Type": "application/json" // <-- Requerido para JSON
+      },
+      body: JSON.stringify(payload) // <-- Enviamos el JSON
     });
 
     if (!res.ok) {
-      // Si el webhook falla (ej. 500)
       throw new Error(`Error del servidor: ${res.statusText}`);
     }
 
-    // 2. Mostramos el mensaje de éxito
+    // 3. Mostramos el mensaje de éxito
     appendMessage("bot", "✅ Gmail Enviado Correctamente.");
     
-    // Opcional: Oculta el botón de "Enviar" para que no se envíe dos veces
+    // Oculta el botón de "Enviar"
     btn.style.display = 'none';
 
   } catch (err) {
@@ -337,7 +344,6 @@ async function handleSendGmail(buttonId) {
     btn.textContent = "Enviar Gmail";
   }
 }
-
 async function manejarGrafico(tipo) {
   appendMessage("bot", `Generando gráfico tipo '${tipo}'...`);
   try {
