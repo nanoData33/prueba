@@ -106,12 +106,13 @@ let chartInstance = null;
 document.addEventListener("keydown", e => { if (e.key === "Enter") sendText(); });
 
 function appendMessage(sender, text, html = false) {
-  const msg = document.createElement("div");
-  msg.className = "msg " + sender;
-  msg.innerHTML = html ? text : text.replace(/\n/g, "<br>");
-  const box = document.getElementById("messages");
-  box.appendChild(msg);
-  box.scrollTop = box.scrollHeight;
+  const msg = document.createElement("div");
+  msg.className = "msg " + sender;
+  msg.innerHTML = html ? text : text.replace(/\n/g, "<br>");
+  const box = document.getElementById("messages");
+  box.appendChild(msg);
+  box.scrollTop = box.scrollHeight;
+  return msg; // <--- AÑADE ESTA LÍNEA
 }
 
 async function sendText() {
@@ -216,17 +217,24 @@ function renderChartButtonsInChat() {
 }
 
 function renderGmailButton(consulta) {
-  // Reutilizamos los estilos de los botones de gráficos
   const html = `
     <p><strong>Acción sugerida:</strong></p>
     <div class="btn-group">
       <button class="btn-chart btn-rec" id="gmailBtn">Generar Gmail</button>
     </div>`;
   
-  appendMessage("bot", html, true);
+  // 1. Capturamos el 'div' que 'appendMessage' acaba de crear
+  const msgElement = appendMessage("bot", html, true);
 
-  // Añadimos el listener al botón que acabamos de crear
-  document.getElementById("gmailBtn").addEventListener("click", () => handleGmailGeneration(consulta));
+  // 2. Buscamos el botón DENTRO de ese 'div'
+  const button = msgElement.querySelector("#gmailBtn");
+
+  // 3. Añadimos el listener al botón encontrado
+  if (button) {
+    button.addEventListener("click", () => handleGmailGeneration(consulta));
+  } else {
+    console.error("Error: No se pudo adjuntar el listener al #gmailBtn");
+  }
 }
 
 /**
