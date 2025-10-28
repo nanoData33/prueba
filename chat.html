@@ -136,8 +136,7 @@ async function sendText() {
       ultimaConsultaSQL = data.sql || "";
       ultimaX = data.x || "";
       ultimaY = data.y || "";
-      renderChartButtonsInChat();
-    } else {
+      // renderChartButtonsInChat(); // <--- LÍNEA COMENTADA    } else {
       appendMessage("bot", data.respuesta || "No se ha encontrado información.");
     }
   } catch {
