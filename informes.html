@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CohortIQ — Generador de Informes Visuales</title>
+<title>CohortIQ — Generador Avanzado de Informes</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -16,25 +16,13 @@
   --verde: #3d7658;
   --verde-claro: #4ba67d;
 }
-body {
-  font-family: 'Inter', sans-serif;
-  background-color: #f8f9f8;
-  color: #1c1c1c;
-}
-.btn-main {
-  background: linear-gradient(90deg, var(--verde) 0%, var(--verde-claro) 100%);
-  color: white; border: none; padding: 0.6rem 1.2rem;
-  border-radius: 0.5rem; font-weight: 500; font-size: 0.9rem;
-  transition: 0.25s;
-}
-.btn-main:hover { filter: brightness(1.1); transform: translateY(-1px); }
-.section {
-  background: white; border-radius: 0.8rem; padding: 1.5rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-}
-h1,h2 { color: var(--verde); }
-.table-custom th { background: #eef3ef; }
-.table-custom th, .table-custom td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #e5e7eb; text-align: center; }
+body { font-family: 'Inter', sans-serif; background-color: #f8f9f8; color: #1c1c1c; }
+.section { background: white; border-radius: 0.8rem; padding: 1.5rem; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+h1,h2,h3 { color: var(--verde); }
+.btn-main { background: linear-gradient(90deg, var(--verde) 0%, var(--verde-claro) 100%); color: white; border: none; padding: 0.7rem 1.4rem; border-radius: 0.5rem; font-weight: 500; font-size: 0.9rem; transition: 0.25s; }
+.btn-main:hover { filter: brightness(1.1); transform: translateY(-2px); }
+.table-custom th { background: #eef3ef; text-align: center; }
+.table-custom td, .table-custom th { padding: 0.5rem; border-bottom: 1px solid #e5e7eb; }
 </style>
 </head>
 
@@ -42,7 +30,7 @@ h1,h2 { color: var(--verde); }
 <header class="flex justify-between items-center mb-6">
   <h1 class="text-2xl font-semibold flex items-center gap-2 text-[var(--verde)]">
     <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"/></svg>
-    Generador de Informes Visuales
+    Generador Avanzado de Informes
   </h1>
   <a href="index.html" class="text-[var(--verde)] hover:underline text-sm">← Volver al inicio</a>
 </header>
@@ -52,17 +40,17 @@ h1,h2 { color: var(--verde); }
   <h2 class="text-lg font-semibold mb-3">Configuración del informe</h2>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <div>
-      <label class="text-sm font-semibold">Selecciona enfermedad</label>
-      <select id="selEnf" class="w-full border border-gray-300 rounded-md p-2 mt-1 text-sm"></select>
+      <label class="text-sm font-semibold">Cohortes a comparar</label>
+      <select id="selCohortes" multiple class="w-full border border-gray-300 rounded-md p-2 mt-1 text-sm h-28"></select>
+      <p class="text-xs text-gray-500 mt-1">Ctrl+clic para seleccionar varias</p>
     </div>
     <div>
-      <label class="text-sm font-semibold">Elementos a incluir</label>
-      <div class="flex flex-col mt-1 text-sm">
-        <label><input type="checkbox" class="mr-1" id="chkMetricas" checked> Métricas principales</label>
-        <label><input type="checkbox" class="mr-1" id="chkGraficoClinico" checked> Gráfico clínico</label>
-        <label><input type="checkbox" class="mr-1" id="chkGraficoMed" checked> Medicaciones</label>
-        <label><input type="checkbox" class="mr-1" id="chkTablaPac" checked> Tabla de pacientes</label>
-        <label><input type="checkbox" class="mr-1" id="chkTexto" checked> Interpretación automática</label>
+      <label class="text-sm font-semibold">Filtros opcionales</label>
+      <div class="grid grid-cols-2 gap-2 text-sm mt-1">
+        <input id="fGenero" placeholder="Género (M/F)" class="border rounded-md p-1.5" />
+        <input id="fEdad" placeholder="Edad mínima" type="number" class="border rounded-md p-1.5" />
+        <input id="fEdadMax" placeholder="Edad máxima" type="number" class="border rounded-md p-1.5" />
+        <input id="fIMC" placeholder="IMC mínimo" type="number" class="border rounded-md p-1.5" />
       </div>
     </div>
     <div class="flex items-end">
@@ -71,7 +59,7 @@ h1,h2 { color: var(--verde); }
   </div>
 </section>
 
-<!-- Informe generado -->
+<!-- Contenido generado -->
 <section id="informe" class="section hidden">
   <div id="contenidoInforme"></div>
   <canvas id="grafico1" class="mt-4 hidden"></canvas>
@@ -82,117 +70,117 @@ h1,h2 { color: var(--verde); }
 </section>
 
 <script>
-const supabase = window.supabase.createClient("https://tmolxeszsgkffurhrcxy.supabase.co",
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw");
+const supabase = window.supabase.createClient(
+  "https://tmolxeszsgkffurhrcxy.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw"
+);
 
 let graf1, graf2;
 
-async function cargarEnfermedades(){
+async function cargarCohortes() {
   const { data } = await supabase.from("pacientes").select("enfermedad_principal");
-  const unicas = [...new Set(data.map(d=>d.enfermedad_principal).filter(Boolean))];
-  document.getElementById("selEnf").innerHTML = unicas.map(u=>`<option>${u}</option>`).join("");
+  const unicas = [...new Set(data.map(d => d.enfermedad_principal).filter(Boolean))];
+  document.getElementById("selCohortes").innerHTML = unicas.map(u => `<option>${u}</option>`).join("");
 }
-cargarEnfermedades();
+cargarCohortes();
+
+function filtrarPacientes(pacientes, genero, edadMin, edadMax, imcMin){
+  return pacientes.filter(p=>{
+    if(genero && p.sexo?.toUpperCase()!==genero.toUpperCase()) return false;
+    if(edadMin && p.edad<edadMin) return false;
+    if(edadMax && p.edad>edadMax) return false;
+    if(imcMin && (p.IMC||0)<imcMin) return false;
+    return true;
+  });
+}
 
 async function generarInforme(){
-  const enf = document.getElementById("selEnf").value;
-  const { data: pacientes } = await supabase.from("pacientes").select("*").ilike("enfermedad_principal", `%${enf}%`);
-  if(!pacientes?.length) return alert("No hay datos para esta cohorte.");
+  const cohortesSel = Array.from(document.getElementById("selCohortes").selectedOptions).map(o=>o.value);
+  if(cohortesSel.length===0) return alert("Selecciona al menos una cohorte.");
+
+  const genero = document.getElementById("fGenero").value.trim();
+  const edadMin = +document.getElementById("fEdad").value || null;
+  const edadMax = +document.getElementById("fEdadMax").value || null;
+  const imcMin = +document.getElementById("fIMC").value || null;
 
   document.getElementById("informe").classList.remove("hidden");
   const cont = document.getElementById("contenidoInforme");
   cont.innerHTML = "";
 
-  /* === MÉTRICAS PRINCIPALES === */
-  if(document.getElementById("chkMetricas").checked){
-    const edad = (pacientes.reduce((a,b)=>a+b.edad,0)/pacientes.length).toFixed(1);
-    const imc = (pacientes.reduce((a,b)=>a+(b.IMC||0),0)/pacientes.filter(p=>p.IMC).length).toFixed(1);
-    const fem = pacientes.filter(p=>p.sexo?.toLowerCase().startsWith('f')).length;
-    const masc = pacientes.length - fem;
-    cont.innerHTML += `
-      <h2 class="text-lg font-semibold mb-2">${enf}</h2>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-        <div class="bg-green-50 p-3 rounded-md text-center"><p class="font-semibold">Pacientes</p><p>${pacientes.length}</p></div>
-        <div class="bg-green-50 p-3 rounded-md text-center"><p class="font-semibold">Edad media</p><p>${edad} años</p></div>
-        <div class="bg-green-50 p-3 rounded-md text-center"><p class="font-semibold">IMC medio</p><p>${imc}</p></div>
-        <div class="bg-green-50 p-3 rounded-md text-center"><p class="font-semibold">Sexo</p><p>${((fem/pacientes.length)*100).toFixed(1)}% F · ${(100*(masc/pacientes.length)).toFixed(1)}% M</p></div>
-      </div>`;
+  const resumen = [];
+
+  for(const enf of cohortesSel){
+    const { data: pacientes } = await supabase.from("pacientes").select("*").ilike("enfermedad_principal", `%${enf}%`);
+    if(!pacientes?.length) continue;
+
+    const filtrados = filtrarPacientes(pacientes, genero, edadMin, edadMax, imcMin);
+    const edad = promedio(filtrados.map(p=>p.edad));
+    const imc = promedio(filtrados.map(p=>p.IMC));
+    const fem = filtrados.filter(p=>p.sexo?.toLowerCase().startsWith('f')).length;
+    const masc = filtrados.length - fem;
+
+    resumen.push({ cohorte: enf, n: filtrados.length, edad, imc, fem, masc });
   }
 
-  /* === GRÁFICO CLÍNICO === */
-  if(document.getElementById("chkGraficoClinico").checked){
-    const { data: labs } = await supabase.from("laboratorios").select("fecha_prueba, HbA1c, colesterol_total, IMC, TFG");
-    const ult = labs.slice(-180); // últimos 6 meses
-    const fechas = [...new Set(ult.map(l=>l.fecha_prueba))].sort();
-    const hba1c = fechas.map(f => promedio(ult.filter(l=>l.fecha_prueba===f).map(l=>l.HbA1c)));
-    const col = fechas.map(f => promedio(ult.filter(l=>l.fecha_prueba===f).map(l=>l.colesterol_total)));
-    const tfg = fechas.map(f => promedio(ult.filter(l=>l.fecha_prueba===f).map(l=>l.TFG)));
+  cont.innerHTML = `
+    <h2 class="text-lg font-semibold mb-2">Resumen comparativo</h2>
+    <table class="table-custom w-full text-xs mb-4">
+      <thead><tr><th>Cohorte</th><th>Pacientes</th><th>Edad media</th><th>IMC medio</th><th>% Femenino</th><th>% Masculino</th></tr></thead>
+      <tbody>
+        ${resumen.map(r=>`<tr><td>${r.cohorte}</td><td>${r.n}</td><td>${r.edad||"-"}</td><td>${r.imc||"-"}</td><td>${((r.fem/r.n)*100||0).toFixed(1)}%</td><td>${((r.masc/r.n)*100||0).toFixed(1)}%</td></tr>`).join("")}
+      </tbody>
+    </table>`;
 
-    const ctx = document.getElementById("grafico1");
-    ctx.classList.remove("hidden");
-    if(graf1) graf1.destroy();
-    graf1 = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: fechas,
-        datasets: [
-          { label: "HbA1c", data: hba1c, borderColor: "#3d7658", tension: 0.3 },
-          { label: "Colesterol", data: col, borderColor: "#f7c15a", tension: 0.3 },
-          { label: "TFG", data: tfg, borderColor: "#e58b7c", tension: 0.3 }
-        ]
-      },
-      options: { plugins: { title: { display: true, text: "Evolución clínica (últimos meses)" } } }
-    });
-  }
+  // === GRÁFICO CLÍNICO COMPARATIVO ===
+  const ctx = document.getElementById("grafico1");
+  ctx.classList.remove("hidden");
+  if(graf1) graf1.destroy();
+  graf1 = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: resumen.map(r=>r.cohorte),
+      datasets: [
+        { label: "Edad media", data: resumen.map(r=>r.edad), backgroundColor: "#3d7658" },
+        { label: "IMC medio", data: resumen.map(r=>r.imc), backgroundColor: "#4ba67d" }
+      ]
+    },
+    options: { plugins: { title: { display: true, text: "Comparativa de edad e IMC" } }, responsive: true }
+  });
 
-  /* === GRÁFICO DE MEDICACIONES === */
-  if(document.getElementById("chkGraficoMed").checked){
-    const ids = pacientes.map(p=>p.patient_id);
-    const { data: meds } = await supabase.from("medicaciones").select("principio_activo, patient_id").in("patient_id", ids);
-    const cuenta = {};
-    meds.forEach(m => { cuenta[m.principio_activo] = (cuenta[m.principio_activo] || 0) + 1; });
-    const arr = Object.entries(cuenta).sort((a,b)=>b[1]-a[1]).slice(0,8);
-    const ctx2 = document.getElementById("grafico2");
-    ctx2.classList.remove("hidden");
-    if(graf2) graf2.destroy();
-    graf2 = new Chart(ctx2, {
-      type: "bar",
-      data: { labels: arr.map(a=>a[0]), datasets: [{ data: arr.map(a=>a[1]), backgroundColor: "#4ba67d" }] },
-      options: { plugins: { title: { display: true, text: "Top medicaciones en la cohorte" } }, indexAxis: "y" }
-    });
-  }
+  // === GRÁFICO MEDICACIONES ===
+  const ctx2 = document.getElementById("grafico2");
+  ctx2.classList.remove("hidden");
+  if(graf2) graf2.destroy();
+  const { data: meds } = await supabase.from("medicaciones").select("principio_activo, patient_id");
+  const cuenta = {};
+  meds.forEach(m => cuenta[m.principio_activo] = (cuenta[m.principio_activo] || 0)+1);
+  const top = Object.entries(cuenta).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  graf2 = new Chart(ctx2,{
+    type:"bar",
+    data:{labels:top.map(a=>a[0]),datasets:[{data:top.map(a=>a[1]),backgroundColor:"#f7c15a"}]},
+    options:{plugins:{title:{display:true,text:"Top 10 medicaciones globales"}}}
+  });
 
-  /* === TABLA DE PACIENTES === */
-  if(document.getElementById("chkTablaPac").checked){
-    const top = pacientes.sort((a,b)=>(b.gravedad_score||0)-(a.gravedad_score||0)).slice(0,10);
-    cont.innerHTML += `
-      <h3 class="mt-5 mb-2 font-semibold">Top 10 pacientes por gravedad</h3>
-      <table class="table-custom w-full text-xs">
-        <thead><tr><th>ID</th><th>Nombre</th><th>Edad</th><th>IMC</th><th>Sexo</th><th>Gravedad</th><th>Diagnóstico</th></tr></thead>
-        <tbody>${top.map(p=>`<tr><td>${p.patient_id}</td><td>${p.nombre}</td><td>${p.edad}</td><td>${p.IMC||"-"}</td><td>${p.sexo}</td><td>${p.gravedad_score||"-"}</td><td>${p.enfermedad_principal}</td></tr>`).join("")}</tbody>
-      </table>`;
-  }
-
-  /* === TEXTO AUTOMÁTICO === */
-  if(document.getElementById("chkTexto").checked){
-    cont.innerHTML += `<p class="mt-4 text-sm text-gray-600 italic">
-      La cohorte de ${enf.toLowerCase()} presenta un perfil clínico estable, con una edad media de ${pacientes.reduce((a,b)=>a+b.edad,0)/pacientes.length} años y un IMC medio de ${pacientes.reduce((a,b)=>a+(b.IMC||0),0)/pacientes.filter(p=>p.IMC).length}.
-      Se observa un uso predominante de los medicamentos más frecuentes, reflejando una adherencia moderada y una tendencia al control metabólico.</p>`;
-  }
+  // === TEXTO INTERPRETATIVO ===
+  cont.innerHTML += `
+    <p class="mt-4 text-sm italic text-gray-600">
+      Se observan diferencias notables entre las cohortes seleccionadas. Los valores medios de edad e IMC
+      reflejan el perfil clínico predominante en cada grupo, mientras que el gráfico de medicaciones ilustra
+      las terapias más extendidas a nivel global.</p>`;
 }
 
-function promedio(arr){return arr.length?arr.reduce((a,b)=>a+(+b||0),0)/arr.length:null;}
+function promedio(arr){return arr.length? (arr.reduce((a,b)=>a+(+b||0),0)/arr.length).toFixed(1):null;}
 
 async function descargarPDF(){
   const informe = document.getElementById("informe");
   const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF("p", "mm", "a4");
+  const pdf = new jsPDF("p","mm","a4");
   await html2canvas(informe).then(canvas=>{
     const img = canvas.toDataURL("image/png");
     const width = pdf.internal.pageSize.getWidth();
     const height = canvas.height * width / canvas.width;
-    pdf.addImage(img, "PNG", 0, 0, width, height);
-    pdf.save("Informe_Cohorte.pdf");
+    pdf.addImage(img,"PNG",0,0,width,height);
+    pdf.save("Informe_Comparativo_Cohortes.pdf");
   });
 }
 </script>
