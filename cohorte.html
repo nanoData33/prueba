@@ -1,152 +1,3 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CohortIQ — Cohorte dinámica</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
-
-<style>
-:root {
-  --verde: #3d7658;
-  --verde-claro: #4ba67d;
-  --gris-fondo: #f8f9f8;
-}
-body {
-  background-color: var(--gris-fondo);
-  font-family: 'Inter', sans-serif;
-}
-.card {
-  background: white;
-  border-radius: 0.8rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-  padding: 1rem 1.5rem;
-}
-.arrow {
-  background: #e5e7eb;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  transition: 0.3s;
-}
-.arrow:hover { background: var(--verde-claro); color: white; }
-.modal {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.45);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 50;
-}
-.spinner {
-  border: 4px solid #eee;
-  border-top: 4px solid var(--verde);
-  border-radius: 50%;
-  width: 45px;
-  height: 45px;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin { 100% { transform: rotate(360deg); } }
-.chat-btn {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  background: var(--verde);
-  color: white;
-  border-radius: 50%;
-  width: 60px; height: 60px;
-  display: flex; justify-content: center; align-items: center;
-  font-size: 28px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.25);
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-.chat-btn:hover { transform: scale(1.1); background: var(--verde-claro); }
-</style>
-</head>
-
-<body class="p-6">
-<header class="flex justify-between items-center mb-6">
-  <div class="flex items-center gap-3">
-    <i data-lucide="activity" class="text-[var(--verde)]"></i>
-    <h1 class="text-2xl font-semibold text-[var(--verde)]">CohortIQ</h1>
-    <span id="nombreCohorte" class="text-gray-500 text-sm">Cohorte dinámica</span>
-  </div>
-  <a href="index.html" class="text-sm text-[var(--verde)] hover:underline">← Volver al panel</a>
-</header>
-
-<main class="space-y-6">
-  <section class="grid grid-cols-4 gap-4">
-    <div class="card text-center"><p>Pacientes</p><h3 id="nPac" class="text-xl font-bold text-[var(--verde)]">–</h3></div>
-    <div class="card text-center"><p>Edad media</p><h3 id="edadMedia" class="text-xl font-bold text-[var(--verde)]">–</h3></div>
-    <div class="card text-center"><p>% Controlados</p><h3 id="controlados" class="text-xl font-bold text-[var(--verde)]">–</h3></div>
-    <div class="card text-center"><p>% Adherencia</p><h3 id="adherencia" class="text-xl font-bold text-[var(--verde)]">–</h3></div>
-  </section>
-
-  <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-    <div class="card">
-      <h2 class="text-[var(--verde)] font-semibold mb-2">Indicadores clínicos</h2>
-      <div class="flex items-center justify-between mb-3">
-        <div class="arrow" onclick="prevGrafico()">‹</div>
-        <canvas id="graficoCohorte" height="180"></canvas>
-        <div class="arrow" onclick="nextGrafico()">›</div>
-      </div>
-      <div class="flex mt-2 gap-2">
-        <input id="inputGrafico" placeholder="Ej: histograma de edad por sexo"
-          class="flex-grow border border-gray-300 rounded-md p-2 text-sm">
-        <button onclick="abrirModal()" class="bg-[var(--verde)] text-white px-4 rounded-md">Generar</button>
-        <button onclick="abrirPopupDepuracion()" class="bg-gray-200 text-gray-700 px-4 rounded-md">Depurar</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2 class="text-[var(--verde)] font-semibold mb-2">Medicaciones en la cohorte</h2>
-      <canvas id="graficoMed" height="180"></canvas>
-      <ul id="topMeds" class="text-sm mt-3 text-gray-600"></ul>
-    </div>
-  </section>
-
-  <section class="card">
-    <h2 class="text-[var(--verde)] font-semibold mb-3">Pacientes de la cohorte</h2>
-    <table id="tablaPacientes" class="w-full border-collapse text-sm">
-      <thead><tr><th>ID</th><th>Nombre</th><th>Edad</th><th>IMC</th><th>Diagnóstico</th><th></th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </section>
-</main>
-
-<!-- Modal de carga -->
-<div id="modal" class="modal hidden">
-  <div class="bg-white p-6 rounded-lg shadow-lg text-center w-[300px]">
-    <div class="spinner mx-auto mb-4"></div>
-    <p class="text-gray-600">Procesando solicitud...</p>
-    <button onclick="cerrarModal()" class="mt-4 bg-[var(--verde)] text-white px-4 py-1 rounded-md">Cancelar</button>
-  </div>
-</div>
-
-<!-- Modal de depuración -->
-<div id="depuracionModal" class="modal hidden">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-[80%] max-w-3xl h-[70%] overflow-auto flex flex-col">
-    <div class="flex justify-between items-center mb-3">
-      <h3 class="text-lg font-semibold text-[var(--verde)]">Respuesta de n8n</h3>
-      <button onclick="cerrarDepuracion()" class="bg-[var(--verde)] text-white px-3 py-1 rounded-md text-sm">Cerrar</button>
-    </div>
-    <pre id="contenidoDepuracion" class="text-xs text-gray-800 whitespace-pre-wrap bg-gray-50 border border-gray-200 rounded-md p-3 flex-grow"></pre>
-  </div>
-</div>
-
-<!-- Botón flotante de chat -->
-<div class="chat-btn" onclick="abrirChat()"><i data-lucide="message-circle"></i></div>
-
 <script>
 lucide.createIcons();
 const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
@@ -166,9 +17,11 @@ window.onload = async () => {
 };
 
 async function cargarCohorte(nombre) {
-  const { data: pacientes } = await supabase.from("pacientes")
+  const { data: pacientes } = await supabase
+    .from("pacientes")
     .select("*")
     .ilike("enfermedad_principal", `%${nombre}%`);
+
   if (!pacientes?.length) return alert("No hay datos de esta cohorte.");
   window.pacientes = pacientes;
 
@@ -189,7 +42,7 @@ async function cargarCohorte(nombre) {
   await renderGraficoMedicaciones(pacientes);
 }
 
-// Mantiene las funcionalidades previas (gráficos, navegación, etc.)
+/* === GRAFICO COHORTE MEJORADO === */
 async function renderGraficoCohorte(pacientes, metrica) {
   const { data: labs } = await supabase.from("laboratorios").select("*");
   const fechas = [...new Set(labs.map(l => l.fecha_prueba))].sort();
@@ -199,68 +52,174 @@ async function renderGraficoCohorte(pacientes, metrica) {
   });
   const ctx = document.getElementById("graficoCohorte");
   if (grafico) grafico.destroy();
-  grafico = new Chart(ctx,{
-    type:"line",
-    data:{labels:fechas,datasets:[{label:metrica,data:valores,borderColor:colores[indexGrafico],tension:0.3,fill:false}]},
-    options:{plugins:{legend:{display:true}},scales:{y:{beginAtZero:false}}}
+
+  grafico = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: fechas,
+      datasets: [{
+        label: `${metrica} promedio`,
+        data: valores,
+        borderColor: colores[indexGrafico],
+        backgroundColor: colores[indexGrafico]+"33",
+        tension: 0.3,
+        fill: true
+      }]
+    },
+    options: {
+      plugins: {
+        legend: { display: true },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.parsed.y?.toFixed(2)}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: false,
+          title: { display: true, text: metrica }
+        },
+        x: {
+          title: { display: true, text: "Fecha" }
+        }
+      }
+    }
   });
 }
 
+/* === GRAFICO MEDICACIONES MEJORADO === */
 async function renderGraficoMedicaciones(pacientes) {
   const ids = pacientes.map(p=>p.patient_id);
   const { data: meds } = await supabase.from("medicaciones").select("principio_activo, patient_id");
   const cuenta = {};
-  meds.forEach(m=>{if(ids.includes(m.patient_id))cuenta[m.principio_activo]=(cuenta[m.principio_activo]||0)+1;});
-  const labels=Object.keys(cuenta), valores=Object.values(cuenta);
-  const ctx=document.getElementById("graficoMed");
-  if(graficoMed)graficoMed.destroy();
-  graficoMed=new Chart(ctx,{type:"bar",data:{labels,datasets:[{data:valores,backgroundColor:"#3d7658"}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
-  document.getElementById("topMeds").innerHTML = labels.map((m,i)=>`<li>${m} — ${valores[i]} pacientes</li>`).join("");
+  meds.forEach(m => {
+    if (ids.includes(m.patient_id))
+      cuenta[m.principio_activo] = (cuenta[m.principio_activo] || 0) + 1;
+  });
+  const labels = Object.keys(cuenta);
+  const valores = Object.values(cuenta);
+
+  const ctx = document.getElementById("graficoMed");
+  if (graficoMed) graficoMed.destroy();
+
+  graficoMed = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        data: valores,
+        backgroundColor: "#3d7658",
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => `${ctx.parsed.x} pacientes` } }
+      },
+      scales: {
+        x: { title: { display: true, text: "Número de pacientes" } },
+        y: { title: { display: true, text: "Principio activo" } }
+      }
+    }
+  });
+  document.getElementById("topMeds").innerHTML =
+    labels.map((m,i)=>`<li>${m} — ${valores[i]} pacientes</li>`).join("");
 }
 
-function prevGrafico(){indexGrafico=(indexGrafico-1+metricas.length)%metricas.length;renderGraficoCohorte(window.pacientes,metricas[indexGrafico]);}
-function nextGrafico(){indexGrafico=(indexGrafico+1)%metricas.length;renderGraficoCohorte(window.pacientes,metricas[indexGrafico]);}
-function abrirPaciente(id){window.location.href=`explorar.html?paciente=${id}`;}
-function abrirChat(){window.open("chat.html","_blank");}
-function abrirModal(){document.getElementById("modal").classList.remove("hidden");}
-function cerrarModal(){document.getElementById("modal").classList.add("hidden");}
+/* === FUNCIONES DE NAVEGACIÓN === */
+function prevGrafico(){ indexGrafico=(indexGrafico-1+metricas.length)%metricas.length; renderGraficoCohorte(window.pacientes,metricas[indexGrafico]); }
+function nextGrafico(){ indexGrafico=(indexGrafico+1)%metricas.length; renderGraficoCohorte(window.pacientes,metricas[indexGrafico]); }
+function abrirPaciente(id){ window.location.href=`explorar.html?paciente=${id}`; }
+function abrirChat(){ window.open("chat.html","_blank"); }
+function abrirModal(){ document.getElementById("modal").classList.remove("hidden"); }
+function cerrarModal(){ document.getElementById("modal").classList.add("hidden"); }
 
-// Nueva función: abre pop-up de depuración y envía consulta a n8n
+/* === ENVÍO AL WEBHOOK Y POPUP DE GRAFICO === */
 async function abrirPopupDepuracion(){
-  const consulta=document.getElementById("inputGrafico").value.trim();
-  if(!consulta)return alert("Escribe la consulta del gráfico que quieres depurar.");
+  const consulta = document.getElementById("inputGrafico").value.trim();
+  if (!consulta) return alert("Escribe la consulta del gráfico que quieres generar.");
 
   document.getElementById("modal").classList.remove("hidden");
-  const body={consulta, cohorte: cohorteActual};
+  const body = { consulta, cohorte: cohorteActual };
 
-  try{
-    const res=await fetch("https://rubaseval.app.n8n.cloud/webhook-test/grafico",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(body)
+  try {
+    // 👉 Webhook actualizado sin "test"
+    const res = await fetch("https://rubaseval.app.n8n.cloud/webhook/grafico", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(body)
     });
-    const text=await res.text();
+    const json = await res.json();
     cerrarModal();
-    mostrarDepuracion(text);
-  }catch(e){
+    await generarGraficoDesdeWebhook(json);
+  } catch (e) {
     cerrarModal();
-    mostrarDepuracion("Error al contactar con n8n:\n"+e.message);
+    mostrarDepuracion("Error al contactar con n8n:\n" + e.message);
   }
 }
 
+/* === CREAR EL GRAFICO DEL WEBHOOK EN POPUP === */
+async function generarGraficoDesdeWebhook(resp){
+  if(!resp?.sql) return mostrarDepuracion("Respuesta inválida del webhook.");
+
+  // Ejecutar SQL en Supabase
+  const { data, error } = await supabase.rpc("ejecutar_sql_dinamico", { query: resp.sql });
+  // ⚠️ Si no tienes esa función RPC, se puede sustituir por una simulación:
+  // const { data, error } = await supabase.from("pacientes").select(resp.xaxis+", count(*) as "+resp.yaxis);
+
+  if(error) return mostrarDepuracion("Error ejecutando SQL:\n"+error.message);
+
+  // Crear modal dinámico
+  const modal = document.createElement("div");
+  modal.className = "modal";
+  modal.innerHTML = `
+    <div class="bg-white p-6 rounded-lg shadow-lg w-[90%] max-w-3xl h-[80%] flex flex-col">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-lg font-semibold text-[var(--verde)]">Gráfico generado por CohortIQ</h3>
+        <button class="bg-[var(--verde)] text-white px-3 py-1 rounded-md text-sm" onclick="this.closest('.modal').remove()">Cerrar</button>
+      </div>
+      <canvas id="graficoWebhook" class="flex-grow"></canvas>
+      <pre class="text-xs bg-gray-50 border border-gray-200 rounded-md p-2 mt-2 overflow-auto">${resp.sql}</pre>
+    </div>`;
+  document.body.appendChild(modal);
+
+  // Preparar datos
+  const labels = data.map(d => d[resp.xaxis]);
+  const valores = data.map(d => d[resp.yaxis]);
+
+  new Chart(document.getElementById("graficoWebhook"), {
+    type: resp.chart_type || "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: `${resp.yaxis} por ${resp.xaxis}`,
+        data: valores,
+        backgroundColor: "#4ba67d",
+        borderColor: "#3d7658",
+        borderWidth: 1
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { title: { display: true, text: resp.xaxis } },
+        y: { title: { display: true, text: resp.yaxis }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+/* === DEPURACION === */
 function mostrarDepuracion(texto){
   const modal=document.getElementById("depuracionModal");
   const pre=document.getElementById("contenidoDepuracion");
   pre.textContent=texto;
   modal.classList.remove("hidden");
 }
-
 function cerrarDepuracion(){
   document.getElementById("depuracionModal").classList.add("hidden");
 }
 </script>
-</body>
-</html>
-
-
-por favor que esta dando error 
