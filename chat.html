@@ -89,11 +89,11 @@ pre.debug{background:#222;color:#e3e3e3;padding:10px;border-radius:8px;overflow:
 <script>
 lucide.createIcons();
 
-const webhookText = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
-const webhookGraf = "https://rubaseval.app.n8n.cloud/webhook-test/grafico";
-const webhookData = "https://rubaseval.app.n8n.cloud/webhook-test/dataset";
-const webhookGmail = "https://rubaseval.app.n8n.cloud/webhook-test/escribir-gmail"; 
-const webhookEnviarGmail = "https://rubaseval.app.n8n.cloud/webhook-test/enviar-gmail"; // <--- AÑADE ESTA
+const webhookText = "https://rubaseval.app.n8n.cloud/webhook/dedaluschataudio";
+const webhookGraf = "https://rubaseval.app.n8n.cloud/webhook/grafico";
+const webhookData = "https://rubaseval.app.n8n.cloud/webhook/dataset";
+const webhookGmail = "https://rubaseval.app.n8n.cloud/webhook/escribir-gmail"; 
+const webhookEnviarGmail = "https://rubaseval.app.n8n.cloud/webhook/enviar-gmail"; // <--- AÑADE ESTA
 const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -105,6 +105,7 @@ let ultimaY = "";
 let chartInstance = null;
 
 document.addEventListener("keydown", e => { if (e.key === "Enter") sendText(); });
+document.getElementById("sendBtn").addEventListener("click", sendText);
 
 function appendMessage(sender, text, html = false) {
   const msg = document.createElement("div");
