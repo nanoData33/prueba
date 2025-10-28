@@ -265,6 +265,7 @@ async function handleGmailGeneration(consulta) {
     const data = await res.json();
     document.querySelector(".msg.bot:last-child").remove(); // Quita "Generando..."
 
+    // Comprueba que el webhook devuelve el JSON esperado
     if (data.gmail) {
       // 1. Damos un ID único al nuevo botón "Enviar"
       const uniqueButtonId = `enviar-btn-${Date.now()}`;
@@ -288,10 +289,12 @@ async function handleGmailGeneration(consulta) {
       // 5. Le añadimos el listener para llamar a la nueva función
       if (sendButton) {
         sendButton.addEventListener("click", () => handleSendGmail(uniqueButtonId));
+      } else {
+        console.error("Error: No se pudo encontrar el #sendButton");
       }
 
     } else {
-      appendMessage("bot", "No se pudo generar el cuerpo del Gmail.");
+      appendMessage("bot", "No se pudo generar el cuerpo del Gmail. (Respuesta no contiene 'data.gmail')");
     }
 
   } catch (err) {
