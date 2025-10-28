@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CohortIQ — Informe Clínico Comparativo</title>
+<title>CohortIQ — Informe Clínico Profesional</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -13,86 +13,83 @@
 
 <style>
 :root {
-  --verde: #2f6d50;
-  --verde-claro: #4fa87b;
-  --gris-fondo: #f9faf9;
+  --verde: #1e604a;
+  --verde-claro: #3ca375;
+  --gris-fondo: #f7f9f8;
+  --gris-texto: #1a1a1a;
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   background-color: var(--gris-fondo);
-  color: #1a1a1a;
+  color: var(--gris-texto);
   display: flex;
   justify-content: center;
 }
 
 main {
-  max-width: 850px;
+  max-width: 880px;
   width: 100%;
-  padding: 1.5rem;
+  background: white;
+  margin: 1.5rem;
+  padding: 1.5rem 2rem;
+  border-radius: 0.8rem;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
 }
 
-header { 
-  border-bottom: 1px solid #e5e7eb; 
-  padding-bottom: 0.4rem; 
-  margin-bottom: 1rem; 
+header {
+  border-bottom: 2px solid var(--verde);
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.4rem;
+}
+
+header h1 {
+  color: var(--verde);
+  font-weight: 700;
+  font-size: 1.35rem;
 }
 
 .section {
-  background: white;
-  border-radius: 0.6rem;
-  padding: 1.2rem 1.4rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-  margin-bottom: 1rem;
+  margin-bottom: 1.8rem;
 }
 
 .card {
-  background: #f3f7f4;
-  border-left: 3px solid var(--verde);
-  border-radius: 0.4rem;
-  padding: 0.6rem 0.8rem;
+  background: linear-gradient(135deg, #f9fefb, #ecf9f3);
+  border-left: 4px solid var(--verde);
+  border-radius: 0.6rem;
+  padding: 0.8rem 1rem;
+  text-align: center;
   font-size: 0.85rem;
 }
 
 .card h3 {
   color: var(--verde);
   font-weight: 600;
-  margin-bottom: 0.1rem;
   font-size: 0.95rem;
-}
-
-.chart-wrapper {
-  width: 75%;
-  margin: 0 auto;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  margin-bottom: 0.2rem;
 }
 
 canvas {
-  max-height: 140px !important;
   width: 100% !important;
+  max-height: 160px !important;
 }
 
 .table-custom {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.8rem;
-  margin-top: 0.8rem;
+  margin-top: 1rem;
 }
-
 .table-custom th, .table-custom td {
   border: 1px solid #e5e7eb;
   padding: 0.4rem 0.6rem;
   text-align: center;
 }
-
 .table-custom th {
   background: #f3f6f4;
-  color: #1a1a1a;
+  color: var(--verde);
   font-weight: 600;
 }
-
 .table-custom tbody tr:nth-child(even) {
   background-color: #fafafa;
 }
@@ -107,16 +104,34 @@ canvas {
   font-size: 0.85rem;
   transition: 0.25s;
 }
-
 .btn-main:hover { filter: brightness(1.1); }
 
+.interpretacion {
+  background: #f9faf9;
+  border-left: 3px solid var(--verde);
+  border-radius: 0.4rem;
+  padding: 0.8rem 1rem;
+  margin-top: 1.2rem;
+  font-size: 0.85rem;
+  color: #333;
+  line-height: 1.4;
+}
+
+footer {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 1rem;
+  border-top: 1px solid #eee;
+  padding-top: 0.5rem;
+}
 </style>
 </head>
 
 <body>
 <main>
 <header class="flex justify-between items-center">
-  <h1 class="text-xl font-semibold text-[var(--verde)]">Informe Clínico Comparativo</h1>
+  <h1>Informe Clínico Comparativo</h1>
   <a href="index.html" class="text-sm text-[var(--verde)] hover:underline">Volver al inicio</a>
 </header>
 
@@ -143,17 +158,20 @@ canvas {
   </div>
 </section>
 
-<section id="informe" class="section hidden">
+<section id="informe" class="hidden">
   <div id="resumen" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
-  <div id="graficos" class="grid grid-cols-1 gap-6 mb-4"></div>
+  <div id="graficos" class="grid grid-cols-1 gap-5 mb-4"></div>
+  <div id="interpretacion" class="interpretacion hidden"></div>
 
-  <h3 class="text-[var(--verde)] font-semibold mt-4 mb-2">Comparativa detallada</h3>
+  <h3 class="text-[var(--verde)] font-semibold mt-6 mb-2">Comparativa detallada</h3>
   <div id="tablaContainer"></div>
 
   <div class="text-right mt-3">
     <button onclick="descargarPDF()" class="btn-main">Descargar PDF</button>
   </div>
 </section>
+
+<footer>© 2025 CohortIQ · Informe analítico generado automáticamente</footer>
 
 <script>
 const supabase = window.supabase.createClient(
@@ -191,18 +209,12 @@ async function generarInforme(){
   const imcMin=+document.getElementById("fIMC").value||null;
 
   const { data: todos } = await supabase.from("pacientes").select("*");
-  const mediaGlobal={
-    edad:promedio(todos.map(x=>x.edad)),
-    imc:promedio(todos.map(x=>x.IMC)),
-    fem:(todos.filter(x=>x.sexo?.toLowerCase().startsWith("f")).length/todos.length*100).toFixed(1),
-    fum:(todos.filter(x=>x.fumador==="Sí"||x.fumador==="si").length/todos.length*100).toFixed(1),
-    riesgo:promedio(todos.map(x=>parseFloat(x.gravedad_score||0)))
-  };
 
   document.getElementById("informe").classList.remove("hidden");
   document.getElementById("resumen").innerHTML="";
   document.getElementById("graficos").innerHTML="";
   document.getElementById("tablaContainer").innerHTML="";
+  document.getElementById("interpretacion").classList.add("hidden");
   charts.forEach(c=>c.destroy());
 
   const resumen=[];
@@ -220,36 +232,43 @@ async function generarInforme(){
   resumen.forEach(r=>{
     document.getElementById("resumen").innerHTML+=`
       <div class="card"><h3>${r.cohorte}</h3>
-      <p>Pacientes: <b>${r.n}</b></p>
-      <p>Edad media: ${r.edad} | IMC: ${r.imc}</p></div>`;
+      <p><b>${r.n}</b> pacientes</p>
+      <p>Edad media: ${r.edad} · IMC: ${r.imc}</p></div>`;
   });
 
   const labels=resumen.map(r=>r.cohorte);
   const metricas=[
-    {titulo:"Edad media",data:resumen.map(r=>r.edad),media:mediaGlobal.edad},
-    {titulo:"IMC medio",data:resumen.map(r=>r.imc),media:mediaGlobal.imc},
-    {titulo:"% Mujeres",data:resumen.map(r=>r.porFem),media:mediaGlobal.fem},
-    {titulo:"% Fumadores",data:resumen.map(r=>r.fum),media:mediaGlobal.fum},
-    {titulo:"Riesgo clínico medio",data:resumen.map(r=>r.riesgo),media:mediaGlobal.riesgo}
+    {titulo:"Edad media",data:resumen.map(r=>r.edad)},
+    {titulo:"IMC medio",data:resumen.map(r=>r.imc)},
+    {titulo:"% Mujeres",data:resumen.map(r=>r.porFem)},
+    {titulo:"% Fumadores",data:resumen.map(r=>r.fum)},
+    {titulo:"Riesgo clínico medio",data:resumen.map(r=>r.riesgo)}
   ];
 
   metricas.forEach(m=>{
-    const wrapper=document.createElement("div");
-    wrapper.classList.add("chart-wrapper");
     const c=document.createElement("canvas");
-    wrapper.appendChild(c);
-    document.getElementById("graficos").appendChild(wrapper);
+    document.getElementById("graficos").appendChild(c);
     const g=new Chart(c,{
       type:"bar",
-      data:{labels,datasets:[
-        {label:m.titulo,data:m.data,backgroundColor:"#4ba67d"},
-        {label:"Media global",data:new Array(labels.length).fill(m.media),type:"line",borderColor:"#888",borderWidth:1,pointRadius:0,fill:false}
-      ]},
-      options:{plugins:{legend:{display:false},title:{display:true,text:m.titulo,color:"#2f6d50",font:{size:12}}},scales:{y:{beginAtZero:true},x:{ticks:{font:{size:10}}}}}
+      data:{labels,datasets:[{label:m.titulo,data:m.data,backgroundColor:"#4fa87b",borderRadius:6}]},
+      options:{plugins:{legend:{display:false},title:{display:true,text:m.titulo,color:"#1e604a",font:{size:13}}},scales:{y:{beginAtZero:true},x:{ticks:{font:{size:10}}}}}
     });
     charts.push(g);
   });
 
+  // Interpretación automática
+  const mayorEdad = resumen.reduce((a,b)=>a.edad>b.edad?a:b);
+  const mayorIMC = resumen.reduce((a,b)=>a.imc>b.imc?a:b);
+  const mayorRiesgo = resumen.reduce((a,b)=>a.riesgo>b.riesgo?a:b);
+  document.getElementById("interpretacion").innerHTML=`
+    <b>Interpretación automática:</b><br>
+    La cohorte con mayor edad media es <b>${mayorEdad.cohorte}</b> (${mayorEdad.edad} años),
+    mientras que el mayor IMC promedio se observa en <b>${mayorIMC.cohorte}</b>.
+    En cuanto al riesgo clínico, destaca <b>${mayorRiesgo.cohorte}</b> con una puntuación media de ${mayorRiesgo.riesgo}.
+    Estos resultados sugieren posibles diferencias en la composición demográfica y el control clínico de las cohortes seleccionadas.`;
+  document.getElementById("interpretacion").classList.remove("hidden");
+
+  // Tabla
   document.getElementById("tablaContainer").innerHTML=`
     <table class="table-custom">
       <thead><tr><th>Cohorte</th><th>Pacientes</th><th>Edad</th><th>IMC</th><th>% Mujeres</th><th>% Fumadores</th><th>Riesgo</th></tr></thead>
@@ -262,7 +281,7 @@ async function generarInforme(){
 async function descargarPDF(){
   const { jsPDF }=window.jspdf;
   const pdf=new jsPDF("p","mm","a4");
-  const elem=document.getElementById("informe");
+  const elem=document.querySelector("main");
   await html2canvas(elem,{scale:2}).then(canvas=>{
     const img=canvas.toDataURL("image/png");
     const w=pdf.internal.pageSize.getWidth();
