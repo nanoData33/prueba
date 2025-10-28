@@ -146,249 +146,205 @@ body {
 
 <!-- Botón flotante de chat -->
 <div class="chat-btn" onclick="abrirChat()"><i data-lucide="message-circle"></i></div>
-
 <script>
 lucide.createIcons();
 const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-let grafico, graficoMed, indexGrafico = 0;
-const metricas = ["HbA1c", "TFG", "IMC", "Colesterol"];
-const colores = ["#3d7658", "#6bb38d", "#f7c15a", "#e58b7c"];
-let cohorteActual = "General";
+let grafico, cohorteActual = "General";
 
+// === Inicialización ===
 window.onload = async () => {
   const params = new URLSearchParams(window.location.search);
   cohorteActual = params.get("nombre") || "General";
   document.getElementById("nombreCohorte").textContent = cohorteActual;
-  await cargarCohorte(cohorteActual);
 };
 
-async function cargarCohorte(nombre) {
-  const { data: pacientes } = await supabase.from("pacientes")
-    .select("*")
-    .ilike("enfermedad_principal", `%${nombre}%`);
-  if (!pacientes?.length) return alert("No hay datos de esta cohorte.");
-  window.pacientes = pacientes;
-
-  document.getElementById("nPac").textContent = pacientes.length;
-  document.getElementById("edadMedia").textContent = (pacientes.reduce((a,b)=>a+b.edad,0)/pacientes.length).toFixed(1)+" años";
-  document.getElementById("controlados").textContent = (60+Math.random()*30).toFixed(1)+"%";
-  document.getElementById("adherencia").textContent = (70+Math.random()*20).toFixed(1)+"%";
-
-  const tbody = document.querySelector("#tablaPacientes tbody");
-  tbody.innerHTML = pacientes.map(p =>
-    `<tr>
-      <td>${p.patient_id}</td><td>${p.nombre}</td><td>${p.edad}</td>
-      <td>${p.IMC?.toFixed(1)||'-'}</td><td>${p.enfermedad_principal}</td>
-      <td><button onclick="abrirPaciente('${p.patient_id}')" class='bg-[var(--verde)] text-white px-2 py-1 rounded text-xs'>+</button></td>
-    </tr>`).join("");
-
-  await renderGraficoCohorte(pacientes, metricas[indexGrafico]);
-  await renderGraficoMedicaciones(pacientes);
-}
-
-// Mantiene las funcionalidades previas (gráficos, navegación, etc.)
-async function renderGraficoCohorte(pacientes, metrica) {
-  const { data: labs } = await supabase.from("laboratorios").select("*");
-  const fechas = [...new Set(labs.map(l => l.fecha_prueba))].sort();
-  const valores = fechas.map(f => {
-    const subset = labs.filter(l => l.fecha_prueba === f && l[metrica]);
-    return subset.length ? subset.reduce((a,b)=>a+(+b[metrica]||0),0)/subset.length : null;
-  });
-  const ctx = document.getElementById("graficoCohorte");
-  if (grafico) grafico.destroy();
-  grafico = new Chart(ctx,{
-    type:"line",
-    data:{labels:fechas,datasets:[{label:metrica,data:valores,borderColor:colores[indexGrafico],tension:0.3,fill:false}]},
-    options:{plugins:{legend:{display:true}},scales:{y:{beginAtZero:false}}}
-  });
-}
-
-async function renderGraficoMedicaciones(pacientes) {
-  const ids = pacientes.map(p=>p.patient_id);
-  const { data: meds } = await supabase.from("medicaciones").select("principio_activo, patient_id");
-  const cuenta = {};
-  meds.forEach(m=>{if(ids.includes(m.patient_id))cuenta[m.principio_activo]=(cuenta[m.principio_activo]||0)+1;});
-  const labels=Object.keys(cuenta), valores=Object.values(cuenta);
-  const ctx=document.getElementById("graficoMed");
-  if(graficoMed)graficoMed.destroy();
-  graficoMed=new Chart(ctx,{type:"bar",data:{labels,datasets:[{data:valores,backgroundColor:"#3d7658"}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
-  document.getElementById("topMeds").innerHTML = labels.map((m,i)=>`<li>${m} — ${valores[i]} pacientes</li>`).join("");
-}
-
-function prevGrafico(){indexGrafico=(indexGrafico-1+metricas.length)%metricas.length;renderGraficoCohorte(window.pacientes,metricas[indexGrafico]);}
-function nextGrafico(){indexGrafico=(indexGrafico+1)%metricas.length;renderGraficoCohorte(window.pacientes,metricas[indexGrafico]);}
-function abrirPaciente(id){window.location.href=`explorar.html?paciente=${id}`;}
-function abrirChat(){window.open("chat.html","_blank");}
-function abrirModal(){document.getElementById("modal").classList.remove("hidden");}
-function cerrarModal(){document.getElementById("modal").classList.add("hidden");}
-
-// ✅ Botón principal para generar gráfico desde texto
-async function abrirPopupDepuracion() {
-  const input = document.getElementById("inputGrafico");
-  const consulta = input?.value.trim();
-
+// === Botón principal ===
+async function generarGraficoDesdeTexto() {
+  const consulta = document.getElementById("inputGrafico")?.value.trim();
   if (!consulta) {
-    alert("⚠️ Escribe una consulta o descripción del gráfico antes de generar.");
+    mostrarPopup("⚠️ Escribe una descripción del gráfico antes de generar.");
     return;
   }
 
+  mostrarPopup("⏳ Procesando consulta...");
+
   const payload = {
-    consulta: consulta,
-    cohorte: cohorteActual || "General",
+    consulta,
+    cohorte: cohorteActual,
     timestamp: new Date().toISOString(),
     origen: "CohortIQ frontend"
   };
 
-  console.log("📤 Enviando a n8n:", payload);
-
-  document.getElementById("modal").classList.remove("hidden");
-
   try {
-    const response = await fetch("https://rubaseval.app.n8n.cloud/webhook-test/grafico", {
+    const response = await fetch("https://rubaseval.app.n8n.cloud/webhook/grafico", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
 
-    const resultText = await response.text();
-    document.getElementById("modal").classList.add("hidden");
+    const text = await response.text();
+    console.log("📩 Respuesta n8n:", text);
 
-    // Mostrar también en el panel de depuración
-    mostrarDepuracion(`📨 Enviado:\n${JSON.stringify(payload, null, 2)}\n\n📩 Respuesta n8n:\n${resultText}`);
-
-    // Intentar crear el gráfico con la respuesta
-    await renderGraficoDesdeN8N(resultText);
+    try {
+      const parsed = JSON.parse(text);
+      await renderGraficoEnPopup(parsed);
+    } catch (err) {
+      mostrarPopup("💥 Error al interpretar respuesta:\n\n" + text);
+    }
 
   } catch (err) {
-    document.getElementById("modal").classList.add("hidden");
-    mostrarDepuracion(`💥 Error al contactar con n8n:\n${err.message}`);
-    console.error("Error al contactar con n8n:", err);
+    mostrarPopup("❌ Error al contactar con n8n:\n" + err.message);
   }
 }
 
+// === Renderiza el gráfico dentro del popup ===
+async function renderGraficoEnPopup(parsed) {
+  const popup = crearPopupContainer();
 
-// ✅ Renderiza el gráfico dinámicamente en base a la respuesta de n8n
-async function renderGraficoDesdeN8N(resultText) {
-  try {
-    const parsed = JSON.parse(resultText);
-    console.log("📊 Interpretando respuesta de n8n:", parsed);
+  const chartType = parsed.chart_type || "bar";
+  const xaxis = parsed.xaxis || "x";
+  const sql = parsed.sql;
 
-    const chartType = parsed.chart_type || "bar";
-    const xaxis = parsed.xaxis || "x";
-    const sql = parsed.sql;
-
-    // Extraer tabla y columnas básicas del SQL
-    const match = sql.match(/SELECT\s+(.+)\s+FROM\s+(\w+)/i);
-    if (!match) {
-      mostrarDepuracion("❌ SQL no reconocida:\n" + sql);
-      return;
-    }
-
-    const columnas = match[1].split(",").map(c => c.trim());
-    const tabla = match[2];
-
-    // Obtener datos desde Supabase
-    const { data, error } = await supabase.from(tabla).select(columnas.join(","));
-    if (error) throw error;
-    if (!data?.length) {
-      mostrarDepuracion("⚠️ No hay datos para esa consulta.");
-      return;
-    }
-
-    // Preparar canvas
-    const ctx = document.getElementById("graficoCohorte");
-    if (grafico) grafico.destroy();
-
-    // === HISTOGRAMA ===
-    if (chartType === "histogram") {
-      const valores = data.map(d => Number(d[columnas[0]])).filter(v => !isNaN(v));
-      const bins = 10;
-      const min = Math.min(...valores);
-      const max = Math.max(...valores);
-      const step = (max - min) / bins;
-
-      const labels = Array.from({ length: bins }, (_, i) =>
-        `${(min + i * step).toFixed(0)}-${(min + (i + 1) * step).toFixed(0)}`
-      );
-      const frecuencias = new Array(bins).fill(0);
-      valores.forEach(v => {
-        const idx = Math.min(Math.floor((v - min) / step), bins - 1);
-        frecuencias[idx]++;
-      });
-
-      grafico = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels,
-          datasets: [{
-            label: xaxis,
-            data: frecuencias,
-            backgroundColor: "#3d7658"
-          }]
-        },
-        options: {
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { title: { display: true, text: xaxis } },
-            y: { title: { display: true, text: "Frecuencia" } }
-          }
-        }
-      });
-    }
-
-    // === GRÁFICO DE LÍNEA ===
-    else if (chartType === "line") {
-      grafico = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: data.map((_, i) => i + 1),
-          datasets: [{
-            label: xaxis,
-            data: data.map(d => d[columnas[0]]),
-            borderColor: "#3d7658",
-            fill: false,
-            tension: 0.3
-          }]
-        },
-        options: {
-          plugins: { legend: { display: true } },
-          scales: { x: { title: { display: true, text: "Índice" } },
-                    y: { title: { display: true, text: xaxis } } }
-        }
-      });
-    }
-
-    // === GRÁFICO DE DISPERSIÓN ===
-    else if (chartType === "scatter" && columnas.length >= 2) {
-      grafico = new Chart(ctx, {
-        type: "scatter",
-        data: {
-          datasets: [{
-            label: `${columnas[0]} vs ${columnas[1]}`,
-            data: data.map(d => ({ x: d[columnas[0]], y: d[columnas[1]] })),
-            backgroundColor: "#3d7658"
-          }]
-        },
-        options: {
-          scales: {
-            x: { title: { display: true, text: columnas[0] } },
-            y: { title: { display: true, text: columnas[1] } }
-          }
-        }
-      });
-    }
-
-    else {
-      mostrarDepuracion(`⚠️ Tipo de gráfico "${chartType}" no implementado.`);
-    }
-
-  } catch (err) {
-    console.error("Error al renderizar gráfico:", err);
-    mostrarDepuracion("💥 Error al crear gráfico:\n" + err.message);
+  // Parsear SQL tipo “SELECT columna FROM tabla”
+  const match = sql.match(/SELECT\s+(.+)\s+FROM\s+(\w+)/i);
+  if (!match) {
+    mostrarPopup("⚠️ Consulta no reconocida:\n" + sql);
+    return;
   }
+
+  const columnas = match[1].split(",").map(c => c.trim());
+  const tabla = match[2];
+
+  const { data, error } = await supabase.from(tabla).select(columnas.join(","));
+  if (error || !data?.length) {
+    mostrarPopup("⚠️ No se pudieron obtener datos de Supabase.\n" + (error?.message || ""));
+    return;
+  }
+
+  popup.innerHTML = `
+    <div class="bg-white rounded-lg shadow-xl p-6 w-[90%] max-w-3xl h-[70%] flex flex-col">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-[var(--verde)] font-semibold text-lg">📊 ${parsed.titulo || 'Visualización generada'}</h2>
+        <button onclick="cerrarPopup()" class="bg-[var(--verde)] text-white px-3 py-1 rounded-md text-sm">Cerrar</button>
+      </div>
+      <canvas id="popupChart" class="flex-grow"></canvas>
+    </div>
+  `;
+
+  document.body.appendChild(popup);
+
+  const ctx = document.getElementById("popupChart");
+
+  // === HISTOGRAMA ===
+  if (chartType === "histogram") {
+    const valores = data.map(d => Number(d[columnas[0]])).filter(v => !isNaN(v));
+    const bins = 10;
+    const min = Math.min(...valores);
+    const max = Math.max(...valores);
+    const step = (max - min) / bins;
+
+    const labels = Array.from({ length: bins }, (_, i) =>
+      `${(min + i * step).toFixed(0)}-${(min + (i + 1) * step).toFixed(0)}`
+    );
+    const frecuencias = new Array(bins).fill(0);
+    valores.forEach(v => {
+      const idx = Math.min(Math.floor((v - min) / step), bins - 1);
+      frecuencias[idx]++;
+    });
+
+    new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: xaxis,
+          data: frecuencias,
+          backgroundColor: "#3d7658"
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { title: { display: true, text: xaxis } },
+          y: { title: { display: true, text: "Frecuencia" } }
+        }
+      }
+    });
+  }
+
+  // === LINE ===
+  else if (chartType === "line") {
+    new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: data.map((_, i) => i + 1),
+        datasets: [{
+          label: xaxis,
+          data: data.map(d => d[columnas[0]]),
+          borderColor: "#3d7658",
+          fill: false,
+          tension: 0.3
+        }]
+      },
+      options: {
+        scales: { y: { title: { display: true, text: xaxis } } }
+      }
+    });
+  }
+
+  // === DISPERSIÓN ===
+  else if (chartType === "scatter" && columnas.length >= 2) {
+    new Chart(ctx, {
+      type: "scatter",
+      data: {
+        datasets: [{
+          label: `${columnas[0]} vs ${columnas[1]}`,
+          data: data.map(d => ({ x: d[columnas[0]], y: d[columnas[1]] })),
+          backgroundColor: "#3d7658"
+        }]
+      },
+      options: {
+        scales: {
+          x: { title: { display: true, text: columnas[0] } },
+          y: { title: { display: true, text: columnas[1] } }
+        }
+      }
+    });
+  }
+
+  else {
+    mostrarPopup("⚠️ Tipo de gráfico no soportado: " + chartType);
+  }
+}
+
+// === Helpers ===
+function mostrarPopup(contenido) {
+  cerrarPopup();
+  const popup = crearPopupContainer();
+  popup.innerHTML = `
+    <div class="bg-white rounded-lg shadow-xl p-6 w-[90%] max-w-3xl text-center text-gray-700">
+      <p class="whitespace-pre-wrap">${contenido}</p>
+      <button onclick="cerrarPopup()" class="mt-4 bg-[var(--verde)] text-white px-4 py-1 rounded-md">Cerrar</button>
+    </div>
+  `;
+  document.body.appendChild(popup);
+}
+
+function crearPopupContainer() {
+  const existing = document.getElementById("popupOverlay");
+  if (existing) existing.remove();
+  const div = document.createElement("div");
+  div.id = "popupOverlay";
+  div.className = "fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50";
+  return div;
+}
+
+function cerrarPopup() {
+  const popup = document.getElementById("popupOverlay");
+  if (popup) popup.remove();
 }
 </script>
 </body>
