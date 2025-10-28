@@ -103,7 +103,8 @@ body {
       <div class="flex mt-2 gap-2">
         <input id="inputGrafico" placeholder="Ej: histograma de edad por sexo"
           class="flex-grow border border-gray-300 rounded-md p-2 text-sm">
-        <button onclick="generarGraficoN8N()" class="bg-[var(--verde)] text-white px-4 rounded-md">Generar</button>
+        <button onclick="abrirModal()" class="bg-[var(--verde)] text-white px-4 rounded-md">Generar</button>
+        <button onclick="abrirPopupDepuracion()" class="bg-gray-200 text-gray-700 px-4 rounded-md">Depurar</button>
       </div>
     </div>
 
@@ -128,19 +129,23 @@ body {
   <div class="bg-white p-6 rounded-lg shadow-lg text-center w-[300px]">
     <div class="spinner mx-auto mb-4"></div>
     <p class="text-gray-600">Procesando solicitud...</p>
+    <button onclick="cerrarModal()" class="mt-4 bg-[var(--verde)] text-white px-4 py-1 rounded-md">Cancelar</button>
   </div>
 </div>
 
-<!-- Modal del gráfico generado -->
-<div id="graficoModal" class="modal hidden">
-  <div class="bg-white p-6 rounded-lg shadow-lg w-[80%] max-w-3xl flex flex-col">
+<!-- Modal de depuración -->
+<div id="depuracionModal" class="modal hidden">
+  <div class="bg-white p-6 rounded-lg shadow-lg w-[80%] max-w-3xl h-[70%] overflow-auto flex flex-col">
     <div class="flex justify-between items-center mb-3">
-      <h3 class="text-lg font-semibold text-[var(--verde)]">Resultado del gráfico</h3>
-      <button onclick="cerrarGraficoModal()" class="bg-[var(--verde)] text-white px-3 py-1 rounded-md text-sm">Cerrar</button>
+      <h3 class="text-lg font-semibold text-[var(--verde)]">Respuesta de n8n</h3>
+      <button onclick="cerrarDepuracion()" class="bg-[var(--verde)] text-white px-3 py-1 rounded-md text-sm">Cerrar</button>
     </div>
-    <pre id="contenidoGrafico" class="text-xs text-gray-800 whitespace-pre-wrap bg-gray-50 border border-gray-200 rounded-md p-3 flex-grow overflow-auto"></pre>
+    <pre id="contenidoDepuracion" class="text-xs text-gray-800 whitespace-pre-wrap bg-gray-50 border border-gray-200 rounded-md p-3 flex-grow"></pre>
   </div>
 </div>
+
+<!-- Botón flotante de chat -->
+<div class="chat-btn" onclick="abrirChat()"><i data-lucide="message-circle"></i></div>
 
 <script>
 lucide.createIcons();
@@ -161,54 +166,35 @@ window.onload = async () => {
 };
 
 async function cargarCohorte(nombre) {
-  const { data: pacientes, error } = await supabase
-    .from("pacientes")
+  const { data: pacientes } = await supabase.from("pacientes")
     .select("*")
-    .ilike("diagnostico_principal", `%${nombre}%`);
-
-  if (error) {
-    alert("Error al conectar con Supabase:\n" + error.message);
-    return;
-  }
+    .ilike("enfermedad_principal", `%${nombre}%`);
   if (!pacientes?.length) return alert("No hay datos de esta cohorte.");
-
   window.pacientes = pacientes;
 
   document.getElementById("nPac").textContent = pacientes.length;
-  document.getElementById("edadMedia").textContent =
-    (pacientes.reduce((a,b)=>a+(b.Edad||0),0)/pacientes.length).toFixed(1) + " años";
+  document.getElementById("edadMedia").textContent = (pacientes.reduce((a,b)=>a+b.edad,0)/pacientes.length).toFixed(1)+" años";
   document.getElementById("controlados").textContent = (60+Math.random()*30).toFixed(1)+"%";
   document.getElementById("adherencia").textContent = (70+Math.random()*20).toFixed(1)+"%";
 
   const tbody = document.querySelector("#tablaPacientes tbody");
   tbody.innerHTML = pacientes.map(p =>
     `<tr>
-      <td>${p.PacienteID}</td>
-      <td>${p.Nombre}</td>
-      <td>${p.Edad}</td>
-      <td>${p.IMC || '-'}</td>
-      <td>${p.diagnostico_principal}</td>
-      <td><button onclick="abrirPaciente('${p.PacienteID}')" class='bg-[var(--verde)] text-white px-2 py-1 rounded text-xs'>+</button></td>
-    </tr>`
-  ).join("");
+      <td>${p.patient_id}</td><td>${p.nombre}</td><td>${p.edad}</td>
+      <td>${p.IMC?.toFixed(1)||'-'}</td><td>${p.enfermedad_principal}</td>
+      <td><button onclick="abrirPaciente('${p.patient_id}')" class='bg-[var(--verde)] text-white px-2 py-1 rounded text-xs'>+</button></td>
+    </tr>`).join("");
 
   await renderGraficoCohorte(pacientes, metricas[indexGrafico]);
   await renderGraficoMedicaciones(pacientes);
 }
 
-// Limita datos al último mes
-function filtrarUltimoMes(data, campoFecha) {
-  const haceUnMes = new Date();
-  haceUnMes.setMonth(haceUnMes.getMonth() - 1);
-  return data.filter(d => new Date(d[campoFecha]) >= haceUnMes);
-}
-
+// Mantiene las funcionalidades previas (gráficos, navegación, etc.)
 async function renderGraficoCohorte(pacientes, metrica) {
   const { data: labs } = await supabase.from("laboratorios").select("*");
-  const recientes = filtrarUltimoMes(labs, "fecha_prueba");
-  const fechas = [...new Set(recientes.map(l => l.fecha_prueba))].sort();
+  const fechas = [...new Set(labs.map(l => l.fecha_prueba))].sort();
   const valores = fechas.map(f => {
-    const subset = recientes.filter(l => l.fecha_prueba === f && l[metrica]);
+    const subset = labs.filter(l => l.fecha_prueba === f && l[metrica]);
     return subset.length ? subset.reduce((a,b)=>a+(+b[metrica]||0),0)/subset.length : null;
   });
   const ctx = document.getElementById("graficoCohorte");
@@ -221,10 +207,10 @@ async function renderGraficoCohorte(pacientes, metrica) {
 }
 
 async function renderGraficoMedicaciones(pacientes) {
-  const ids = pacientes.map(p=>p.PacienteID);
-  const { data: meds } = await supabase.from("medicaciones").select("principio_activo, PacienteID");
+  const ids = pacientes.map(p=>p.patient_id);
+  const { data: meds } = await supabase.from("medicaciones").select("principio_activo, patient_id");
   const cuenta = {};
-  meds.forEach(m=>{if(ids.includes(m.PacienteID))cuenta[m.principio_activo]=(cuenta[m.principio_activo]||0)+1;});
+  meds.forEach(m=>{if(ids.includes(m.patient_id))cuenta[m.principio_activo]=(cuenta[m.principio_activo]||0)+1;});
   const labels=Object.keys(cuenta), valores=Object.values(cuenta);
   const ctx=document.getElementById("graficoMed");
   if(graficoMed)graficoMed.destroy();
@@ -235,37 +221,46 @@ async function renderGraficoMedicaciones(pacientes) {
 function prevGrafico(){indexGrafico=(indexGrafico-1+metricas.length)%metricas.length;renderGraficoCohorte(window.pacientes,metricas[indexGrafico]);}
 function nextGrafico(){indexGrafico=(indexGrafico+1)%metricas.length;renderGraficoCohorte(window.pacientes,metricas[indexGrafico]);}
 function abrirPaciente(id){window.location.href=`explorar.html?paciente=${id}`;}
-function cerrarGraficoModal(){document.getElementById("graficoModal").classList.add("hidden");}
+function abrirChat(){window.open("chat.html","_blank");}
+function abrirModal(){document.getElementById("modal").classList.remove("hidden");}
+function cerrarModal(){document.getElementById("modal").classList.add("hidden");}
 
-// === 🔹 Enviar consulta al webhook n8n ===
-async function generarGraficoN8N() {
-  const consulta = document.getElementById("inputGrafico").value.trim();
-  if (!consulta) return alert("Escribe una consulta o tipo de gráfico.");
+// Nueva función: abre pop-up de depuración y envía consulta a n8n
+async function abrirPopupDepuracion(){
+  const consulta=document.getElementById("inputGrafico").value.trim();
+  if(!consulta)return alert("Escribe la consulta del gráfico que quieres depurar.");
 
   document.getElementById("modal").classList.remove("hidden");
-  const payload = {
-    consulta,
-    cohorte: cohorteActual,
-    timestamp: new Date().toISOString(),
-    origen: "CohortIQ frontend"
-  };
+  const body={consulta, cohorte: cohorteActual};
 
-  try {
-    const res = await fetch("https://rubaseval.app.n8n.cloud/webhook/grafico", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(payload)
+  try{
+    const res=await fetch("https://rubaseval.app.n8n.cloud/webhook-test/grafico",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(body)
     });
-    const text = await res.text();
-    document.getElementById("modal").classList.add("hidden");
-    document.getElementById("contenidoGrafico").textContent = text;
-    document.getElementById("graficoModal").classList.remove("hidden");
-  } catch (err) {
-    document.getElementById("modal").classList.add("hidden");
-    document.getElementById("contenidoGrafico").textContent = "Error al contactar con n8n:\n" + err.message;
-    document.getElementById("graficoModal").classList.remove("hidden");
+    const text=await res.text();
+    cerrarModal();
+    mostrarDepuracion(text);
+  }catch(e){
+    cerrarModal();
+    mostrarDepuracion("Error al contactar con n8n:\n"+e.message);
   }
+}
+
+function mostrarDepuracion(texto){
+  const modal=document.getElementById("depuracionModal");
+  const pre=document.getElementById("contenidoDepuracion");
+  pre.textContent=texto;
+  modal.classList.remove("hidden");
+}
+
+function cerrarDepuracion(){
+  document.getElementById("depuracionModal").classList.add("hidden");
 }
 </script>
 </body>
 </html>
+
+
+por favor que esta dando error 
