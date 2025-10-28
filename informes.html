@@ -17,21 +17,78 @@
   --verde-claro: #4fa87b;
   --gris-fondo: #f9faf9;
 }
-body { font-family: 'Inter', sans-serif; background-color: var(--gris-fondo); color: #1a1a1a; }
-header { margin-bottom: 1rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.4rem; }
-.section { background: white; border-radius: 0.6rem; padding: 1rem 1.4rem; box-shadow: 0 1px 4px rgba(0,0,0,0.04); margin-bottom: 0.8rem; }
-.card { background: #f1f6f3; border-left: 3px solid var(--verde); border-radius: 0.4rem; padding: 0.6rem 0.8rem; font-size: 0.85rem; }
-.card h3 { color: var(--verde); font-weight: 600; margin-bottom: 0.1rem; font-size: 0.95rem; }
-canvas { max-height: 130px !important; }
-.table-custom { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 0.6rem; }
-.table-custom th, .table-custom td { border: 1px solid #e5e7eb; padding: 0.3rem 0.5rem; text-align: center; }
-.table-custom th { background: #f3f6f4; color: #1a1a1a; font-weight: 600; }
-.btn-main { background: linear-gradient(90deg, var(--verde) 0%, var(--verde-claro) 100%); color: white; border: none; padding: 0.45rem 1rem; border-radius: 0.35rem; font-weight: 500; font-size: 0.85rem; transition: 0.25s; }
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--gris-fondo);
+  color: #1a1a1a;
+  display: flex;
+  justify-content: center;
+}
+main {
+  max-width: 900px;
+  width: 100%;
+  padding: 1.5rem;
+}
+header { border-bottom: 1px solid #e5e7eb; padding-bottom: 0.4rem; margin-bottom: 1rem; }
+.section {
+  background: white;
+  border-radius: 0.6rem;
+  padding: 1.2rem 1.4rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  margin-bottom: 1rem;
+}
+.card {
+  background: #f3f7f4;
+  border-left: 3px solid var(--verde);
+  border-radius: 0.4rem;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
+}
+.card h3 {
+  color: var(--verde);
+  font-weight: 600;
+  margin-bottom: 0.1rem;
+  font-size: 0.95rem;
+}
+canvas {
+  max-height: 150px !important;
+  margin-top: 10px;
+}
+.table-custom {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-top: 0.8rem;
+}
+.table-custom th, .table-custom td {
+  border: 1px solid #e5e7eb;
+  padding: 0.4rem 0.6rem;
+  text-align: center;
+}
+.table-custom th {
+  background: #f3f6f4;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+.table-custom tbody tr:nth-child(even) {
+  background-color: #fafafa;
+}
+.btn-main {
+  background: linear-gradient(90deg, var(--verde) 0%, var(--verde-claro) 100%);
+  color: white;
+  border: none;
+  padding: 0.45rem 1rem;
+  border-radius: 0.35rem;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: 0.25s;
+}
 .btn-main:hover { filter: brightness(1.1); }
 </style>
 </head>
 
-<body class="p-6">
+<body>
+<main>
 <header class="flex justify-between items-center">
   <h1 class="text-xl font-semibold text-[var(--verde)]">Informe Clínico Comparativo</h1>
   <a href="index.html" class="text-sm text-[var(--verde)] hover:underline">Volver al inicio</a>
@@ -62,10 +119,9 @@ canvas { max-height: 130px !important; }
 
 <section id="informe" class="section hidden">
   <div id="resumen" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+  <div id="graficos" class="grid grid-cols-2 gap-4 mb-4"></div>
 
-  <div id="graficos" class="grid grid-cols-2 gap-4"></div>
-
-  <h3 class="text-[var(--verde)] font-semibold mt-6 mb-2">Comparativa detallada</h3>
+  <h3 class="text-[var(--verde)] font-semibold mt-4 mb-2">Comparativa detallada</h3>
   <div id="tablaContainer"></div>
 
   <div class="text-right mt-3">
@@ -135,7 +191,6 @@ async function generarInforme(){
     resumen.push({cohorte:enf,n:pacientes.length,edad,imc,fem,porFem:(fem/pacientes.length*100).toFixed(1),fum:(fum/pacientes.length*100).toFixed(1),riesgo});
   }
 
-  // Tarjetas resumen
   resumen.forEach(r=>{
     document.getElementById("resumen").innerHTML+=`
       <div class="card"><h3>${r.cohorte}</h3>
@@ -143,7 +198,6 @@ async function generarInforme(){
       <p>Edad media: ${r.edad} | IMC: ${r.imc}</p></div>`;
   });
 
-  // Gráficos comparativos (2x3)
   const labels=resumen.map(r=>r.cohorte);
   const metricas=[
     {titulo:"Edad media",data:resumen.map(r=>r.edad),media:mediaGlobal.edad},
@@ -160,14 +214,13 @@ async function generarInforme(){
       type:"bar",
       data:{labels,datasets:[
         {label:m.titulo,data:m.data,backgroundColor:"#4ba67d"},
-        {label:"Media global",data:new Array(labels.length).fill(m.media),type:"line",borderColor:"#888",borderWidth:1.2,pointRadius:0,fill:false}
+        {label:"Media global",data:new Array(labels.length).fill(m.media),type:"line",borderColor:"#888",borderWidth:1,pointRadius:0,fill:false}
       ]},
-      options:{plugins:{legend:{display:false},title:{display:true,text:m.titulo,color:"#2f6d50"}},scales:{y:{beginAtZero:true}}}
+      options:{plugins:{legend:{display:false},title:{display:true,text:m.titulo,color:"#2f6d50"}},scales:{y:{beginAtZero:true},x:{ticks:{font:{size:10}}}}}
     });
     charts.push(g);
   });
 
-  // Tabla
   document.getElementById("tablaContainer").innerHTML=`
     <table class="table-custom">
       <thead><tr><th>Cohorte</th><th>Pacientes</th><th>Edad</th><th>IMC</th><th>% Mujeres</th><th>% Fumadores</th><th>Riesgo</th></tr></thead>
@@ -190,5 +243,6 @@ async function descargarPDF(){
   });
 }
 </script>
+</main>
 </body>
 </html>
