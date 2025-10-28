@@ -131,60 +131,57 @@ header {
 
 <script>
 lucide.createIcons();
-const n8nWebhook = "https://nano33.app.n8n.cloud/webhook-test/diagnostico";
 
-/* === Simulación de datos de ejemplo (modo demo) === */
-const ejemplo = {
-  cohortes: {
-    "Diabetes tipo 2": 82,
-    "Enfermedad renal crónica": 45,
-    "Síndrome metabólico": 68
+const resultadosDemo = {
+  renal: {
+    cohortes: {
+      "Enfermedad renal crónica": 94,
+      "Diabetes tipo 2": 38,
+      "Síndrome metabólico": 21
+    },
+    explicacion: "El patrón analítico muestra un filtrado glomerular reducido y elevación moderada de creatinina. El perfil es compatible con una fase inicial de enfermedad renal crónica. Se recomienda control nefrológico y ajuste farmacológico individualizado."
   },
-  explicacion: "El paciente presenta un perfil compatible con descontrol glucémico persistente y reducción leve del filtrado glomerular. Se recomienda control metabólico intensivo y reevaluación renal trimestral."
+  diabetes: {
+    cohortes: {
+      "Diabetes tipo 2": 92,
+      "Síndrome metabólico": 64,
+      "Riesgo cardiovascular": 48
+    },
+    explicacion: "El perfil indica hiperglucemia mantenida y HbA1c elevada. El paciente presenta un riesgo alto de complicaciones metabólicas asociadas a diabetes tipo 2. Se aconseja refuerzo de la adherencia y seguimiento endocrinológico."
+  },
+  normal: {
+    cohortes: {
+      "Diabetes tipo 2": 4,
+      "Enfermedad renal crónica": 2,
+      "Síndrome metabólico": 5
+    },
+    explicacion: "Los valores analíticos se encuentran dentro de los rangos fisiológicos habituales. No se observan alteraciones metabólicas ni renales significativas. Se recomienda seguimiento rutinario anual."
+  }
 };
 
-/* === Envío PDF === */
 async function enviarPDF() {
   const fileInput = document.getElementById("pdfFile");
   if (!fileInput.files.length) return alert("Selecciona un archivo PDF.");
-  const formData = new FormData();
-  formData.append("file", fileInput.files[0]);
-  formData.append("tipo", "pdf");
+  const nombre = fileInput.files[0].name.toLowerCase();
   mostrarLoader("Analizando informe clínico...");
-  try {
-    const res = await fetch(n8nWebhook, { method: "POST", body: formData });
-    const data = await res.json();
-    renderResultados(data);
-  } catch {
-    renderResultados(ejemplo); // modo demo
-  }
+
+  // Simula análisis con retardo y selección del resultado según nombre
+  await new Promise(r => setTimeout(r, 1200));
+
+  if (nombre.includes("renal")) return renderResultados(resultadosDemo.renal);
+  if (nombre.includes("diabetes")) return renderResultados(resultadosDemo.diabetes);
+  renderResultados(resultadosDemo.normal);
 }
 
-/* === Envío manual === */
 async function enviarValores() {
-  const campos = document.querySelectorAll("input");
-  const payload = {};
-  campos.forEach(c => payload[c.id] = parseFloat(c.value) || null);
   mostrarLoader("Ejecutando clasificación con los valores introducidos...");
-  try {
-    const res = await fetch(n8nWebhook, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    renderResultados(data);
-  } catch {
-    renderResultados(ejemplo);
-  }
+  await new Promise(r => setTimeout(r, 1000));
+  renderResultados(resultadosDemo.normal);
 }
 
-/* === Visualización de resultados === */
 function renderResultados(data) {
   const cont = document.getElementById("resultado");
   cont.innerHTML = "";
-  if (!data) return mostrarError("No se recibieron resultados.");
-
   const cohortes = data.cohortes || {};
   const explicacion = data.explicacion || "Sin observaciones clínicas relevantes.";
 
@@ -217,10 +214,6 @@ function mostrarLoader(text) {
       </svg>
       <p>${text}</p>
     </div>`;
-}
-
-function mostrarError(msg) {
-  document.getElementById("resultado").innerHTML = `<div class="bg-red-100 text-red-700 p-4 rounded-md">${msg}</div>`;
 }
 </script>
 </body>
