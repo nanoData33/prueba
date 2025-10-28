@@ -226,25 +226,52 @@ function abrirModal(){document.getElementById("modal").classList.remove("hidden"
 function cerrarModal(){document.getElementById("modal").classList.add("hidden");}
 
 // Nueva función: abre pop-up de depuración y envía consulta a n8n
-async function abrirPopupDepuracion(){
-  const consulta=document.getElementById("inputGrafico").value.trim();
-  if(!consulta)return alert("Escribe la consulta del gráfico que quieres depurar.");
+// Nueva versión mejorada de abrirPopupDepuracion
+async function abrirPopupDepuracion() {
+  const consulta = document.getElementById("inputGrafico").value.trim();
+  if (!consulta) {
+    alert("Escribe la consulta o gráfico que quieres generar.");
+    return;
+  }
 
+  // Mostrar spinner
   document.getElementById("modal").classList.remove("hidden");
-  const body={consulta, cohorte: cohorteActual};
 
-  try{
-    const res=await fetch("https://rubaseval.app.n8n.cloud/webhook-test/grafico",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(body)
+  const payload = {
+    consulta,
+    cohorte: cohorteActual,
+    timestamp: new Date().toISOString(),
+    origen: "CohortIQ frontend",
+  };
+
+  try {
+    const res = await fetch("https://rubaseval.app.n8n.cloud/webhook-test/grafico", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(payload),
     });
-    const text=await res.text();
+
+    const text = await res.text();
     cerrarModal();
-    mostrarDepuracion(text);
-  }catch(e){
+
+    if (!res.ok) {
+      mostrarDepuracion(
+        `⚠️ Error HTTP ${res.status}\n\nRespuesta:\n${text}`
+      );
+      console.error("Error en respuesta de n8n:", res.status, text);
+      return;
+    }
+
+    mostrarDepuracion(`✅ Enviado correctamente:\n\n${JSON.stringify(payload, null, 2)}\n\n📩 Respuesta de n8n:\n${text}`);
+    console.log("Respuesta completa de n8n:", text);
+
+  } catch (err) {
     cerrarModal();
-    mostrarDepuracion("Error al contactar con n8n:\n"+e.message);
+    mostrarDepuracion(`💥 Error de conexión:\n${err.message}`);
+    console.error("Error de conexión con n8n:", err);
   }
 }
 
