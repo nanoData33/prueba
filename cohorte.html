@@ -16,32 +16,20 @@
   --verde-claro: #4ba67d;
   --gris-fondo: #f8f9f8;
 }
-body {
-  background-color: var(--gris-fondo);
-  font-family: 'Inter', sans-serif;
-}
+body { background-color: var(--gris-fondo); font-family: 'Inter', sans-serif; }
 .card {
-  background: white;
-  border-radius: 0.8rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  background: white; border-radius: 0.8rem; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
   padding: 1.25rem 1.5rem;
 }
-.chat-btn {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  background: var(--verde);
-  color: white;
-  border-radius: 50%;
-  width: 58px; height: 58px;
-  display: flex; justify-content: center; align-items: center;
-  font-size: 26px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.25);
-  cursor: pointer;
-}
-th, td { padding: 0.5rem 0.7rem; }
+th, td { padding: 0.4rem 0.6rem; text-align: left; }
 thead th { background: #f0f2f0; position: sticky; top: 0; }
 tr:nth-child(even) { background: #fafafa; }
+.chat-btn {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--verde); color: white; border-radius: 50%;
+  width: 58px; height: 58px; display: flex; justify-content: center; align-items: center;
+  font-size: 26px; box-shadow: 0 3px 8px rgba(0,0,0,0.25); cursor: pointer;
+}
 </style>
 </head>
 
@@ -77,7 +65,7 @@ tr:nth-child(even) { background: #fafafa; }
     </div>
 
     <div class="card">
-      <h2 class="text-[var(--verde)] font-semibold mb-2">Uso, adherencia y eficacia de medicaciones</h2>
+      <h2 class="text-[var(--verde)] font-semibold mb-2">Uso y adherencia de medicaciones</h2>
       <canvas id="graficoMed" height="180"></canvas>
       <p id="resumenMed" class="text-gray-600 text-sm mt-3"></p>
     </div>
@@ -97,13 +85,7 @@ tr:nth-child(even) { background: #fafafa; }
     <h2 class="text-[var(--verde)] font-semibold mb-3">Pacientes de la cohorte</h2>
     <div class="overflow-auto max-h-[420px] border border-gray-200 rounded-md">
       <table id="tablaPacientes" class="w-full text-sm">
-        <thead>
-          <tr>
-            <th>ID</th><th>Nombre</th><th>Sexo</th><th>Edad</th><th>IMC</th><th>Altura</th><th>Peso</th>
-            <th>Fumador</th><th>Actividad física</th><th>Educación</th><th>Nivel socioeconómico</th>
-            <th>Diagnóstico</th><th>Zona</th><th>Seguimiento activo</th><th>Riesgo clínico</th><th>Riesgo social</th>
-          </tr>
-        </thead><tbody></tbody>
+        <thead><tr id="headerPacientes"></tr></thead><tbody></tbody>
       </table>
     </div>
     <div class="text-right mt-3">
@@ -130,7 +112,6 @@ window.onload=async()=>{
 
 async function cargarCohorte(nombre){
   const {data:pacientes}=await supabase.from("pacientes").select("*").ilike("enfermedad_principal",`%${nombre}%`);
-  if(!pacientes?.length)return alert("No hay datos.");
   const {data:seguimiento}=await supabase.from("seguimiento_pacientes").select("*");
   const {data:contacto}=await supabase.from("paciente_contacto").select("*");
   pacientesGlobal=pacientes.map(p=>({...p,...(seguimiento.find(s=>s.patient_id===p.patient_id)||{}),...(contacto.find(c=>c.patient_id===p.patient_id)||{})}));
@@ -152,7 +133,7 @@ async function renderGraficoLineas(variable){
   const {data:labs}=await supabase.from("laboratorios").select("*").in("patient_id",ids);
   if(!labs?.length)return;
   const fechas=[...new Set(labs.map(l=>l.fecha_prueba))].sort();
-  const ultimas=fechas.slice(-90); // 3 meses aprox
+  const ultimas=fechas.slice(-90);
   const valores=ultimas.map(f=>{
     const subset=labs.filter(l=>l.fecha_prueba===f&&l[variable]!=null);
     return subset.length?subset.reduce((a,b)=>a+(+b[variable]||0),0)/subset.length:null;
@@ -164,28 +145,26 @@ async function renderGraficoLineas(variable){
 
 async function renderGraficoMedicaciones(pacientes){
   const ids=pacientes.map(p=>p.patient_id);
-  const {data:meds}=await supabase.from("medicaciones").select("principio_activo,adherencia,eficacia_reportada,patient_id").in("patient_id",ids);
+  const {data:meds}=await supabase.from("medicaciones").select("principio_activo,adherencia,patient_id").in("patient_id",ids);
   if(!meds?.length)return;
   const resumen={};
   meds.forEach(m=>{
-    if(!resumen[m.principio_activo])resumen[m.principio_activo]={n:0,a:[],e:[]};
-    const r=resumen[m.principio_activo];
-    r.n++; if(m.adherencia)r.a.push(+m.adherencia);
-    if(m.eficacia_reportada)r.e.push(+m.eficacia_reportada);
+    if(!resumen[m.principio_activo])resumen[m.principio_activo]={n:0,a:[]};
+    resumen[m.principio_activo].n++;
+    if(m.adherencia)resumen[m.principio_activo].a.push(+m.adherencia);
   });
-  const arr=Object.entries(resumen).map(([k,v])=>({nombre:k,nPac:v.n,ad:(v.a.length?v.a.reduce((a,b)=>a+b,0)/v.a.length:0),ef:(v.e.length?v.e.reduce((a,b)=>a+b,0)/v.e.length:0)})).sort((a,b)=>b.nPac-a.nPac).slice(0,10);
+  const arr=Object.entries(resumen).map(([k,v])=>({nombre:k,nPac:v.n,ad:(v.a.length?v.a.reduce((a,b)=>a+b,0)/v.a.length:0)})).sort((a,b)=>b.nPac-a.nPac).slice(0,10);
   const ctx=document.getElementById("graficoMed");
   if(graficoMed)graficoMed.destroy();
-  graficoMed=new Chart(ctx,{type:"bar",data:{labels:arr.map(t=>t.nombre),datasets:[{label:"Pacientes",data:arr.map(t=>t.nPac),backgroundColor:"#3d7658aa",yAxisID:"y1"},{label:"Adherencia (%)",data:arr.map(t=>t.ad),backgroundColor:"#4ba67daa",yAxisID:"y2"},{label:"Eficacia (%)",data:arr.map(t=>t.ef),backgroundColor:"#f7c15a",yAxisID:"y2"}]},options:{interaction:{mode:"index",intersect:false},scales:{y1:{beginAtZero:true,title:{text:"Pacientes"}},y2:{beginAtZero:true,max:100,position:"right",grid:{drawOnChartArea:false}}},plugins:{title:{display:true,text:"Uso, adherencia y eficacia",color:"#3d7658"}}}});
-  document.getElementById("resumenMed").textContent=`Adherencia media: ${(arr.reduce((a,b)=>a+b.ad,0)/arr.length).toFixed(1)}% — Eficacia media: ${(arr.reduce((a,b)=>a+b.ef,0)/arr.length).toFixed(1)}%`;
+  graficoMed=new Chart(ctx,{type:"bar",data:{labels:arr.map(t=>t.nombre),datasets:[{label:"Pacientes",data:arr.map(t=>t.nPac),backgroundColor:"#3d7658aa",yAxisID:"y1"},{label:"Adherencia (%)",data:arr.map(t=>t.ad),backgroundColor:"#4ba67daa",yAxisID:"y2"}]},options:{interaction:{mode:"index",intersect:false},scales:{y1:{beginAtZero:true,title:{text:"Pacientes"}},y2:{beginAtZero:true,max:100,position:"right",grid:{drawOnChartArea:false}}},plugins:{title:{display:true,text:"Uso y adherencia",color:"#3d7658"}}}});
+  document.getElementById("resumenMed").textContent=`Adherencia media: ${(arr.reduce((a,b)=>a+b.ad,0)/arr.length).toFixed(1)}%`;
 }
 
 async function renderAlertas(pacientes){
   const ids=pacientes.map(p=>p.patient_id);
   const {data:labs}=await supabase.from("laboratorios").select("*").in("patient_id",ids);
   if(!labs?.length)return;
-  const ultimoPorPaciente={};
-  labs.forEach(l=>ultimoPorPaciente[l.patient_id]=l);
+  const ultimoPorPaciente={};labs.forEach(l=>ultimoPorPaciente[l.patient_id]=l);
   const ultimos=Object.values(ultimoPorPaciente);
   const total=pacientes.length;
   const alertas=[
@@ -201,17 +180,24 @@ async function renderAlertas(pacientes){
 }
 
 function renderTabla(pacientes){
+  pacientes=pacientes.map(p=>{
+    const riesgo=(p.riesgo_clinico?.toLowerCase().includes("alto")||p.riesgo_social?.toLowerCase().includes("vulnerable"))?"Alta":
+                 (p.riesgo_clinico?.toLowerCase().includes("mod")||p.riesgo_social?.toLowerCase().includes("soporte"))?"Media":"Baja";
+    return {...p,riesgo_global:riesgo};
+  });
+  const cols=["patient_id","nombre","sexo","edad","IMC","altura_cm","peso_kg","fumador","actividad_física","nivel_educativo","nivel_socioeconómico","enfermedad_principal","zona","seguimiento_activo","riesgo_clinico","riesgo_social","riesgo_global"];
+  const visibles=cols.filter(c=>pacientes.some(p=>p[c]!==null&&p[c]!=="-"&&p[c]!==undefined));
+  document.getElementById("headerPacientes").innerHTML=visibles.map(c=>`<th>${c.replaceAll("_"," ")}</th>`).join("");
   const tbody=document.querySelector("#tablaPacientes tbody");
-  tbody.innerHTML=pacientes.map(p=>`<tr><td>${p.patient_id}</td><td>${p.nombre||"-"}</td><td>${p.sexo||"-"}</td><td>${p.edad||"-"}</td><td>${p.IMC?.toFixed(1)||"-"}</td><td>${p.altura_cm||"-"}</td><td>${p.peso_kg||"-"}</td><td>${p.fumador||"-"}</td><td>${p.actividad_física||"-"}</td><td>${p.nivel_educativo||"-"}</td><td>${p.nivel_socioeconómico||"-"}</td><td>${p.enfermedad_principal||"-"}</td><td>${p.zona||"-"}</td><td>${p.seguimiento_activo?"Sí":"No"}</td><td>${p.riesgo_clinico||"-"}</td><td>${p.riesgo_social||"-"}</td></tr>`).join("");
+  tbody.innerHTML=pacientes.map(p=>`<tr>${visibles.map(c=>`<td>${p[c]!==null&&p[c]!==undefined?p[c]:"-"}</td>`).join("")}</tr>`).join("");
 }
 
 function descargarCSV(){
-  let csv="ID,Nombre,Sexo,Edad,IMC,Altura,Peso,Fumador,Actividad Física,Educación,Nivel Socioeconómico,Diagnóstico,Zona,Seguimiento Activo,Riesgo Clínico,Riesgo Social\n";
-  pacientesGlobal.forEach(p=>{
-    csv+=`${p.patient_id},${p.nombre},${p.sexo},${p.edad},${p.IMC||""},${p.altura_cm||""},${p.peso_kg||""},${p.fumador||""},${p.actividad_física||""},${p.nivel_educativo||""},${p.nivel_socioeconómico||""},${p.enfermedad_principal||""},${p.zona||""},${p.seguimiento_activo?"Sí":"No"},${p.riesgo_clinico||""},${p.riesgo_social||""}\n`;
-  });
-  const blob=new Blob([csv],{type:"text/csv"});
-  const url=URL.createObjectURL(blob);
+  let csv="";const cols=document.querySelectorAll("#headerPacientes th");const campos=[...cols].map(c=>c.textContent);
+  csv+=campos.join(",")+"\n";
+  const filas=document.querySelectorAll("#tablaPacientes tbody tr");
+  filas.forEach(tr=>{const vals=[...tr.children].map(td=>td.textContent);csv+=vals.join(",")+"\n";});
+  const blob=new Blob([csv],{type:"text/csv"});const url=URL.createObjectURL(blob);
   const a=document.createElement("a");a.href=url;a.download=`cohorte_${cohorteActual}.csv`;a.click();URL.revokeObjectURL(url);
 }
 
