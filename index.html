@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>CohortIQ — Clinical Research Assistant</title>
+<title>CohortLab — Plataforma Inteligente de Investigación Clínica</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -50,13 +50,13 @@ header {
   cursor: pointer;
 }
 .card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
 }
 .section-title {
   font-weight: 600;
   color: var(--verde);
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   margin-bottom: 1rem;
   letter-spacing: 0.3px;
 }
@@ -69,6 +69,11 @@ header {
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.25s;
+}
+.cohorte:hover {
+  transform: translateY(-2px);
+  background: #fafdfb;
 }
 .btn-ver {
   background: var(--verde);
@@ -81,14 +86,32 @@ header {
 .btn-ver:hover {
   background: var(--verde-claro);
 }
+.hero {
+  background: linear-gradient(90deg, rgba(61,118,88,0.07), rgba(75,166,125,0.05));
+  border-bottom: 1px solid #e5e7eb;
+  padding: 3.5rem 1rem 2.5rem;
+  text-align: center;
+}
+.hero h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--verde);
+  margin-bottom: 0.5rem;
+}
+.hero p {
+  color: #4b5563;
+  font-size: 1rem;
+  max-width: 620px;
+  margin: 0 auto;
+}
 </style>
 </head>
 
 <body>
 <header class="w-full flex justify-between items-center px-10 py-4">
   <h1 class="flex items-center gap-2 text-xl font-semibold text-[var(--verde)]">
-    <i data-lucide="activity"></i>
-    CohortIQ
+    <i data-lucide="flask-conical"></i>
+    CohortLab
     <span class="text-gray-500 text-sm font-normal">Clinical Research Assistant</span>
   </h1>
   <a href="chat.html" class="btn-main flex items-center gap-2">
@@ -96,7 +119,12 @@ header {
   </a>
 </header>
 
-<main class="px-10 py-8 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+<section class="hero">
+  <h1>Explora, descubre y analiza tus cohortes clínicas</h1>
+  <p>Transforma los registros médicos en conocimiento accionable. CohortLab combina analítica avanzada, visualización y generación automática de insights clínicos.</p>
+</section>
+
+<main class="px-10 py-10 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
   <!-- COHORTES -->
   <section>
     <h2 class="section-title">Resumen de Cohortes Activas</h2>
@@ -114,7 +142,7 @@ header {
           <i data-lucide='user-plus' class='text-[var(--verde)]'></i>
           <h3 class="font-semibold text-lg">Clasificar nuevo paciente</h3>
         </div>
-        <p class="text-gray-600 text-sm">Sube una analítica o introduce datos clínicos para identificar automáticamente la cohorte a la que pertenece el paciente.</p>
+        <p class="text-gray-600 text-sm">Sube una analítica o introduce datos clínicos para identificar automáticamente la cohorte más probable del paciente.</p>
       </div>
 
       <div class="card" onclick="location.href='explorar.html'">
@@ -122,7 +150,7 @@ header {
           <i data-lucide='database' class='text-[var(--verde)]'></i>
           <h3 class="font-semibold text-lg">Explorar base de datos</h3>
         </div>
-        <p class="text-gray-600 text-sm">Consulta todos los registros clínicos con filtros inteligentes y sin necesidad de escribir SQL.</p>
+        <p class="text-gray-600 text-sm">Consulta registros clínicos con filtros inteligentes, visualizaciones interactivas y descarga de resultados.</p>
       </div>
 
       <div class="card" onclick="location.href='informes.html'">
@@ -130,51 +158,36 @@ header {
           <i data-lucide='file-bar-chart' class='text-[var(--verde)]'></i>
           <h3 class="font-semibold text-lg">Generador de Informes Visuales</h3>
         </div>
-        <p class="text-gray-600 text-sm">Crea informes clínicos completos con métricas, gráficos y tablas directamente desde Supabase, y descárgalos en PDF.</p>
+        <p class="text-gray-600 text-sm">Crea informes automáticos con métricas, gráficos y resúmenes clínicos personalizados listos para exportar a PDF.</p>
       </div>
     </div>
   </section>
 </main>
 
-<footer class="text-center text-sm text-gray-400 py-4 border-t border-gray-200">
-  © 2025 CohortIQ · Plataforma Inteligente de Análisis Clínico
+<footer class="text-center text-sm text-gray-400 py-6 border-t border-gray-200">
+  © 2025 <span class="text-[var(--verde)] font-semibold">CohortLab</span> · Plataforma Inteligente de Investigación Clínica
 </footer>
 
 <script>
 lucide.createIcons();
-
 const supabase = window.supabase.createClient(
   "https://tmolxeszsgkffurhrcxy.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw"
 );
-
 async function cargarCohortes() {
-  const c = document.getElementById("cohortes");
-  const { data, error } = await supabase.from("pacientes").select("enfermedad_principal");
-  if (error) {
-    c.innerHTML = "<p class='text-red-600'>Error al conectar con Supabase.</p>";
-    return;
-  }
-
-  const conteo = {};
-  data.forEach(p => {
-    const enf = p.enfermedad_principal || "Sin especificar";
-    conteo[enf] = (conteo[enf] || 0) + 1;
-  });
-
-  c.innerHTML = Object.entries(conteo)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([e, t]) => `
+  const c=document.getElementById("cohortes");
+  const {data,error}=await supabase.from("pacientes").select("enfermedad_principal");
+  if(error){c.innerHTML="<p class='text-red-600'>Error al conectar con Supabase.</p>";return;}
+  const conteo={};data.forEach(p=>{const enf=p.enfermedad_principal||"Sin especificar";conteo[enf]=(conteo[enf]||0)+1;});
+  c.innerHTML=Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,5)
+    .map(([e,t])=>`
       <div class='cohorte'>
         <div>
           <h4 class='font-semibold text-gray-800'>${e}</h4>
           <p class='text-gray-500 text-sm'>${t} pacientes registrados</p>
         </div>
         <button onclick="location.href='cohorte.html?nombre=${encodeURIComponent(e)}'" class='btn-ver'>Ver cohorte</button>
-      </div>
-    `)
-    .join("");
+      </div>`).join("");
 }
 cargarCohortes();
 </script>
