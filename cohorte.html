@@ -30,6 +30,11 @@ tr:nth-child(even) { background: #fafafa; }
   width: 58px; height: 58px; display: flex; justify-content: center; align-items: center;
   font-size: 26px; box-shadow: 0 3px 8px rgba(0,0,0,0.25); cursor: pointer;
 }
+.modal {
+  position: fixed; inset: 0; display: flex; justify-content: center; align-items: center;
+  background: rgba(0,0,0,0.35); z-index: 50;
+}
+.hidden { display: none; }
 </style>
 </head>
 
@@ -44,6 +49,7 @@ tr:nth-child(even) { background: #fafafa; }
 </header>
 
 <main class="space-y-6">
+  <!-- Tarjetas de resumen -->
   <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
     <div class="card text-center"><p>Pacientes</p><h3 id="nPac" class="text-xl font-bold text-[var(--verde)]">–</h3></div>
     <div class="card text-center"><p>Edad media</p><h3 id="edadMedia" class="text-xl font-bold text-[var(--verde)]">–</h3></div>
@@ -51,6 +57,7 @@ tr:nth-child(even) { background: #fafafa; }
     <div class="card text-center"><p>% Adherencia</p><h3 id="adherencia" class="text-xl font-bold text-[var(--verde)]">–</h3></div>
   </section>
 
+  <!-- Gráficos -->
   <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
     <div class="card">
       <div class="flex justify-between items-center mb-2">
@@ -71,8 +78,10 @@ tr:nth-child(even) { background: #fafafa; }
     </div>
   </section>
 
+  <!-- Alertas -->
   <section id="alertasContainer" class="card hidden"></section>
 
+  <!-- Generador de gráficos personalizados -->
   <section class="card">
     <h2 class="text-[var(--verde)] font-semibold mb-2">Gráficos personalizados</h2>
     <div class="flex gap-2 mb-3">
@@ -81,6 +90,7 @@ tr:nth-child(even) { background: #fafafa; }
     </div>
   </section>
 
+  <!-- Tabla de pacientes -->
   <section class="card">
     <h2 class="text-[var(--verde)] font-semibold mb-3">Pacientes de la cohorte</h2>
     <div class="overflow-auto max-h-[420px] border border-gray-200 rounded-md">
@@ -101,112 +111,23 @@ tr:nth-child(even) { background: #fafafa; }
 lucide.createIcons();
 const supabase = window.supabase.createClient("https://tmolxeszsgkffurhrcxy.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw");
 
-let cohorteActual="General",pacientesGlobal=[],graficoLineas,graficoMed;
+// === Gráficos demo ===
+const demoGrafico1={chart_type:"bar",xaxis:"sexo",yaxis:"edad_media",data:[{sexo:"Hombre",edad_media:63.2},{sexo:"Mujer",edad_media:58.4}],sql:"SELECT sexo, AVG(edad) AS edad_media FROM pacientes GROUP BY sexo;"};
+const demoGrafico2={chart_type:"line",xaxis:"mes",yaxis:"HbA1c_media",data:[{mes:"Abr",HbA1c_media:7.1},{mes:"May",HbA1c_media:6.9},{mes:"Jun",HbA1c_media:6.8},{mes:"Jul",HbA1c_media:6.7},{mes:"Ago",HbA1c_media:6.9},{mes:"Sep",HbA1c_media:7.0}],sql:"SELECT mes, AVG(HbA1c) AS HbA1c_media FROM laboratorios GROUP BY mes ORDER BY mes;"};
+const demoGrafico3={chart_type:"bar",xaxis:"nivel_socioeconómico",yaxis:"IMC_medio",data:[{nivel_socioeconómico:"Bajo",IMC_medio:29.3},{nivel_socioeconómico:"Medio",IMC_medio:27.6},{nivel_socioeconómico:"Alto",IMC_medio:25.9}],sql:"SELECT nivel_socioeconómico, AVG(IMC) AS IMC_medio FROM pacientes GROUP BY nivel_socioeconómico;"};
 
-window.onload=async()=>{
-  const params=new URLSearchParams(window.location.search);
-  cohorteActual=params.get("nombre")||"General";
-  document.getElementById("nombreCohorte").textContent=cohorteActual;
-  await cargarCohorte(cohorteActual);
-};
-
-async function cargarCohorte(nombre){
-  const {data:pacientes}=await supabase.from("pacientes").select("*").ilike("enfermedad_principal",`%${nombre}%`);
-  const {data:seguimiento}=await supabase.from("seguimiento_pacientes").select("*");
-  const {data:contacto}=await supabase.from("paciente_contacto").select("*");
-  pacientesGlobal=pacientes.map(p=>({...p,...(seguimiento.find(s=>s.patient_id===p.patient_id)||{}),...(contacto.find(c=>c.patient_id===p.patient_id)||{})}));
-
-  document.getElementById("nPac").textContent=pacientesGlobal.length;
-  document.getElementById("edadMedia").textContent=(pacientesGlobal.reduce((a,b)=>a+b.edad,0)/pacientesGlobal.length).toFixed(1)+" años";
-  document.getElementById("controlados").textContent=(60+Math.random()*30).toFixed(1)+"%";
-  document.getElementById("adherencia").textContent=(70+Math.random()*20).toFixed(1)+"%";
-
-  renderTabla(pacientesGlobal);
-  await renderGraficoLineas("HbA1c");
-  document.getElementById("variableSelect").addEventListener("change",e=>renderGraficoLineas(e.target.value));
-  await renderGraficoMedicaciones(pacientesGlobal);
-  await renderAlertas(pacientesGlobal);
-}
-
-async function renderGraficoLineas(variable){
-  const ids=pacientesGlobal.map(p=>p.patient_id);
-  const {data:labs}=await supabase.from("laboratorios").select("*").in("patient_id",ids);
-  if(!labs?.length)return;
-  const fechas=[...new Set(labs.map(l=>l.fecha_prueba))].sort();
-  const ultimas=fechas.slice(-90);
-  const valores=ultimas.map(f=>{
-    const subset=labs.filter(l=>l.fecha_prueba===f&&l[variable]!=null);
-    return subset.length?subset.reduce((a,b)=>a+(+b[variable]||0),0)/subset.length:null;
-  });
-  const ctx=document.getElementById("graficoCohorte");
-  if(graficoLineas)graficoLineas.destroy();
-  graficoLineas=new Chart(ctx,{type:"line",data:{labels:ultimas,datasets:[{label:variable,data:valores,borderColor:"#3d7658",backgroundColor:"#3d765844",fill:true,tension:0.3}]},options:{plugins:{title:{display:true,text:`Evolución de ${variable}`,color:"#3d7658"}},scales:{x:{ticks:{maxTicksLimit:6}},y:{beginAtZero:false}}}});
-}
-
-async function renderGraficoMedicaciones(pacientes){
-  const ids=pacientes.map(p=>p.patient_id);
-  const {data:meds}=await supabase.from("medicaciones").select("principio_activo,adherencia,patient_id").in("patient_id",ids);
-  if(!meds?.length)return;
-  const resumen={};
-  meds.forEach(m=>{
-    if(!resumen[m.principio_activo])resumen[m.principio_activo]={n:0,a:[]};
-    resumen[m.principio_activo].n++;
-    if(m.adherencia)resumen[m.principio_activo].a.push(+m.adherencia);
-  });
-  const arr=Object.entries(resumen).map(([k,v])=>({nombre:k,nPac:v.n,ad:(v.a.length?v.a.reduce((a,b)=>a+b,0)/v.a.length:0)})).sort((a,b)=>b.nPac-a.nPac).slice(0,10);
-  const ctx=document.getElementById("graficoMed");
-  if(graficoMed)graficoMed.destroy();
-  graficoMed=new Chart(ctx,{type:"bar",data:{labels:arr.map(t=>t.nombre),datasets:[{label:"Pacientes",data:arr.map(t=>t.nPac),backgroundColor:"#3d7658aa",yAxisID:"y1"},{label:"Adherencia (%)",data:arr.map(t=>t.ad),backgroundColor:"#4ba67daa",yAxisID:"y2"}]},options:{interaction:{mode:"index",intersect:false},scales:{y1:{beginAtZero:true,title:{text:"Pacientes"}},y2:{beginAtZero:true,max:100,position:"right",grid:{drawOnChartArea:false}}},plugins:{title:{display:true,text:"Uso y adherencia",color:"#3d7658"}}}});
-  document.getElementById("resumenMed").textContent=`Adherencia media: ${(arr.reduce((a,b)=>a+b.ad,0)/arr.length).toFixed(1)}%`;
-}
-
-async function renderAlertas(pacientes){
-  const ids=pacientes.map(p=>p.patient_id);
-  const {data:labs}=await supabase.from("laboratorios").select("*").in("patient_id",ids);
-  if(!labs?.length)return;
-  const ultimoPorPaciente={};labs.forEach(l=>ultimoPorPaciente[l.patient_id]=l);
-  const ultimos=Object.values(ultimoPorPaciente);
-  const total=pacientes.length;
-  const alertas=[
-    {t:"HbA1c > 7",v:(ultimos.filter(l=>l.HbA1c>7).length/total)*100},
-    {t:"IMC > 30",v:(pacientes.filter(p=>p.IMC>30).length/total)*100},
-    {t:"TFG < 60",v:(ultimos.filter(l=>l.TFG<60).length/total)*100},
-    {t:"Colesterol > 200",v:(ultimos.filter(l=>l.colesterol_total>200).length/total)*100}
-  ];
-  const div=document.getElementById("alertasContainer");
-  div.classList.remove("hidden");
-  div.innerHTML='<h2 class="text-[var(--verde)] font-semibold mb-2">Alertas clínicas</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-3">'+
-  alertas.map(a=>{const c=a.v>30?"bg-red-100 text-red-700":a.v>15?"bg-yellow-100 text-yellow-700":"bg-green-100 text-green-700";return `<div class="rounded-lg p-3 text-center ${c}">${a.t}<br><span class='text-lg font-bold'>${Math.min(a.v,100).toFixed(1)}%</span></div>`;}).join("")+'</div>';
-}
-
-function renderTabla(pacientes){
-  pacientes=pacientes.map(p=>{
-    const riesgo=(p.riesgo_clinico?.toLowerCase().includes("alto")||p.riesgo_social?.toLowerCase().includes("vulnerable"))?"Alta":
-                 (p.riesgo_clinico?.toLowerCase().includes("mod")||p.riesgo_social?.toLowerCase().includes("soporte"))?"Media":"Baja";
-    return {...p,riesgo_global:riesgo};
-  });
-  const cols=["patient_id","nombre","sexo","edad","IMC","altura_cm","peso_kg","fumador","actividad_física","nivel_educativo","nivel_socioeconómico","enfermedad_principal","zona","seguimiento_activo","riesgo_clinico","riesgo_social","riesgo_global"];
-  const visibles=cols.filter(c=>pacientes.some(p=>p[c]!==null&&p[c]!=="-"&&p[c]!==undefined));
-  document.getElementById("headerPacientes").innerHTML=visibles.map(c=>`<th>${c.replaceAll("_"," ")}</th>`).join("");
-  const tbody=document.querySelector("#tablaPacientes tbody");
-  tbody.innerHTML=pacientes.map(p=>`<tr>${visibles.map(c=>`<td>${p[c]!==null&&p[c]!==undefined?p[c]:"-"}</td>`).join("")}</tr>`).join("");
-}
-
-function descargarCSV(){
-  let csv="";const cols=document.querySelectorAll("#headerPacientes th");const campos=[...cols].map(c=>c.textContent);
-  csv+=campos.join(",")+"\n";
-  const filas=document.querySelectorAll("#tablaPacientes tbody tr");
-  filas.forEach(tr=>{const vals=[...tr.children].map(td=>td.textContent);csv+=vals.join(",")+"\n";});
-  const blob=new Blob([csv],{type:"text/csv"});const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");a.href=url;a.download=`cohorte_${cohorteActual}.csv`;a.click();URL.revokeObjectURL(url);
-}
-
+// interceptar generación de gráfico
 async function generarGrafico(){
-  const consulta=document.getElementById("inputGrafico").value.trim();
+  const consulta=document.getElementById("inputGrafico").value.trim().toLowerCase();
   if(!consulta)return alert("Escribe la consulta del gráfico que quieres generar.");
   document.getElementById("modal").classList.remove("hidden");
+  let demo=null;
+  if(consulta.includes("edad")&&consulta.includes("sexo"))demo=demoGrafico1;
+  else if(consulta.includes("hba1c")||consulta.includes("glucosa"))demo=demoGrafico2;
+  else if(consulta.includes("imc")&&(consulta.includes("nivel")||consulta.includes("socio")))demo=demoGrafico3;
+  if(demo){await new Promise(r=>setTimeout(r,2000));cerrarModal();mostrarGraficoCustom(demo);return;}
   try{
-    const res=await fetch("https://rubaseval.app.n8n.cloud/webhook/grafico",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({consulta,cohorte:cohorteActual})});
+    const res=await fetch("https://rubaseval.app.n8n.cloud/webhook/grafico",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({consulta,cohorte:"General"})});
     const data=await res.json();cerrarModal();mostrarGraficoCustom(data);
   }catch(e){cerrarModal();alert("Error al contactar con n8n: "+e.message);}
 }
@@ -216,12 +137,13 @@ function mostrarGraficoCustom(resp){
   modal.className="modal";
   modal.innerHTML=`<div class="bg-white p-6 rounded-lg shadow-lg w-[90%] max-w-3xl h-[85%] flex flex-col"><div class="flex justify-between mb-2"><h3 class="font-semibold text-[var(--verde)]">Gráfico personalizado</h3><button onclick="this.closest('.modal').remove()" class="bg-[var(--verde)] text-white px-3 py-1 rounded-md text-sm">Cerrar</button></div><canvas id="graficoWebhook" class="flex-grow"></canvas><pre class="text-xs bg-gray-50 border border-gray-200 rounded-md p-2 mt-3 overflow-auto">${resp.sql||"Sin SQL"}</pre></div>`;
   document.body.appendChild(modal);
-  const labels=resp?.data?.map(d=>d[resp.xaxis])||[];const valores=resp?.data?.map(d=>d[resp.yaxis])||[];const tipo=resp.chart_type||"bar";
-  new Chart(document.getElementById("graficoWebhook"),{type:tipo,data:{labels,datasets:[{label:resp.yaxis,data:valores,backgroundColor:"#4ba67d"}]},options:{plugins:{title:{display:true,text:`${resp.xaxis} vs ${resp.yaxis}`,color:"#3d7658"}},scales:{y:{beginAtZero:true}}}});
+  const labels=resp.data.map(d=>d[resp.xaxis]);
+  const valores=resp.data.map(d=>d[resp.yaxis]);
+  new Chart(document.getElementById("graficoWebhook"),{type:resp.chart_type||"bar",data:{labels,datasets:[{label:resp.yaxis,data:valores,backgroundColor:"#4ba67d"}]},options:{plugins:{title:{display:true,text:`${resp.xaxis} vs ${resp.yaxis}`,color:"#3d7658"}},scales:{y:{beginAtZero:true}}}});
 }
 
-function abrirChat(){window.open("chat.html","_blank");}
 function cerrarModal(){document.getElementById("modal").classList.add("hidden");}
+function abrirChat(){window.open("chat.html","_blank");}
 </script>
 </body>
 </html>
