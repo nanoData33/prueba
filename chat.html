@@ -18,13 +18,22 @@ header button{background:var(--verde);color:white;border:none;border-radius:8px;
 header button:hover{background:var(--verde-oscuro);}
 main{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:20px;min-height:0;}
 .chat-box,.tabla-box{background:var(--card);border-radius:12px;box-shadow:0 4px 10px var(--sombra);padding:20px;display:flex;flex-direction:column;min-height:0;}
+
+/* --- CSS para layout 50/50 --- */
+#tablaContainer {
+    flex: 1; /* Hace que este div ocupe el espacio restante */
+    overflow: auto; /* Añade scroll si la tabla es muy grande */
+    min-height: 0; /* Asegura el comportamiento correcto del overflow en flex */
+}
+/* --- FIN CAMBIO --- */
+
 h2{text-align:center;color:var(--verde);margin:0 0 10px;}
 .messages{flex:1;overflow:auto;background:#f8faf8;border-radius:10px;padding:15px;margin-bottom:10px;}
 .msg{margin-bottom:12px;padding:12px 15px;border-radius:12px;max-width:100%;}
 .msg.user{background:var(--verde);color:white;align-self:flex-end;}
 .msg.bot{background:#e8f3e8;white-space:pre-wrap;}
 
-/* --- INICIO CAMBIOS CSS --- */
+/* --- CSS de Audio --- */
 .input-area{display:flex;gap:10px;}
 input{flex:1;padding:10px;border:1px solid #ccc;border-radius:10px;}
 button.action{
@@ -52,11 +61,22 @@ button.action.is-recording {
     70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
     100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
 }
-/* --- FIN CAMBIOS CSS --- */
+/* --- FIN CSS de Audio --- */
 
 table{width:100%;border-collapse:collapse;margin-top:10px;font-size:0.9rem;}
 th,td{border:1px solid #ddd;padding:10px;text-align:left;}
-th{background:var(--verde);color:white;}
+
+/* --- INICIO CAMBIO --- */
+/* Encabezado de tabla fijo */
+th{
+    background:var(--verde);
+    color:white;
+    position: sticky; /* Se adhiere a la parte superior */
+    top: 0;           /* Pega al borde superior del scroll */
+    z-index: 1;       /* Asegura que esté por encima de las filas */
+}
+/* --- FIN CAMBIO --- */
+
 tr:nth-child(even){background:#f5f7f5;}
 .btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
 .btn-chart{padding:8px 12px;border:none;border-radius:6px;cursor:pointer;}
@@ -83,15 +103,13 @@ pre.debug{background:#222;color:#e3e3e3;padding:10px;border-radius:8px;overflow:
 
 <main>
   <div class="chat-box">
-     <h2>Chat con el Agente</h2>
+    <h2>Chat con el Agente</h2>
     <div id="messages" class="messages"></div>
-    <!-- --- INICIO CAMBIOS HTML --- -->
     <div class="input-area">
       <input id="userInput" placeholder="Escribe tu mensaje o graba un audio...">
       <button class="action" id="sendBtn"><i data-lucide="send"></i></button>
       <button class="action" id="micBtn"><i data-lucide="mic"></i></button>
     </div>
-    <!-- --- FIN CAMBIOS HTML --- -->
   </div>
 
   <div class="tabla-box">
@@ -173,15 +191,12 @@ async function sendText() {
       body: JSON.stringify({type:"text", content:text})
     });
     
-    // --- INICIO CORRECCIÓN ERROR JSON ---
-    // Leemos la respuesta como texto primero para verificar si está vacía
     const rawResponse = await res.text();
     if (!rawResponse) {
         throw new Error("Respuesta vacía del servidor (webhook)");
     }
     
     const data = JSON.parse(rawResponse);
-    // --- FIN CORRECCIÓN ERROR JSON ---
 
     document.querySelector(".msg.bot:last-child").remove();
 
@@ -235,22 +250,17 @@ async function startRecording() {
       audioChunks.push(event.data);
     };
     
-    // --- INICIO CAMBIO ---
     mediaRecorder.onstop = () => {
-      // Usamos 'audio/webm' que es ampliamente soportado
       const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-      audioChunks = []; // Limpia los chunks
-      
-      // Ya no convertimos a Base64. Enviamos el Blob directamente.
+      audioChunks = [];
       sendAudio(audioBlob); // Envía el Blob binario
     };
-    // --- FIN CAMBIO ---
     
     mediaRecorder.start();
     isRecording = true;
-    micBtn.innerHTML = `<i data-lucide="stop-circle"></i>`; // Cambia icono
-    micBtn.classList.add("is-recording"); // Añade estilo
-    lucide.createIcons(); // Re-renderiza el icono
+    micBtn.innerHTML = `<i data-lucide="stop-circle"></i>`;
+    micBtn.classList.add("is-recording");
+    lucide.createIcons();
   } catch (err) {
     console.error("Error starting recording:", err);
     appendMessage("bot", "Error al acceder al micrófono. Asegúrate de dar permiso.");
@@ -261,54 +271,39 @@ function stopRecording() {
   if (mediaRecorder && mediaRecorder.state === "recording") {
     mediaRecorder.stop();
     isRecording = false;
-    micBtn.innerHTML = `<i data-lucide="mic"></i>`; // Restaura icono
-    micBtn.classList.remove("is-recording"); // Quita estilo
-    lucide.createIcons(); // Re-renderiza el icono
-
-    // Detiene las pistas del stream para apagar el indicador del micrófono en el navegador
+    micBtn.innerHTML = `<i data-lucide="mic"></i>`;
+    micBtn.classList.remove("is-recording");
+    lucide.createIcons();
     mediaRecorder.stream.getTracks().forEach(track => track.stop());
   }
 }
 
-// --- INICIO CAMBIO ---
-async function sendAudio(audioBlob) { // Parámetro cambiado de audioBase64 a audioBlob
+async function sendAudio(audioBlob) {
   appendMessage("bot", "Procesando audio...");
 
   try {
-    // 1. Crear FormData
     const formData = new FormData();
-    
-    // 2. Añadir el Blob como un archivo binario con el nombre 'file'
-    // El tercer argumento 'audio.webm' es el nombre de archivo que verá el servidor.
     formData.append('file', audioBlob, 'audio.webm'); 
 
     const res = await fetch(webhookText, {
       method: "POST",
-      // 3. NO especificar Content-Type. El navegador lo hará
-      //    automáticamente (será multipart/form-data).
-      body: formData // 4. Enviar el FormData
+      body: formData
     });
-    // --- FIN CAMBIO ---
     
-    // --- INICIO CORRECCIÓN ERROR JSON ---
-    // Leemos la respuesta como texto primero para verificar si está vacía
     const rawResponse = await res.text();
     if (!rawResponse) {
         throw new Error("Respuesta vacía del servidor (webhook)");
     }
 
     const data = JSON.parse(rawResponse);
-    // --- FIN CORRECCIÓN ERROR JSON ---
 
-    document.querySelector(".msg.bot:last-child").remove(); // Quita "Procesando..."
+    document.querySelector(".msg.bot:last-child").remove();
 
-    // --- Lógica de respuesta (idéntica a sendText) ---
     let hasHandled = false; 
 
-    // Muestra la transcripción (asumiendo que viene en data.consulta)
     if (data.consulta) {
         appendMessage("user", `[Audio] ${data.consulta}`);
-        ultimaConsulta = data.consulta; // Guarda la transcripción
+        ultimaConsulta = data.consulta;
     }
 
     if (data.tabla) {
@@ -322,18 +317,14 @@ async function sendAudio(audioBlob) { // Parámetro cambiado de audioBase64 a au
       hasHandled = true;
     }
 
-    // Si es una respuesta de texto simple (sin tabla)
     if (data.respuesta && !data.tabla) {
       appendMessage("bot", data.respuesta);
       hasHandled = true;
     } 
     
     if (!hasHandled) {
-      // Si fue una acción (tabla/gmail) ya se manejó.
-      // Si no, y no hubo 'respuesta', muestra error.
       appendMessage("bot", "No se ha encontrado información.");
     }
-    // --- Fin lógica de respuesta ---
 
   } catch (err) {
     console.error("Error en sendAudio:", err);
@@ -378,7 +369,6 @@ function renderChartButtonsInChat() {
   tipos.forEach(t => html += `<button class="btn-chart btn-alt" data-tipo="${t}">${t}</button>`);
   html += "</div>";
   
-  // Modificado para adjuntar listeners de forma segura
   const msgElement = appendMessage("bot", html, true);
 
   msgElement.querySelectorAll(".btn-chart").forEach(btn => 
@@ -392,7 +382,7 @@ async function manejarGrafico(tipo) {
     const payload = {
       consulta: ultimaConsulta,
       sql: ultimaConsultaSQL,
-      decision: tipo
+D   decision: tipo
     };
 
     const res = await fetch(webhookGraf, {
@@ -413,7 +403,7 @@ async function manejarGrafico(tipo) {
 }
 
 async function renderChartFromSQL(sql, xField, yField, chartType) {
-  try {
+source   try {
     const { data, error } = await supabase.rpc("execute_sql_query", { query: sql });
     if (error || !data?.length) {
       appendMessage("bot", "Sin resultados en la consulta para graficar.");
@@ -430,7 +420,7 @@ async function renderChartFromSQL(sql, xField, yField, chartType) {
     const modal = document.getElementById("chartModal");
     modal.style.display = "flex";
     const ctx = document.getElementById("chartCanvas").getContext("2d");
-    if (chartInstance) chartInstance.destroy();
+I   if (chartInstance) chartInstance.destroy();
 
     chartInstance = new Chart(ctx, {
       type: chartType === "histogram" ? "bar" : chartType,
@@ -448,14 +438,14 @@ async function renderChartFromSQL(sql, xField, yField, chartType) {
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-          y: { beginAtZero: true, title: { display: true, text: yField } },
+C         y: { beginAtZero: true, title: { display: true, text: yField } },
           x: { title: { display: true, text: xField } }
         }
       }
     });
   } catch {
     appendMessage("bot", "Error al generar el gráfico desde Supabase.");
-C }
+  }
 }
 
 async function enviarDataset() {
@@ -467,7 +457,7 @@ async function enviarDataset() {
   try {
     const res = await fetch(webhookData, {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
+DE     headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ sql: ultimaConsultaSQL })
     });
     const data = await res.json();
