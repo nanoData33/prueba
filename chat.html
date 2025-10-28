@@ -114,50 +114,82 @@ function appendMessage(sender, text, html = false) {
 }
 
 async function sendText() {
-  const input = document.getElementById("userInput");
-  const text = input.value.trim();
-  if (!text) return;
-  appendMessage("user", text);
-  input.value = "";
-  appendMessage("bot", "Consultando al agente...");
+  const input = document.getElementById("userInput");
+  const text = input.value.trim();
+  if (!text) return;
+  appendMessage("user", text);
+  input.value = "";
+  appendMessage("bot", "Consultando al agente...");
 
-  try {
-    const res = await fetch(webhookText, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({type:"text", content:text})
-    });
-    const data = await res.json();
-    document.querySelector(".msg.bot:last-child").remove();
+  try {
+    const res = await fetch(webhookText, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({type:"text", content:text})
+    });
+    const data = await res.json();
+    document.querySelector(".msg.bot:last-child").remove();
 
-    if (data.respuesta && data.respuesta.includes("|")) {
-      renderMarkdownTable(data.respuesta);
-      ultimaConsulta = data.consulta || "";
-      ultimaConsultaSQL = data.sql || "";
-      ultimaX = data.x || "";
-      ultimaY = data.y || "";
-      // renderChartButtonsInChat(); // <--- LÍNEA COMENTADA    } else {
-      appendMessage("bot", data.respuesta || "No se ha encontrado información.");
-    }
-  } catch {
-    appendMessage("bot", "Error al conectar con el agente.");
-  }
+    // --- INICIO DE CAMBIOS ---
+    if (data.tabla) {
+      // Pasamos los nuevos datos a la función que renderiza
+      renderMarkdownTable(data.cohorte, data.tabla, data.n_total);
+      
+      // Guardamos el SQL y la consulta como antes
+      ultimaConsulta = data.consulta || "";
+      ultimaConsultaSQL = data.sql || "";
+      
+      // La llamada a renderChartButtonsInChat() ya no está (como pediste antes)
+
+    } else if (data.respuesta) {
+      // Fallback para mensajes de texto simples
+      appendMessage("bot", data.respuesta);
+    } else {
+      appendMessage("bot", "No se ha encontrado información.");
+    }
+    // --- FIN DE CAMBIOS ---
+
+  } catch (err) {
+    console.error("Error en sendText:", err);
+    appendMessage("bot", "Error al conectar con el agente.");
+  }
 }
 
-function renderMarkdownTable(text) {
-  const lines = text.trim().split("\n").filter(l => l.includes("|"));
-  if (lines.length < 2) return;
+function renderMarkdownTable(tituloCohorte, tablaString, mensajeTotal) {
+  const lines = tablaString.trim().split("\n").filter(l => l.includes("|"));
+  if (lines.length < 2) return;
 
-  const headers = lines[0].split("|").map(h => h.trim()).filter(Boolean);
-  const rows = lines.slice(2).map(line => line.split("|").map(c => c.trim()).filter(Boolean));
+  const headers = lines[0].split("|").map(h => h.trim()).filter(Boolean);
+  const rows = lines.slice(2).map(line => line.split("|").map(c => c.trim()).filter(Boolean));
 
-  let html = "<table><thead><tr>";
-  headers.forEach(h => html += `<th>${h}</th>`);
-  html += "</tr></thead><tbody>";
-  rows.forEach(r => html += "<tr>" + r.map(c => `<td>${c}</td>`).join("") + "</tr>");
-  html += "</tbody></table>";
-  html += `<button id="verDatasetBtn">Ver resultado completo</button>`;
+  // 1. Empezamos a construir el HTML
+  let html = "";
+
+  // 2. Añadimos el título de la cohorte si existe
+  if (tituloCohorte) {
+    // Usamos un h3 para el título de la cohorte
+    html += `<h3 style="text-align: left; margin-top: 0;">Cohorte: ${tituloCohorte}</h3>`;
+  }
+
+  // 3. Añadimos la tabla (lógica de parseo de antes)
+  html += "<table><thead><tr>";
+  headers.forEach(h => html += `<th>${h}</th>`);
+  html += "</tr></thead><tbody>";
+  rows.forEach(r => html += "<tr>" + r.map(c => `<td>${c}</td>`).join("") + "</tr>");
+  html += "</tbody></table>";
+
+  // 4. Añadimos el mensaje de total de filas debajo de la tabla
+  if (mensajeTotal) {
+    html += `<p style="text-align: center; font-size: 0.9rem; color: #555; margin-top: 12px;">${mensajeTotal}</p>`;
+  }
+
+  // 5. Añadimos el botón (como antes)
+  html += `<button id="verDatasetBtn">Ver resultado completo</button>`;
+  
+  // Renderizamos todo en el contenedor
   document.getElementById("tablaContainer").innerHTML = html;
+  
+  // Añadimos el listener al botón (como antes)
   document.getElementById("verDatasetBtn").addEventListener("click", enviarDataset);
 }
 
