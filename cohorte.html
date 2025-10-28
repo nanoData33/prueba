@@ -225,65 +225,170 @@ function abrirChat(){window.open("chat.html","_blank");}
 function abrirModal(){document.getElementById("modal").classList.remove("hidden");}
 function cerrarModal(){document.getElementById("modal").classList.add("hidden");}
 
-// Nueva función: abre pop-up de depuración y envía consulta a n8n
-// Nueva versión mejorada de abrirPopupDepuracion
+// ✅ Botón principal para generar gráfico desde texto
 async function abrirPopupDepuracion() {
-  const consulta = document.getElementById("inputGrafico").value.trim();
+  const input = document.getElementById("inputGrafico");
+  const consulta = input?.value.trim();
+
   if (!consulta) {
-    alert("Escribe la consulta o gráfico que quieres generar.");
+    alert("⚠️ Escribe una consulta o descripción del gráfico antes de generar.");
     return;
   }
 
-  // Mostrar spinner
-  document.getElementById("modal").classList.remove("hidden");
-
   const payload = {
-    consulta,
-    cohorte: cohorteActual,
+    consulta: consulta,
+    cohorte: cohorteActual || "General",
     timestamp: new Date().toISOString(),
-    origen: "CohortIQ frontend",
+    origen: "CohortIQ frontend"
   };
 
+  console.log("📤 Enviando a n8n:", payload);
+
+  document.getElementById("modal").classList.remove("hidden");
+
   try {
-    const res = await fetch("https://rubaseval.app.n8n.cloud/webhook-test/grafico", {
+    const response = await fetch("https://rubaseval.app.n8n.cloud/webhook-test/grafico", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      },
-      body: JSON.stringify(payload),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
     });
 
-    const text = await res.text();
-    cerrarModal();
+    const resultText = await response.text();
+    document.getElementById("modal").classList.add("hidden");
 
-    if (!res.ok) {
-      mostrarDepuracion(
-        `⚠️ Error HTTP ${res.status}\n\nRespuesta:\n${text}`
-      );
-      console.error("Error en respuesta de n8n:", res.status, text);
-      return;
-    }
+    // Mostrar también en el panel de depuración
+    mostrarDepuracion(`📨 Enviado:\n${JSON.stringify(payload, null, 2)}\n\n📩 Respuesta n8n:\n${resultText}`);
 
-    mostrarDepuracion(`✅ Enviado correctamente:\n\n${JSON.stringify(payload, null, 2)}\n\n📩 Respuesta de n8n:\n${text}`);
-    console.log("Respuesta completa de n8n:", text);
+    // Intentar crear el gráfico con la respuesta
+    await renderGraficoDesdeN8N(resultText);
 
   } catch (err) {
-    cerrarModal();
-    mostrarDepuracion(`💥 Error de conexión:\n${err.message}`);
-    console.error("Error de conexión con n8n:", err);
+    document.getElementById("modal").classList.add("hidden");
+    mostrarDepuracion(`💥 Error al contactar con n8n:\n${err.message}`);
+    console.error("Error al contactar con n8n:", err);
   }
 }
 
-function mostrarDepuracion(texto){
-  const modal=document.getElementById("depuracionModal");
-  const pre=document.getElementById("contenidoDepuracion");
-  pre.textContent=texto;
-  modal.classList.remove("hidden");
-}
 
-function cerrarDepuracion(){
-  document.getElementById("depuracionModal").classList.add("hidden");
+// ✅ Renderiza el gráfico dinámicamente en base a la respuesta de n8n
+async function renderGraficoDesdeN8N(resultText) {
+  try {
+    const parsed = JSON.parse(resultText);
+    console.log("📊 Interpretando respuesta de n8n:", parsed);
+
+    const chartType = parsed.chart_type || "bar";
+    const xaxis = parsed.xaxis || "x";
+    const sql = parsed.sql;
+
+    // Extraer tabla y columnas básicas del SQL
+    const match = sql.match(/SELECT\s+(.+)\s+FROM\s+(\w+)/i);
+    if (!match) {
+      mostrarDepuracion("❌ SQL no reconocida:\n" + sql);
+      return;
+    }
+
+    const columnas = match[1].split(",").map(c => c.trim());
+    const tabla = match[2];
+
+    // Obtener datos desde Supabase
+    const { data, error } = await supabase.from(tabla).select(columnas.join(","));
+    if (error) throw error;
+    if (!data?.length) {
+      mostrarDepuracion("⚠️ No hay datos para esa consulta.");
+      return;
+    }
+
+    // Preparar canvas
+    const ctx = document.getElementById("graficoCohorte");
+    if (grafico) grafico.destroy();
+
+    // === HISTOGRAMA ===
+    if (chartType === "histogram") {
+      const valores = data.map(d => Number(d[columnas[0]])).filter(v => !isNaN(v));
+      const bins = 10;
+      const min = Math.min(...valores);
+      const max = Math.max(...valores);
+      const step = (max - min) / bins;
+
+      const labels = Array.from({ length: bins }, (_, i) =>
+        `${(min + i * step).toFixed(0)}-${(min + (i + 1) * step).toFixed(0)}`
+      );
+      const frecuencias = new Array(bins).fill(0);
+      valores.forEach(v => {
+        const idx = Math.min(Math.floor((v - min) / step), bins - 1);
+        frecuencias[idx]++;
+      });
+
+      grafico = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: xaxis,
+            data: frecuencias,
+            backgroundColor: "#3d7658"
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { title: { display: true, text: xaxis } },
+            y: { title: { display: true, text: "Frecuencia" } }
+          }
+        }
+      });
+    }
+
+    // === GRÁFICO DE LÍNEA ===
+    else if (chartType === "line") {
+      grafico = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: data.map((_, i) => i + 1),
+          datasets: [{
+            label: xaxis,
+            data: data.map(d => d[columnas[0]]),
+            borderColor: "#3d7658",
+            fill: false,
+            tension: 0.3
+          }]
+        },
+        options: {
+          plugins: { legend: { display: true } },
+          scales: { x: { title: { display: true, text: "Índice" } },
+                    y: { title: { display: true, text: xaxis } } }
+        }
+      });
+    }
+
+    // === GRÁFICO DE DISPERSIÓN ===
+    else if (chartType === "scatter" && columnas.length >= 2) {
+      grafico = new Chart(ctx, {
+        type: "scatter",
+        data: {
+          datasets: [{
+            label: `${columnas[0]} vs ${columnas[1]}`,
+            data: data.map(d => ({ x: d[columnas[0]], y: d[columnas[1]] })),
+            backgroundColor: "#3d7658"
+          }]
+        },
+        options: {
+          scales: {
+            x: { title: { display: true, text: columnas[0] } },
+            y: { title: { display: true, text: columnas[1] } }
+          }
+        }
+      });
+    }
+
+    else {
+      mostrarDepuracion(`⚠️ Tipo de gráfico "${chartType}" no implementado.`);
+    }
+
+  } catch (err) {
+    console.error("Error al renderizar gráfico:", err);
+    mostrarDepuracion("💥 Error al crear gráfico:\n" + err.message);
+  }
 }
 </script>
 </body>
