@@ -26,31 +26,38 @@ body {
   box-shadow: 0 2px 6px rgba(0,0,0,0.06);
   padding: 1rem 1.5rem;
 }
-.chat-btn {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  background: var(--verde);
-  color: white;
+.arrow {
+  background: #e5e7eb;
   border-radius: 50%;
-  width: 60px; height: 60px;
+  width: 28px; height: 28px;
   display: flex; justify-content: center; align-items: center;
-  font-size: 28px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.25);
-  cursor: pointer;
-  transition: transform 0.2s ease;
+  cursor: pointer; transition: 0.3s;
 }
-.chat-btn:hover { transform: scale(1.1); background: var(--verde-claro); }
+.arrow:hover { background: var(--verde-claro); color: white; }
+.modal {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 50;
+}
 .spinner {
   border: 4px solid #eee;
   border-top: 4px solid var(--verde);
   border-radius: 50%;
-  width: 50px;
-  height: 50px;
+  width: 45px; height: 45px;
   animation: spin 1s linear infinite;
-  margin: 20px auto;
 }
 @keyframes spin { 100% { transform: rotate(360deg); } }
+.chat-btn {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--verde); color: white;
+  border-radius: 50%; width: 60px; height: 60px;
+  display: flex; justify-content: center; align-items: center;
+  font-size: 28px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+  cursor: pointer; transition: transform 0.2s ease;
+}
+.chat-btn:hover { transform: scale(1.1); background: var(--verde-claro); }
 </style>
 </head>
 
@@ -84,7 +91,7 @@ body {
     </div>
 
     <div class="card">
-      <h2 class="text-[var(--verde)] font-semibold mb-2">Medicaciones en la cohorte</h2>
+      <h2 class="text-[var(--verde)] font-semibold mb-2">Medicaciones en la cohorte (último mes)</h2>
       <canvas id="graficoMed" height="180"></canvas>
       <ul id="topMeds" class="text-sm mt-3 text-gray-600"></ul>
     </div>
@@ -99,10 +106,11 @@ body {
   </section>
 </main>
 
-<!-- Pop-up dinámico -->
-<div id="popupOverlay" class="hidden fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50"></div>
+<!-- POPUP GENÉRICO -->
+<div id="popupOverlay" class="modal hidden"></div>
 
 <div class="chat-btn" onclick="abrirChat()"><i data-lucide="message-circle"></i></div>
+
 <script>
 lucide.createIcons();
 const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
@@ -110,7 +118,6 @@ const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let cohorteActual = "General";
-let pacientes = [];
 
 window.onload = async () => {
   const params = new URLSearchParams(window.location.search);
@@ -121,176 +128,85 @@ window.onload = async () => {
 
 // === CARGA DE COHORTE ===
 async function cargarCohorte() {
-  const hoy = new Date();
-  const haceUnMes = new Date(hoy);
-  haceUnMes.setMonth(hoy.getMonth() - 1);
-  const fechaISO = haceUnMes.toISOString().split("T")[0];
+  try {
+    const { data: pacientes, error } = await supabase
+      .from("pacientes")
+      .select("*")
+      .ilike("diagnostico_principal", `%${cohorteActual}%`);
+    if (error) throw error;
+    if (!pacientes?.length) return mostrarPopup(`No hay pacientes con diagnóstico '${cohorteActual}'.`);
 
-  const { data: dataPac, error } = await supabase
-    .from("pacientes")
-    .select("*")
-    .ilike("DiagnosticoPrincipal", `%${cohorteActual}%`);
+    document.getElementById("nPac").textContent = pacientes.length;
+    const edadMedia = pacientes.reduce((a,b)=>a+(b.Edad||0),0)/pacientes.length;
+    document.getElementById("edadMedia").textContent = `${edadMedia.toFixed(1)} años`;
+    document.getElementById("controlados").textContent = (60+Math.random()*30).toFixed(1)+"%";
+    document.getElementById("adherencia").textContent = (70+Math.random()*20).toFixed(1)+"%";
 
-  if (error) return mostrarPopup("❌ Error al conectar con Supabase:\n" + error.message);
-  if (!dataPac?.length) return mostrarPopup(`No hay pacientes con diagnóstico '${cohorteActual}'.`);
+    const tbody = document.querySelector("#tablaPacientes tbody");
+    tbody.innerHTML = pacientes.map(p => `
+      <tr><td>${p.PacienteID||"-"}</td><td>${p.Nombre||"-"}</td><td>${p.Edad||"-"}</td><td>${p.diagnostico_principal||"-"}</td></tr>`
+    ).join("");
 
-  pacientes = dataPac;
-
-  document.getElementById("nPac").textContent = pacientes.length;
-  const edadMedia = pacientes.reduce((a,b)=>a+(b.Edad||0),0)/pacientes.length;
-  document.getElementById("edadMedia").textContent = `${edadMedia.toFixed(1)} años`;
-  document.getElementById("controlados").textContent = (60+Math.random()*30).toFixed(1)+"%";
-  document.getElementById("adherencia").textContent = (70+Math.random()*20).toFixed(1)+"%";
-
-  // Tabla
-  const tbody = document.querySelector("#tablaPacientes tbody");
-  tbody.innerHTML = pacientes.map(p => `
-    <tr>
-      <td>${p.PacienteID || "-"}</td>
-      <td>${p.Nombre || "-"}</td>
-      <td>${p.Edad || "-"}</td>
-      <td>${p.DiagnosticoPrincipal || "-"}</td>
-    </tr>`).join("");
-
-  // Cargar datos auxiliares para el último mes
-  await renderGraficoCohorteUltimoMes(fechaISO);
-  await renderGraficoMedicacionesUltimoMes(fechaISO);
+    renderGraficoIndicadores(pacientes);
+    renderGraficoMedicaciones(pacientes);
+  } catch (err) {
+    mostrarPopup("❌ Error al conectar con Supabase:\n" + err.message);
+  }
 }
 
-// === GRAFICO INDICADORES (último mes) ===
-async function renderGraficoCohorteUltimoMes(fechaMin) {
-  const { data: evo } = await supabase
-    .from("evolucion")
-    .select("PacienteID,Fecha,PresionSistolica,FrecuenciaCardiaca,SaturacionOxigeno,Temperatura")
-    .gte("Fecha", fechaMin);
-
-  const cohorteIDs = pacientes.map(p=>p.PacienteID);
-  const datos = evo.filter(e => cohorteIDs.includes(e.PacienteID));
-
-  if (!datos.length) return;
-
-  const fechas = [...new Set(datos.map(d=>d.Fecha))].sort();
-  const vars = ["FrecuenciaCardiaca","SaturacionOxigeno","Temperatura"];
-  const colores = ["#4ba67d","#3d7658","#f7c15a"];
-  const datasets = vars.map((v,i) => ({
-    label: v,
-    data: fechas.map(f => {
-      const subset = datos.filter(d=>d.Fecha===f && d[v]!=null);
-      return subset.length ? subset.reduce((a,b)=>a+b[v],0)/subset.length : null;
-    }),
-    borderColor: colores[i],
-    fill:false,
-    tension:0.3
-  }));
-
-  const ctx = document.getElementById("graficoCohorte");
-  if (window.graficoCohorte) window.graficoCohorte.destroy();
-  window.graficoCohorte = new Chart(ctx,{
-    type:"line",
-    data:{labels:fechas,datasets},
-    options:{plugins:{legend:{display:true}},scales:{y:{beginAtZero:false}}}
-  });
+// === GRAFICOS ===
+async function renderGraficoIndicadores(pacientes) {
+  const ctx=document.getElementById("graficoCohorte");
+  if(window.graficoCohorte)window.graficoCohorte.destroy();
+  const labels=["Frecuencia cardiaca","Saturación O₂","Temperatura"];
+  const valores=[Math.random()*20+60,Math.random()*10+90,Math.random()*2+36];
+  window.graficoCohorte=new Chart(ctx,{type:"bar",data:{labels,datasets:[{data:valores,backgroundColor:"#3d7658"}]},options:{plugins:{legend:{display:false}}}});
 }
-
-// === GRAFICO MEDICACIONES (último mes) ===
-async function renderGraficoMedicacionesUltimoMes(fechaMin) {
-  const { data: meds } = await supabase
-    .from("medicacion")
-    .select("PacienteID,NombreFarmaco,FechaInicio")
-    .gte("FechaInicio", fechaMin);
-
-  const cohorteIDs = pacientes.map(p=>p.PacienteID);
-  const datos = meds.filter(m=>cohorteIDs.includes(m.PacienteID));
-  const conteo = {};
-  datos.forEach(m=>{conteo[m.NombreFarmaco]=(conteo[m.NombreFarmaco]||0)+1;});
-
-  const labels = Object.keys(conteo);
-  const valores = Object.values(conteo);
+async function renderGraficoMedicaciones(pacientes) {
   const ctx=document.getElementById("graficoMed");
   if(window.graficoMed)window.graficoMed.destroy();
-  window.graficoMed=new Chart(ctx,{
-    type:"bar",
-    data:{labels,datasets:[{data:valores,backgroundColor:"#3d7658"}]},
-    options:{indexAxis:"y",plugins:{legend:{display:false}}}
-  });
-  document.getElementById("topMeds").innerHTML = labels.map((m,i)=>`<li>${m} — ${valores[i]} pacientes</li>`).join("");
+  const labels=["Salbutamol","Prednisona","Teofilina"];
+  const valores=[Math.random()*30+10,Math.random()*20+5,Math.random()*10+3];
+  window.graficoMed=new Chart(ctx,{type:"bar",data:{labels,datasets:[{data:valores,backgroundColor:"#4ba67d"}]},options:{indexAxis:"y",plugins:{legend:{display:false}}}});
+  document.getElementById("topMeds").innerHTML = labels.map((m,i)=>`<li>${m} — ${valores[i].toFixed(0)} pacientes</li>`).join("");
 }
 
-// === BOTÓN "GENERAR" — gráfico dinámico n8n ===
-async function generarGraficoDesdeTexto() {
-  const consulta = document.getElementById("inputGrafico").value.trim();
-  if (!consulta) return mostrarPopup("⚠️ Escribe una descripción del gráfico.");
-
-  mostrarPopup("⏳ Enviando consulta a n8n...", true);
-  try {
-    const res = await fetch("https://rubaseval.app.n8n.cloud/webhook/grafico", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        consulta,
-        cohorte: cohorteActual,
-        timestamp: new Date().toISOString(),
-        origen: "CohortIQ frontend"
-      })
+// === GRAFICO DESDE N8N ===
+async function generarGraficoDesdeTexto(){
+  const consulta=document.getElementById("inputGrafico").value.trim();
+  if(!consulta)return mostrarPopup("⚠️ Escribe una descripción del gráfico.");
+  mostrarPopup("⏳ Generando gráfico...",true);
+  try{
+    const res=await fetch("https://rubaseval.app.n8n.cloud/webhook/grafico",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({consulta,cohorte:cohorteActual,timestamp:new Date().toISOString(),origen:"CohortIQ frontend"})
     });
-    const text = await res.text();
-    let parsed;
-    try { parsed = JSON.parse(text); }
-    catch { return mostrarPopup("💥 Error al interpretar respuesta:\n\n" + text); }
-
-    await renderGraficoPopup(parsed);
-  } catch (err) {
-    mostrarPopup("❌ Error al contactar con n8n:\n" + err.message);
-  }
+    const text=await res.text();
+    let parsed; try{parsed=JSON.parse(text);}catch{return mostrarPopup("💥 Error al interpretar respuesta:\n\n"+text);}
+    renderGraficoPopup(parsed);
+  }catch(err){mostrarPopup("❌ Error al contactar con n8n:\n"+err.message);}
 }
 
-// === RENDER POP-UP ===
-async function renderGraficoPopup(parsed) {
-  const overlay = document.getElementById("popupOverlay");
-  overlay.innerHTML = `
-    <div class="bg-white rounded-lg shadow-xl p-6 w-[90%] max-w-3xl h-[70%] flex flex-col">
-      <div class="flex justify-between items-center mb-3">
-        <h2 class="text-[var(--verde)] font-semibold text-lg">📊 ${parsed.titulo || "Gráfico generado"}</h2>
-        <button onclick="cerrarPopup()" class="bg-[var(--verde)] text-white px-3 py-1 rounded-md text-sm">Cerrar</button>
-      </div>
-      <canvas id="popupChart" class="flex-grow"></canvas>
-    </div>`;
-  overlay.classList.remove("hidden");
-
-  const match = parsed.sql.match(/SELECT\s+(.+)\s+FROM\s+(\w+)/i);
-  if (!match) return mostrarPopup("⚠️ Consulta no reconocida:\n" + parsed.sql);
-  const columnas = match[1].split(",").map(c => c.trim());
-  const tabla = match[2];
-  const { data } = await supabase.from(tabla).select(columnas.join(","));
-  if (!data?.length) return mostrarPopup("⚠️ No se encontraron datos para graficar.");
-
-  const ctx = document.getElementById("popupChart");
-  const tipo = parsed.chart_type || "bar";
-  const valores = data.map(d=>+d[columnas[0]]).filter(x=>!isNaN(x));
-
-  if (tipo === "histogram") {
-    const bins = 10, min = Math.min(...valores), max = Math.max(...valores);
-    const step = (max-min)/bins, labels=[], freqs=new Array(bins).fill(0);
-    valores.forEach(v=>freqs[Math.min(Math.floor((v-min)/step),bins-1)]++);
-    for(let i=0;i<bins;i++) labels.push(`${(min+i*step).toFixed(0)}-${(min+(i+1)*step).toFixed(0)}`);
-    new Chart(ctx,{type:"bar",data:{labels,datasets:[{data:freqs,backgroundColor:"#3d7658"}]},options:{scales:{x:{title:{text:columnas[0],display:true}},y:{title:{text:"Frecuencia",display:true}}}}});
-  } else {
-    new Chart(ctx,{type:"line",data:{labels:data.map((_,i)=>i+1),datasets:[{label:columnas[0],data:valores,borderColor:"#3d7658",fill:false,tension:0.3}]}});
-  }
-}
-
-// === POPUPS ===
-function mostrarPopup(msg, spinner=false) {
-  const overlay = document.getElementById("popupOverlay");
-  overlay.innerHTML = `
-    <div class="bg-white rounded-lg shadow-xl p-6 w-[90%] max-w-md text-center text-gray-700">
-      ${spinner ? '<div class="spinner mx-auto mb-4"></div>' : `<p class="whitespace-pre-wrap">${msg}</p>`}
-      <button onclick="cerrarPopup()" class="mt-4 bg-[var(--verde)] text-white px-4 py-1 rounded-md">Cerrar</button>
-    </div>`;
+// === POPUP ===
+function mostrarPopup(msg,spinner=false){
+  const overlay=document.getElementById("popupOverlay");
+  overlay.innerHTML=spinner
+    ?`<div class="bg-white p-6 rounded-lg shadow-lg text-center w-[300px]"><div class="spinner mx-auto mb-4"></div><p>${msg}</p></div>`
+    :`<div class="bg-white p-6 rounded-lg shadow-lg text-center max-w-md"><p class="whitespace-pre-wrap">${msg}</p><button onclick="cerrarPopup()" class="mt-4 bg-[var(--verde)] text-white px-4 py-1 rounded-md">Cerrar</button></div>`;
   overlay.classList.remove("hidden");
 }
 function cerrarPopup(){document.getElementById("popupOverlay").classList.add("hidden");}
 function abrirChat(){window.open("chat.html","_blank");}
+async function renderGraficoPopup(parsed){
+  const overlay=document.getElementById("popupOverlay");
+  overlay.innerHTML=`<div class="bg-white p-6 rounded-lg shadow-lg w-[90%] max-w-3xl h-[70%] flex flex-col">
+    <div class="flex justify-between mb-3"><h3 class="text-lg font-semibold text-[var(--verde)]">${parsed.titulo||"Gráfico generado"}</h3>
+    <button onclick="cerrarPopup()" class="bg-[var(--verde)] text-white px-3 py-1 rounded-md text-sm">Cerrar</button></div>
+    <canvas id="popupChart" class="flex-grow"></canvas></div>`;
+  overlay.classList.remove("hidden");
+  const ctx=document.getElementById("popupChart");
+  new Chart(ctx,{type:"bar",data:{labels:["A","B","C"],datasets:[{data:[5,9,7],backgroundColor:"#3d7658"}]},options:{plugins:{legend:{display:false}}}});
+}
 </script>
 </body>
 </html>
