@@ -1,12 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CohortIQ — Explorador Clínico Avanzado</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<style>
+  :root {
+    --verde: #2b7a58;
+    --verde-claro: #4aba84;
+    --gris-fondo: #f6f7f6;
+  }
+  body {
+    font-family: "Inter", sans-serif;
+    background-color: var(--gris-fondo);
+  }
+  header {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .tab {
+    cursor: pointer;
+    padding: 0.8rem 1.4rem;
+    border-bottom: 3px solid transparent;
+    font-weight: 500;
+    transition: 0.25s;
+  }
+  .tab.active {
+    border-color: var(--verde);
+    color: var(--verde);
+    font-weight: 600;
+  }
+  .panel {
+    background: white;
+    border-radius: 0.9rem;
+    padding: 1.2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: 0.25s;
+  }
+  .panel:hover { transform: translateY(-1px); }
+  .chip {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  .chip.riesgo-alto { background: #fee2e2; color: #991b1b; }
+  .chip.riesgo-medio { background: #fef9c3; color: #92400e; }
+  .chip.riesgo-bajo { background: #dcfce7; color: #166534; }
+</style>
+</head>
+
+<body>
+<header class="flex justify-between items-center px-8 py-4">
+  <div class="flex items-center gap-2">
+    <i data-lucide="activity" class="text-[var(--verde)]"></i>
+    <h1 class="text-xl font-semibold text-[var(--verde)]">CohortIQ</h1>
+    <span class="text-gray-500 text-sm">Explorador Clínico</span>
+  </div>
+  <a href="index.html" class="text-sm text-[var(--verde)] hover:underline">← Volver al Panel</a>
+</header>
+
+<!-- Pestañas -->
+<div class="flex border-b bg-white sticky top-0 z-10">
+  <div class="tab active" onclick="cambiarVista('pacientes')">Pacientes</div>
+  <div class="tab" onclick="cambiarVista('laboratorios')">Laboratorios</div>
+  <div class="tab" onclick="cambiarVista('medicaciones')">Medicaciones</div>
+</div>
+
+<main id="contenedor" class="p-6"></main>
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CohortIQ — Explorador Clínico Avanzado</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<style>
+  :root {
+    --verde: #2b7a58;
+    --verde-claro: #4aba84;
+    --gris-fondo: #f6f7f6;
+  }
+  body {
+    font-family: "Inter", sans-serif;
+    background-color: var(--gris-fondo);
+  }
+  header {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .tab {
+    cursor: pointer;
+    padding: 0.8rem 1.4rem;
+    border-bottom: 3px solid transparent;
+    font-weight: 500;
+    transition: 0.25s;
+  }
+  .tab.active {
+    border-color: var(--verde);
+    color: var(--verde);
+    font-weight: 600;
+  }
+  .panel {
+    background: white;
+    border-radius: 0.9rem;
+    padding: 1.2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: 0.25s;
+  }
+  .panel:hover { transform: translateY(-1px); }
+  .chip {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  .chip.riesgo-alto { background: #fee2e2; color: #991b1b; }
+  .chip.riesgo-medio { background: #fef9c3; color: #92400e; }
+  .chip.riesgo-bajo { background: #dcfce7; color: #166534; }
+</style>
+</head>
+
+<body>
+<header class="flex justify-between items-center px-8 py-4">
+  <div class="flex items-center gap-2">
+    <i data-lucide="activity" class="text-[var(--verde)]"></i>
+    <h1 class="text-xl font-semibold text-[var(--verde)]">CohortIQ</h1>
+    <span class="text-gray-500 text-sm">Explorador Clínico</span>
+  </div>
+  <a href="index.html" class="text-sm text-[var(--verde)] hover:underline">← Volver al Panel</a>
+</header>
+
+<!-- Pestañas -->
+<div class="flex border-b bg-white sticky top-0 z-10">
+  <div class="tab active" onclick="cambiarVista('pacientes')">Pacientes</div>
+  <div class="tab" onclick="cambiarVista('laboratorios')">Laboratorios</div>
+  <div class="tab" onclick="cambiarVista('medicaciones')">Medicaciones</div>
+</div>
+
+<main id="contenedor" class="p-6"></main>
+
 <script>
 lucide.createIcons();
 
 const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
 let vistaActual = "pacientes";
-let charts = [];
+let chartLabs, chartExtra;
 
 // Cambiar pestañas
 function cambiarVista(vista) {
@@ -16,14 +173,13 @@ function cambiarVista(vista) {
   if (vista === "pacientes") cargarPacientes();
   if (vista === "laboratorios") cargarLaboratorios();
   if (vista === "medicaciones") cargarMedicaciones();
-  charts.forEach(c=>c.destroy?.());
 }
 
 /* ==========================
-   PACIENTES
+   1. PACIENTES
 ========================== */
 async function cargarPacientes() {
-  const { data: pacientes } = await supabase.from("pacientes").select("*").limit(100);
+  const { data } = await supabase.from("pacientes").select("*").limit(100);
   const cont = document.getElementById("contenedor");
   cont.innerHTML = `
   <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -32,14 +188,15 @@ async function cargarPacientes() {
       <input id="buscador" placeholder="Buscar..." oninput="filtrarPacientes()" class="w-full p-2 mb-3 border rounded-md">
       <div id="listaPacientes"></div>
     </section>
-    <section class="xl:col-span-2 panel overflow-y-auto max-h-[85vh]" id="detallePaciente">
+    <section class="xl:col-span-2 panel overflow-y-auto max-h-[80vh]" id="detallePaciente">
       <p class="text-center text-gray-400 italic">Selecciona un paciente para ver detalles</p>
     </section>
   </div>`;
-  window.pacientes = pacientes;
-  renderPacientes(pacientes);
   lucide.createIcons();
+  window.pacientes = data;
+  renderPacientes(data);
 
+  // Si hay un paciente en la URL, cargarlo
   const params = new URLSearchParams(window.location.search);
   const id = params.get("paciente");
   if (id) verPaciente(id);
@@ -56,7 +213,6 @@ function renderPacientes(lista) {
       <span class="chip ${p.IMC>30?'riesgo-alto':p.IMC>25?'riesgo-medio':'riesgo-bajo'}">IMC ${p.IMC}</span>
     </div>`).join("");
 }
-
 function filtrarPacientes() {
   const q = document.getElementById("buscador").value.toLowerCase();
   renderPacientes(pacientes.filter(p => JSON.stringify(p).toLowerCase().includes(q)));
@@ -69,171 +225,84 @@ async function verPaciente(id, cambiarUrl=false) {
     window.history.pushState({}, "", newUrl);
   }
 
-  const [p, labs, meds, diags, notas, contacto, seg] = await Promise.all([
-    supabase.from("pacientes").select("*").eq("patient_id", id).single(),
-    supabase.from("laboratorios").select("*").eq("patient_id", id).order("fecha_prueba",{ascending:true}),
-    supabase.from("medicaciones").select("*").eq("patient_id", id),
-    supabase.from("diagnosticos").select("*").eq("patient_id", id),
-    supabase.from("notas_clinicas").select("*").eq("patient_id", id).order("fecha_nota",{ascending:false}).limit(3),
-    supabase.from("paciente_contacto").select("*").eq("patient_id", id).single(),
-    supabase.from("seguimiento_pacientes").select("*").eq("patient_id", id).single()
+  const p = pacientes.find(x => x.patient_id === id);
+  const [labs, meds] = await Promise.all([
+    supabase.from("laboratorios").select("*").eq("patient_id", id),
+    supabase.from("medicaciones").select("*").eq("patient_id", id)
   ]);
-
   const labData = labs.data || [];
   const promedioHb = avg(labData.map(x => x.HbA1c));
   const promedioTFG = avg(labData.map(x => x.TFG));
   const riesgo = promedioHb>7||promedioTFG<60?"riesgo-alto":promedioHb>6?"riesgo-medio":"riesgo-bajo";
 
-  const cont = document.getElementById("detallePaciente");
-  cont.innerHTML = `
+  document.getElementById("detallePaciente").innerHTML = `
   <div class="flex justify-between items-center mb-3">
-    <h2 class="text-xl font-semibold text-[var(--verde)]">${p.data.nombre} ${p.data.apellido}</h2>
+    <h2 class="text-xl font-semibold text-[var(--verde)]">${p.nombre} ${p.apellido}</h2>
     <span class="chip ${riesgo}">${riesgo.replace("riesgo-","").toUpperCase()}</span>
   </div>
 
   <div class="grid grid-cols-2 gap-4 mb-4 text-sm">
     <div>
-      <p><b>Edad:</b> ${p.data.edad}</p>
-      <p><b>Sexo:</b> ${p.data.sexo}</p>
-      <p><b>Actividad física:</b> ${p.data.actividad_física}</p>
-      <p><b>IMC:</b> ${p.data.IMC}</p>
-      <p><b>Riesgo crónico:</b> ${p.data.riesgo_cronico || "No definido"}</p>
+      <p><b>Edad:</b> ${p.edad}</p>
+      <p><b>Sexo:</b> ${p.sexo}</p>
+      <p><b>Actividad física:</b> ${p.actividad_física}</p>
+      <p><b>IMC:</b> ${p.IMC}</p>
     </div>
     <div>
-      <p><b>Diagnóstico principal:</b> ${p.data.enfermedad_principal}</p>
-      <p><b>Fumador:</b> ${p.data.fumador}</p>
-      <p><b>Nivel socioeconómico:</b> ${p.data.nivel_socioeconómico}</p>
-      <p><b>Educación:</b> ${p.data.nivel_educativo}</p>
+      <p><b>Diagnóstico principal:</b> ${p.enfermedad_principal}</p>
+      <p><b>Fumador:</b> ${p.fumador}</p>
+      <p><b>Nivel socioeconómico:</b> ${p.nivel_socioeconómico}</p>
+      <p><b>Educación:</b> ${p.nivel_educativo}</p>
     </div>
-  </div>
-
-  <div class="mb-4 text-sm">
-    <h3 class="font-semibold text-[var(--verde)] mb-2">Diagnósticos secundarios</h3>
-    ${(diags.data||[]).map(d=>`<p>• ${d.nombre_diagnóstico} <span class="text-xs text-gray-500">(${d.gravedad||"–"})</span></p>`).join("") || "<p>No hay diagnósticos registrados</p>"}
-  </div>
-
-  <div class="mb-4 text-sm">
-    <h3 class="font-semibold text-[var(--verde)] mb-2">Seguimiento</h3>
-    ${seg.data ? `
-      <p><b>Activo:</b> ${seg.data.seguimiento_activo?"Sí":"No"}</p>
-      <p><b>Tipo:</b> ${seg.data.tipo_seguimiento}</p>
-      <p><b>Última conexión:</b> ${seg.data.fecha_ultima_conexion}</p>
-      <p><b>Riesgo clínico:</b> ${seg.data.riesgo_clinico}</p>
-      <p><b>Riesgo social:</b> ${seg.data.riesgo_social}</p>` : "<p>Sin datos de seguimiento</p>"}
-  </div>
-
-  <div class="mb-4 text-sm">
-    <h3 class="font-semibold text-[var(--verde)] mb-2">Contacto</h3>
-    ${contacto.data ? `
-      <p><b>Teléfono:</b> ${contacto.data.telefono}</p>
-      <p><b>Familiar:</b> ${contacto.data.contacto_familia || "–"} (${contacto.data.telefono_familia || "–"})</p>
-      <p><b>Zona:</b> ${contacto.data.zona_sanitaria || contacto.data.zona}</p>` : "<p>Sin datos de contacto</p>"}
   </div>
 
   <div class="flex flex-col gap-6">
     <div class="panel"><canvas id="graficoLabs"></canvas></div>
     <div class="panel"><canvas id="graficoExtra"></canvas></div>
-  </div>
-
-  <div class="mt-6">
-    <h3 class="font-semibold text-[var(--verde)] mb-2">Notas Clínicas Recientes</h3>
-    ${(notas.data||[]).map(n=>`<div class="border p-2 mb-2 rounded-md"><b>${n.fecha_nota}</b><p class="text-sm">${n.resumen_automatico||n.texto_nota}</p></div>`).join("") || "<p>No hay notas registradas</p>"}
   </div>`;
-
-  lucide.createIcons();
-  setTimeout(()=>{renderGraficoLabs(labData); renderGraficoExtra(labData);},100);
+  renderGraficoLabs(labData);
+  renderGraficoExtra(labData);
 }
 
 /* ==========================
-   LABORATORIOS
+   2. LABORATORIOS
 ========================== */
 async function cargarLaboratorios() {
-  const { data } = await supabase.from("laboratorios").select("*, pacientes(edad,sexo)").limit(500);
+  const { data } = await supabase.from("laboratorios").select("*").limit(200);
   const cont = document.getElementById("contenedor");
+  const mediaHb = avg(data.map(x=>x.HbA1c));
+  const mediaTFG = avg(data.map(x=>x.TFG));
   cont.innerHTML = `
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <div class="panel"><canvas id="labHbEdad"></canvas></div>
-    <div class="panel"><canvas id="labTFGSexo"></canvas></div>
-    <div class="panel"><canvas id="labRiesgo"></canvas></div>
-    <div class="panel"><canvas id="labCreatTFG"></canvas></div>
+  <div class="panel mb-6">
+    <h2 class="text-lg font-semibold text-[var(--verde)] mb-2">Tendencia global de laboratorio</h2>
+    <canvas id="graficoLabGlobal" height="260"></canvas>
   </div>`;
-  lucide.createIcons();
-
-  const porEdad = groupByRange(data, "pacientes.edad", 10);
-  const HbProm = porEdad.map(g => avg(g.map(x=>x.HbA1c)));
-  const labelsEdad = porEdad.map(g=>g.range);
-
-  charts.push(new Chart("labHbEdad", {
-    type:"line", data:{labels:labelsEdad, datasets:[{label:"HbA1c media",data:HbProm,borderColor:"#e76f51",fill:false,tension:0.3}]},
-    options:{plugins:{title:{display:true,text:"HbA1c promedio por grupo de edad"}}}
-  }));
-
-  const sexos = ["Hombre","Mujer"];
-  const tfgSexo = sexos.map(s=>avg(data.filter(d=>d.pacientes?.sexo===s).map(x=>x.TFG)));
-  charts.push(new Chart("labTFGSexo", {
-    type:"bar", data:{labels:sexos, datasets:[{label:"TFG media",data:tfgSexo,backgroundColor:"#4aba84"}]},
-    options:{plugins:{title:{display:true,text:"TFG promedio por sexo"}}}
-  }));
-
-  const riesgos = countBy(data.map(x=>x.flag_riesgo||"Desconocido"));
-  charts.push(new Chart("labRiesgo", {
-    type:"doughnut", data:{labels:Object.keys(riesgos),datasets:[{data:Object.values(riesgos),backgroundColor:["#dcfce7","#fef9c3","#fee2e2","#e5e7eb"]}]},
-    options:{plugins:{title:{display:true,text:"Distribución de flag_riesgo"}}}
-  }));
-
-  charts.push(new Chart("labCreatTFG", {
-    type:"scatter", data:{datasets:[{label:"Creatinina vs TFG",data:data.map(d=>({x:d.creatinina,y:d.TFG})),backgroundColor:"#2b7a58"}]},
-    options:{plugins:{title:{display:true,text:"Creatinina vs TFG"}}}
-  }));
+  renderGraficoLabGlobal(data);
 }
 
 /* ==========================
-   MEDICACIONES
+   3. MEDICACIONES
 ========================== */
 async function cargarMedicaciones() {
-  const { data } = await supabase.from("medicaciones").select("*").limit(500);
+  const { data } = await supabase.from("medicaciones").select("*").limit(200);
   const cont = document.getElementById("contenedor");
   cont.innerHTML = `
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <div class="panel"><canvas id="medFrecuencia"></canvas></div>
-    <div class="panel"><canvas id="medAdherencia"></canvas></div>
-    <div class="panel lg:col-span-2"><canvas id="medEficacia"></canvas></div>
+  <div class="panel">
+    <h2 class="font-semibold text-[var(--verde)] mb-3"><i data-lucide="pill"></i> Medicaciones</h2>
+    <canvas id="graficoMedGlobal"></canvas>
   </div>`;
-  lucide.createIcons();
-
-  const count = countBy(data.map(m=>m.principio_activo));
-  charts.push(new Chart("medFrecuencia",{
-    type:"bar", data:{labels:Object.keys(count),datasets:[{label:"Pacientes tratados",data:Object.values(count),backgroundColor:"#4aba84"}]},
-    options:{indexAxis:"y",plugins:{title:{display:true,text:"Principios activos más frecuentes"}}}
-  }));
-
-  const adherenciaMed = Object.entries(groupBy(data,"principio_activo"))
-    .map(([k,v])=>({k,avg:avg(v.map(x=>x.adherencia))}));
-  charts.push(new Chart("medAdherencia",{
-    type:"bar", data:{labels:adherenciaMed.map(x=>x.k),datasets:[{label:"Adherencia media (%)",data:adherenciaMed.map(x=>x.avg),backgroundColor:"#f4a261"}]},
-    options:{indexAxis:"y",plugins:{title:{display:true,text:"Adherencia media por fármaco"}}}
-  }));
-
-  const eficacia = data.filter(x=>x.eficacia_reportada && x.adherencia);
-  charts.push(new Chart("medEficacia",{
-    type:"bubble", data:{datasets:[{label:"Eficacia vs Adherencia",data:eficacia.map(e=>({x:e.adherencia,y:e.eficacia_reportada?.length||0,r:8})),backgroundColor:"#2b7a58"}]},
-    options:{scales:{x:{title:{display:true,text:"Adherencia (%)"}},y:{title:{display:true,text:"Eficacia (aprox.)"}}},plugins:{title:{display:true,text:"Eficacia vs Adherencia (estimado por texto)"}}}
-  }));
+  renderGraficoMedGlobal(data);
 }
 
 /* ==========================
-   UTILIDADES
+   Gráficos mejorados
 ========================== */
-function avg(arr){return arr.filter(x=>x!=null&&!isNaN(x)).reduce((a,b)=>a+b,0)/(arr.filter(x=>x!=null&&!isNaN(x)).length||1);}
-function countBy(arr){return arr.reduce((a,v)=>(a[v]=(a[v]||0)+1,a),{});}
-function groupBy(arr,prop){return arr.reduce((a,v)=>{const k=v[prop]||"Desconocido";(a[k]=a[k]||[]).push(v);return a;},{});}
-function groupByRange(arr,prop,step){
-  const out=[];arr.forEach(v=>{const val=parseInt(v[prop])||0;const base=Math.floor(val/step)*step;
-  const range=`${base}-${base+step-1}`;(out.find(o=>o.range===range)?.push(v))||(out.push(Object.assign([v],{range})))});return out;
-}
+function avg(arr){return arr.filter(x=>x).reduce((a,b)=>a+b,0)/(arr.filter(x=>x).length||1)}
+
 function renderGraficoLabs(data){
-  const ctx=document.getElementById("graficoLabs"); 
-  const c=new Chart(ctx,{type:"line",data:{
+  const ctx=document.getElementById("graficoLabs");
+  if(chartLabs)chartLabs.destroy();
+  chartLabs=new Chart(ctx,{type:"line",data:{
     labels:data.map(l=>l.fecha_prueba),
     datasets:[
       {label:"HbA1c (%)",data:data.map(l=>l.HbA1c),borderColor:"#e76f51",tension:0.35,fill:false},
@@ -241,19 +310,42 @@ function renderGraficoLabs(data){
     ]},
     options:{responsive:true,interaction:{mode:"index",intersect:false},
       plugins:{legend:{position:"top"},title:{display:true,text:"Evolución HbA1c y TFG"}},
-      scales:{y:{title:{display:true,text:"HbA1c (%)"}},y1:{position:"right",title:{display:true,text:"TFG"}}}});
-  charts.push(c);
+      scales:{y:{title:{display:true,text:"HbA1c (%)"}},y1:{position:"right",title:{display:true,text:"TFG"}}}}
+  });
 }
+
 function renderGraficoExtra(data){
   const ctx=document.getElementById("graficoExtra");
-  const c=new Chart(ctx,{type:"bar",data:{
+  if(chartExtra)chartExtra.destroy();
+  chartExtra=new Chart(ctx,{type:"bar",data:{
     labels:data.map(l=>l.fecha_prueba),
     datasets:[
-      {label:"Colesterol total",data:data.map(l=>l.colesterol_total),backgroundColor:"#4aba84"},
-      {label:"Triglicéridos",data:data.map(l=>l.triglicéridos),backgroundColor:"#f4a261"}]},
-    options:{responsive:true,plugins:{legend:{position:"top"},title:{display:true,text:"Perfil lipídico"}}}});
-  charts.push(c);
+      {label:"Colesterol total (mg/dL)",data:data.map(l=>l.colesterol_total),backgroundColor:"#4aba84"},
+      {label:"Triglicéridos (mg/dL)",data:data.map(l=>l.triglicéridos),backgroundColor:"#f4a261"}
+    ]},
+    options:{responsive:true,plugins:{legend:{position:"top"},title:{display:true,text:"Perfil lipídico"}}}
+  });
+}
+
+function renderGraficoLabGlobal(data){
+  new Chart(document.getElementById("graficoLabGlobal"),{
+    type:"scatter",
+    data:{datasets:[{label:"Relación HbA1c-TFG",data:data.map(d=>({x:d.HbA1c,y:d.TFG})),backgroundColor:"#2b7a58"}]},
+    options:{plugins:{legend:{display:true}},scales:{x:{title:{display:true,text:"HbA1c"}},y:{title:{display:true,text:"TFG"}}}}
+  });
+}
+
+function renderGraficoMedGlobal(data){
+  const medsCount={};
+  data.forEach(m=>medsCount[m.principio_activo]=(medsCount[m.principio_activo]||0)+1);
+  new Chart(document.getElementById("graficoMedGlobal"),{
+    type:"bar",
+    data:{labels:Object.keys(medsCount),datasets:[{label:"Pacientes tratados",data:Object.values(medsCount),backgroundColor:"#4aba84"}]},
+    options:{indexAxis:"y",plugins:{legend:{display:false},title:{display:true,text:"Medicaciones más frecuentes"}}}
+  });
 }
 
 cambiarVista("pacientes");
 </script>
+</body>
+</html>
