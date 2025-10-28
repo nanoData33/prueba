@@ -10,188 +10,88 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-  :root {
-    --verde: #3d7658;
-    --verde-claro: #4ba67d;
-    --gris-fondo: #f8f9f8;
-    --gris-texto: #1c1c1c;
-  }
-
-  body {
-    font-family: "Inter", sans-serif;
-    background-color: var(--gris-fondo);
-    color: var(--gris-texto);
-  }
-
-  header {
-    background: white;
-    border-bottom: 1px solid #e2e8f0;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  }
-
-  .btn-main {
-    background: linear-gradient(90deg, var(--verde) 0%, var(--verde-claro) 100%);
-    color: white;
-    border: none;
-    padding: 0.7rem 1.4rem;
-    border-radius: 0.5rem;
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: all 0.25s ease;
-  }
-  .btn-main:hover {
-    filter: brightness(1.08);
-    transform: translateY(-2px);
-  }
-
-  .card {
-    background: white;
-    border-radius: 0.9rem;
-    padding: 1.4rem;
-    border-left: 4px solid var(--verde);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-    transition: all 0.25s ease;
-    cursor: pointer;
-  }
-
-  .card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
-  }
-
-  .section-title {
-    font-weight: 600;
-    color: var(--verde);
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
-    letter-spacing: 0.3px;
-  }
-
-  .cohorte {
-    background: white;
-    border-radius: 0.7rem;
-    padding: 1rem 1.2rem;
-    border-left: 4px solid var(--verde);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-  }
-
-  .btn-ver {
-    background: var(--verde);
-    color: white;
-    font-size: 0.85rem;
-    border-radius: 0.4rem;
-    padding: 0.4rem 0.9rem;
-    transition: all 0.2s;
-  }
-
-  .btn-ver:hover {
-    background: var(--verde-claro);
-  }
+:root {
+  --verde: #3d7658;
+  --verde-claro: #4ba67d;
+  --gris-fondo: #f8f9f8;
+  --gris-texto: #1c1c1c;
+}
+body { font-family: "Inter", sans-serif; background: var(--gris-fondo); color: var(--gris-texto); }
+header { background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.05); padding: 1rem 2rem; }
+.btn-main {
+  background: linear-gradient(90deg, var(--verde) 0%, var(--verde-claro) 100%);
+  color: white; border: none; padding: 0.8rem 1.5rem;
+  border-radius: 0.5rem; font-weight: 500; transition: 0.3s;
+}
+.btn-main:hover { filter: brightness(1.08); transform: translateY(-2px); }
+.section-title { font-weight: 600; color: var(--verde); font-size: 1.1rem; margin-bottom: 1rem; }
+.cohorte {
+  background: white; border-radius: 0.7rem; padding: 1rem 1.2rem;
+  border-left: 4px solid var(--verde);
+  display: flex; justify-content: space-between; align-items: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+.btn-ver { background: var(--verde); color: white; padding: 0.4rem 0.9rem; border-radius: 0.4rem; transition: 0.3s; }
+.btn-ver:hover { background: var(--verde-claro); }
 </style>
 </head>
 
 <body>
-  <!-- HEADER -->
-  <header class="w-full flex justify-between items-center px-10 py-4">
-    <h1 class="flex items-center gap-2 text-xl font-semibold text-[var(--verde)]">
-      <i data-lucide="activity"></i>
-      CohortIQ
-      <span class="text-gray-500 text-sm font-normal">Clinical Research Assistant</span>
-    </h1>
-    <a href="chat.html" class="btn-main flex items-center gap-2">
-      <i data-lucide="bot"></i> Asistente Conversacional
-    </a>
-  </header>
+<header class="flex justify-between items-center">
+  <h1 class="flex items-center gap-2 text-xl font-semibold text-[var(--verde)]">
+    <i data-lucide="activity"></i> CohortIQ
+    <span class="text-gray-500 text-sm font-normal">Clinical Research Assistant</span>
+  </h1>
+  <a href="chat.html" class="btn-main flex items-center gap-2">
+    <i data-lucide="bot"></i> Asistente Conversacional
+  </a>
+</header>
 
-  <!-- MAIN -->
-  <main class="px-10 py-8 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+<main class="px-10 py-8 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+  <!-- COHORTES -->
+  <section>
+    <h2 class="section-title">Resumen de Cohortes Activas</h2>
+    <div id="cohortes" class="flex flex-col gap-3"><p class="text-gray-400 italic">Cargando cohortes...</p></div>
+  </section>
 
-    <!-- COHORTES -->
-    <section>
-      <h2 class="section-title">Resumen de Cohortes Activas</h2>
-      <div id="cohortes" class="flex flex-col gap-3">
-        <p class="text-gray-400 italic">Cargando cohortes...</p>
-      </div>
-    </section>
-
-    <!-- HERRAMIENTAS -->
-    <section>
-      <h2 class="section-title">Herramientas de Investigación</h2>
-      <div class="flex flex-col gap-5">
-        <div class="card" onclick="location.href='clasificar.html'">
-          <div class="flex items-center gap-2 mb-1">
-            <i data-lucide='user-plus' class='text-[var(--verde)]'></i>
-            <h3 class="font-semibold text-lg">Clasificar nuevo paciente</h3>
-          </div>
-          <p class="text-gray-600 text-sm">Sube una analítica o introduce datos clínicos para identificar automáticamente la cohorte a la que pertenece el paciente.</p>
-        </div>
-
-        <div class="card" onclick="location.href='explorar.html'">
-          <div class="flex items-center gap-2 mb-1">
-            <i data-lucide='database' class='text-[var(--verde)]'></i>
-            <h3 class="font-semibold text-lg">Explorar base de datos</h3>
-          </div>
-          <p class="text-gray-600 text-sm">Consulta todos los registros clínicos con filtros inteligentes y sin necesidad de escribir SQL.</p>
-        </div>
-
-        <div class="card" onclick="location.href='comparar.html'">
-          <div class="flex items-center gap-2 mb-1">
-            <i data-lucide='bar-chart-2' class='text-[var(--verde)]'></i>
-            <h3 class="font-semibold text-lg">Comparar cohortes</h3>
-          </div>
-          <p class="text-gray-600 text-sm">Analiza diferencias entre cohortes por edad, sexo o enfermedad, con generación automática de gráficos comparativos.</p>
-        </div>
-
-        <div class="card" onclick="location.href='informes.html'">
-          <div class="flex items-center gap-2 mb-1">
-            <i data-lucide='file-bar-chart' class='text-[var(--verde)]'></i>
-            <h3 class="font-semibold text-lg">Informes automáticos y chat</h3>
-          </div>
-          <p class="text-gray-600 text-sm">Conversa con el asistente n8n para generar informes o explorar la base de datos mediante lenguaje natural.</p>
+  <!-- HERRAMIENTAS -->
+  <section>
+    <h2 class="section-title">Herramientas de Investigación</h2>
+    <div class="flex flex-col gap-5">
+      <div class="cohorte justify-center py-8">
+        <div class="text-center">
+          <h3 class="text-lg font-semibold text-[var(--verde)] mb-2">Generador de Informes Visuales</h3>
+          <p class="text-gray-600 mb-4 text-sm">Crea informes clínicos completos y descárgalos en PDF.</p>
+          <button onclick="location.href='informes.html'" class="btn-main">Ir al Generador</button>
         </div>
       </div>
-    </section>
-  </main>
+    </div>
+  </section>
+</main>
 
-  <footer class="text-center text-sm text-gray-400 py-4 border-t border-gray-200">
-    © 2025 CohortIQ · Plataforma Inteligente de Análisis Clínico
-  </footer>
+<footer class="text-center text-sm text-gray-400 py-4 border-t border-gray-200">
+  © 2025 CohortIQ · Plataforma Inteligente de Análisis Clínico
+</footer>
 
-  <script>
-    lucide.createIcons();
-
-    const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-    async function cargarCohortes() {
-      const c = document.getElementById("cohortes");
-      const { data, error } = await supabase.from("pacientes").select("enfermedad_principal");
-      if (error) { c.innerHTML = "<p class='text-red-600'>Error al conectar con Supabase.</p>"; return; }
-
-      const conteo = {};
-      data.forEach(p => {
-        const enf = p.enfermedad_principal || "Sin especificar";
-        conteo[enf] = (conteo[enf] || 0) + 1;
-      });
-
-      c.innerHTML = Object.entries(conteo)
-        .sort((a,b)=>b[1]-a[1])
-        .slice(0,5)
-        .map(([e,t])=>`
-          <div class='cohorte'>
-            <div>
-              <h4 class='font-semibold text-gray-800'>${e}</h4>
-              <p class='text-gray-500 text-sm'>${t} pacientes registrados</p>
-            </div>
-            <button onclick="location.href='cohorte.html?nombre=${encodeURIComponent(e)}'" class='btn-ver'>Ver cohorte</button>
-          </div>
-        `).join("");
-    }
-    cargarCohortes();
-  </script>
+<script>
+lucide.createIcons();
+const supabase = window.supabase.createClient(
+  "https://tmolxeszsgkffurhrcxy.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw"
+);
+async function cargarCohortes(){
+  const c=document.getElementById("cohortes");
+  const {data}=await supabase.from("pacientes").select("enfermedad_principal");
+  const conteo={};
+  data.forEach(p=>{const e=p.enfermedad_principal||"Sin especificar";conteo[e]=(conteo[e]||0)+1;});
+  c.innerHTML=Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,5)
+    .map(([e,t])=>`<div class='cohorte'>
+      <div><h4 class='font-semibold text-gray-800'>${e}</h4>
+      <p class='text-gray-500 text-sm'>${t} pacientes registrados</p></div>
+      <button onclick="location.href='cohorte.html?nombre=${encodeURIComponent(e)}'" class='btn-ver'>Ver cohorte</button>
+    </div>`).join("");
+}
+cargarCohortes();
+</script>
 </body>
 </html>
