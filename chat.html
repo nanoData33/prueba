@@ -92,7 +92,8 @@ lucide.createIcons();
 const webhookText = "https://rubaseval.app.n8n.cloud/webhook-test/dedaluschataudio";
 const webhookGraf = "https://rubaseval.app.n8n.cloud/webhook-test/grafico";
 const webhookData = "https://rubaseval.app.n8n.cloud/webhook-test/dataset";
-  const webhookGmail = "https://rubaseval.app.n8n.cloud/webhook-test/escribir-gmail"; 
+const webhookGmail = "https://rubaseval.app.n8n.cloud/webhook-test/escribir-gmail"; 
+const webhookEnviarGmail = "https://rubaseval.app.n8n.cloud/webhook-test/enviar-gmail"; // <--- AÑADE ESTA
 const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -242,19 +243,19 @@ function renderGmailButton(consulta) {
  * Llama al webhook 'escribir-gmail' y muestra la respuesta.
  */
 async function handleGmailGeneration(consulta) {
-  const btn = document.getElementById("gmailBtn");
+  // Deshabilita el botón "Generar Gmail"
+  const btn = document.getElementById("gmailBtn"); 
   if (btn) {
-    btn.disabled = true; // Deshabilita el botón
+    btn.disabled = true;
     btn.textContent = "Generando...";
+    btn.id = ""; // Limpia el ID para evitar duplicados
   }
   
   appendMessage("bot", "Generando borrador de Gmail...");
 
   try {
-    // 1. Preparamos el JSON que pide el webhook: { "consulta": "..." }
     const payload = { "consulta": consulta };
 
-    // 2. Llamamos al nuevo webhook
     const res = await fetch(webhookGmail, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
@@ -264,21 +265,75 @@ async function handleGmailGeneration(consulta) {
     const data = await res.json();
     document.querySelector(".msg.bot:last-child").remove(); // Quita "Generando..."
 
-    // 3. Mostramos la respuesta (el cuerpo del email)
     if (data.gmail) {
-      // Usamos 'pre-wrap' para respetar saltos de línea y formato
-      const emailBodyHtml = `<div style="white-space: pre-wrap; background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; padding: 12px;">${data.gmail}</div>`;
-      appendMessage("bot", emailBodyHtml, true);
+      // 1. Damos un ID único al nuevo botón "Enviar"
+      const uniqueButtonId = `enviar-btn-${Date.now()}`;
+
+      // 2. Creamos el HTML del borrador Y del botón "Enviar Gmail"
+      const emailHtml = `
+        <div style="white-space: pre-wrap; background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; padding: 12px;">
+          ${data.gmail}
+        </div>
+        <div class="btn-group" style="margin-top: 10px;">
+          <button class="btn-chart btn-rec" id="${uniqueButtonId}">Enviar Gmail</button>
+        </div>
+      `;
+      
+      // 3. Añadimos el HTML al chat y capturamos el elemento
+      const msgElement = appendMessage("bot", emailHtml, true);
+
+      // 4. Buscamos el botón que acabamos de crear DENTRO del elemento
+      const sendButton = msgElement.querySelector(`#${uniqueButtonId}`);
+      
+      // 5. Le añadimos el listener para llamar a la nueva función
+      if (sendButton) {
+        sendButton.addEventListener("click", () => handleSendGmail(uniqueButtonId));
+      }
+
     } else {
       appendMessage("bot", "No se pudo generar el cuerpo del Gmail.");
     }
 
   } catch (err) {
-    document.querySelector(".msg.bot:last-child")?.remove(); // Quita "Generando..." si hay error
+    document.querySelector(".msg.bot:last-child")?.remove();
     console.error("Error en handleGmailGeneration:", err);
     appendMessage("bot", "Error al conectar con el servicio de Gmail.");
   }
-}  
+}
+
+async function handleSendGmail(buttonId) {
+  const btn = document.getElementById(buttonId);
+  if (!btn || btn.disabled) return; // Si no existe o ya se pulsó
+
+  btn.disabled = true;
+  btn.textContent = "Enviando...";
+
+  try {
+    // 1. Llamamos al webhook de envío con GET (no necesita body)
+    const res = await fetch(webhookEnviarGmail, {
+      method: "GET"
+    });
+
+    if (!res.ok) {
+      // Si el webhook falla (ej. 500)
+      throw new Error(`Error del servidor: ${res.statusText}`);
+    }
+
+    // 2. Mostramos el mensaje de éxito
+    appendMessage("bot", "✅ Gmail Enviado Correctamente.");
+    
+    // Opcional: Oculta el botón de "Enviar" para que no se envíe dos veces
+    btn.style.display = 'none';
+
+  } catch (err) {
+    console.error("Error en handleSendGmail:", err);
+    appendMessage("bot", "❌ Error al enviar el Gmail. Inténtalo de nuevo.");
+    
+    // Habilita el botón de nuevo si falló
+    btn.disabled = false;
+    btn.textContent = "Enviar Gmail";
+  }
+}
 
 async function manejarGrafico(tipo) {
   appendMessage("bot", `Generando gráfico tipo '${tipo}'...`);
