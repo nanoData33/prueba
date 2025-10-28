@@ -17,6 +17,7 @@
   --verde-claro: #4fa87b;
   --gris-fondo: #f9faf9;
 }
+
 body {
   font-family: 'Inter', sans-serif;
   background-color: var(--gris-fondo);
@@ -24,12 +25,19 @@ body {
   display: flex;
   justify-content: center;
 }
+
 main {
-  max-width: 900px;
+  max-width: 850px;
   width: 100%;
   padding: 1.5rem;
 }
-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 0.4rem; margin-bottom: 1rem; }
+
+header { 
+  border-bottom: 1px solid #e5e7eb; 
+  padding-bottom: 0.4rem; 
+  margin-bottom: 1rem; 
+}
+
 .section {
   background: white;
   border-radius: 0.6rem;
@@ -37,6 +45,7 @@ header { border-bottom: 1px solid #e5e7eb; padding-bottom: 0.4rem; margin-bottom
   box-shadow: 0 1px 4px rgba(0,0,0,0.05);
   margin-bottom: 1rem;
 }
+
 .card {
   background: #f3f7f4;
   border-left: 3px solid var(--verde);
@@ -44,35 +53,50 @@ header { border-bottom: 1px solid #e5e7eb; padding-bottom: 0.4rem; margin-bottom
   padding: 0.6rem 0.8rem;
   font-size: 0.85rem;
 }
+
 .card h3 {
   color: var(--verde);
   font-weight: 600;
   margin-bottom: 0.1rem;
   font-size: 0.95rem;
 }
-canvas {
-  max-height: 150px !important;
-  margin-top: 10px;
+
+.chart-wrapper {
+  width: 75%;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
+
+canvas {
+  max-height: 140px !important;
+  width: 100% !important;
+}
+
 .table-custom {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.8rem;
   margin-top: 0.8rem;
 }
+
 .table-custom th, .table-custom td {
   border: 1px solid #e5e7eb;
   padding: 0.4rem 0.6rem;
   text-align: center;
 }
+
 .table-custom th {
   background: #f3f6f4;
   color: #1a1a1a;
   font-weight: 600;
 }
+
 .table-custom tbody tr:nth-child(even) {
   background-color: #fafafa;
 }
+
 .btn-main {
   background: linear-gradient(90deg, var(--verde) 0%, var(--verde-claro) 100%);
   color: white;
@@ -83,7 +107,9 @@ canvas {
   font-size: 0.85rem;
   transition: 0.25s;
 }
+
 .btn-main:hover { filter: brightness(1.1); }
+
 </style>
 </head>
 
@@ -119,7 +145,7 @@ canvas {
 
 <section id="informe" class="section hidden">
   <div id="resumen" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
-  <div id="graficos" class="grid grid-cols-2 gap-4 mb-4"></div>
+  <div id="graficos" class="grid grid-cols-1 gap-6 mb-4"></div>
 
   <h3 class="text-[var(--verde)] font-semibold mt-4 mb-2">Comparativa detallada</h3>
   <div id="tablaContainer"></div>
@@ -208,15 +234,18 @@ async function generarInforme(){
   ];
 
   metricas.forEach(m=>{
+    const wrapper=document.createElement("div");
+    wrapper.classList.add("chart-wrapper");
     const c=document.createElement("canvas");
-    document.getElementById("graficos").appendChild(c);
+    wrapper.appendChild(c);
+    document.getElementById("graficos").appendChild(wrapper);
     const g=new Chart(c,{
       type:"bar",
       data:{labels,datasets:[
         {label:m.titulo,data:m.data,backgroundColor:"#4ba67d"},
         {label:"Media global",data:new Array(labels.length).fill(m.media),type:"line",borderColor:"#888",borderWidth:1,pointRadius:0,fill:false}
       ]},
-      options:{plugins:{legend:{display:false},title:{display:true,text:m.titulo,color:"#2f6d50"}},scales:{y:{beginAtZero:true},x:{ticks:{font:{size:10}}}}}
+      options:{plugins:{legend:{display:false},title:{display:true,text:m.titulo,color:"#2f6d50",font:{size:12}}},scales:{y:{beginAtZero:true},x:{ticks:{font:{size:10}}}}}
     });
     charts.push(g);
   });
