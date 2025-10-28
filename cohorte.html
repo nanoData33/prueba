@@ -29,33 +29,46 @@ body {
 .arrow {
   background: #e5e7eb;
   border-radius: 50%;
-  width: 28px; height: 28px;
-  display: flex; justify-content: center; align-items: center;
-  cursor: pointer; transition: 0.3s;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: 0.3s;
 }
 .arrow:hover { background: var(--verde-claro); color: white; }
 .modal {
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.45);
-  display: flex; justify-content: center; align-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   z-index: 50;
 }
 .spinner {
   border: 4px solid #eee;
   border-top: 4px solid var(--verde);
   border-radius: 50%;
-  width: 45px; height: 45px;
+  width: 45px;
+  height: 45px;
   animation: spin 1s linear infinite;
 }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 .chat-btn {
-  position: fixed; bottom: 24px; right: 24px;
-  background: var(--verde); color: white;
-  border-radius: 50%; width: 60px; height: 60px;
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--verde);
+  color: white;
+  border-radius: 50%;
+  width: 60px; height: 60px;
   display: flex; justify-content: center; align-items: center;
   font-size: 28px;
   box-shadow: 0 3px 8px rgba(0,0,0,0.25);
-  cursor: pointer; transition: transform 0.2s ease;
+  cursor: pointer;
+  transition: transform 0.2s ease;
 }
 .chat-btn:hover { transform: scale(1.1); background: var(--verde-claro); }
 </style>
@@ -82,16 +95,20 @@ body {
   <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
     <div class="card">
       <h2 class="text-[var(--verde)] font-semibold mb-2">Indicadores clínicos</h2>
-      <canvas id="graficoCohorte" height="180"></canvas>
-      <div class="flex mt-3 gap-2">
+      <div class="flex items-center justify-between mb-3">
+        <div class="arrow" onclick="prevGrafico()">‹</div>
+        <canvas id="graficoCohorte" height="180"></canvas>
+        <div class="arrow" onclick="nextGrafico()">›</div>
+      </div>
+      <div class="flex mt-2 gap-2">
         <input id="inputGrafico" placeholder="Ej: histograma de edad por sexo"
           class="flex-grow border border-gray-300 rounded-md p-2 text-sm">
-        <button onclick="generarGraficoDesdeTexto()" class="bg-[var(--verde)] text-white px-4 rounded-md">Generar</button>
+        <button onclick="generarGraficoN8N()" class="bg-[var(--verde)] text-white px-4 rounded-md">Generar</button>
       </div>
     </div>
 
     <div class="card">
-      <h2 class="text-[var(--verde)] font-semibold mb-2">Medicaciones en la cohorte (último mes)</h2>
+      <h2 class="text-[var(--verde)] font-semibold mb-2">Medicaciones en la cohorte</h2>
       <canvas id="graficoMed" height="180"></canvas>
       <ul id="topMeds" class="text-sm mt-3 text-gray-600"></ul>
     </div>
@@ -100,16 +117,30 @@ body {
   <section class="card">
     <h2 class="text-[var(--verde)] font-semibold mb-3">Pacientes de la cohorte</h2>
     <table id="tablaPacientes" class="w-full border-collapse text-sm">
-      <thead><tr><th>ID</th><th>Nombre</th><th>Edad</th><th>Diagnóstico</th></tr></thead>
+      <thead><tr><th>ID</th><th>Nombre</th><th>Edad</th><th>IMC</th><th>Diagnóstico</th><th></th></tr></thead>
       <tbody></tbody>
     </table>
   </section>
 </main>
 
-<!-- POPUP GENÉRICO -->
-<div id="popupOverlay" class="modal hidden"></div>
+<!-- Modal de carga -->
+<div id="modal" class="modal hidden">
+  <div class="bg-white p-6 rounded-lg shadow-lg text-center w-[300px]">
+    <div class="spinner mx-auto mb-4"></div>
+    <p class="text-gray-600">Procesando solicitud...</p>
+  </div>
+</div>
 
-<div class="chat-btn" onclick="abrirChat()"><i data-lucide="message-circle"></i></div>
+<!-- Modal del gráfico generado -->
+<div id="graficoModal" class="modal hidden">
+  <div class="bg-white p-6 rounded-lg shadow-lg w-[80%] max-w-3xl flex flex-col">
+    <div class="flex justify-between items-center mb-3">
+      <h3 class="text-lg font-semibold text-[var(--verde)]">Resultado del gráfico</h3>
+      <button onclick="cerrarGraficoModal()" class="bg-[var(--verde)] text-white px-3 py-1 rounded-md text-sm">Cerrar</button>
+    </div>
+    <pre id="contenidoGrafico" class="text-xs text-gray-800 whitespace-pre-wrap bg-gray-50 border border-gray-200 rounded-md p-3 flex-grow overflow-auto"></pre>
+  </div>
+</div>
 
 <script>
 lucide.createIcons();
@@ -117,95 +148,123 @@ const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+let grafico, graficoMed, indexGrafico = 0;
+const metricas = ["HbA1c", "TFG", "IMC", "Colesterol"];
+const colores = ["#3d7658", "#6bb38d", "#f7c15a", "#e58b7c"];
 let cohorteActual = "General";
 
 window.onload = async () => {
   const params = new URLSearchParams(window.location.search);
   cohorteActual = params.get("nombre") || "General";
   document.getElementById("nombreCohorte").textContent = cohorteActual;
-  await cargarCohorte();
+  await cargarCohorte(cohorteActual);
 };
 
-// === CARGA DE COHORTE ===
-async function cargarCohorte() {
-  try {
-    const { data: pacientes, error } = await supabase
-      .from("pacientes")
-      .select("*")
-      .ilike("diagnostico_principal", `%${cohorteActual}%`);
-    if (error) throw error;
-    if (!pacientes?.length) return mostrarPopup(`No hay pacientes con diagnóstico '${cohorteActual}'.`);
+async function cargarCohorte(nombre) {
+  const { data: pacientes, error } = await supabase
+    .from("pacientes")
+    .select("*")
+    .ilike("diagnostico_principal", `%${nombre}%`);
 
-    document.getElementById("nPac").textContent = pacientes.length;
-    const edadMedia = pacientes.reduce((a,b)=>a+(b.Edad||0),0)/pacientes.length;
-    document.getElementById("edadMedia").textContent = `${edadMedia.toFixed(1)} años`;
-    document.getElementById("controlados").textContent = (60+Math.random()*30).toFixed(1)+"%";
-    document.getElementById("adherencia").textContent = (70+Math.random()*20).toFixed(1)+"%";
-
-    const tbody = document.querySelector("#tablaPacientes tbody");
-    tbody.innerHTML = pacientes.map(p => `
-      <tr><td>${p.PacienteID||"-"}</td><td>${p.Nombre||"-"}</td><td>${p.Edad||"-"}</td><td>${p.diagnostico_principal||"-"}</td></tr>`
-    ).join("");
-
-    renderGraficoIndicadores(pacientes);
-    renderGraficoMedicaciones(pacientes);
-  } catch (err) {
-    mostrarPopup("❌ Error al conectar con Supabase:\n" + err.message);
+  if (error) {
+    alert("Error al conectar con Supabase:\n" + error.message);
+    return;
   }
+  if (!pacientes?.length) return alert("No hay datos de esta cohorte.");
+
+  window.pacientes = pacientes;
+
+  document.getElementById("nPac").textContent = pacientes.length;
+  document.getElementById("edadMedia").textContent =
+    (pacientes.reduce((a,b)=>a+(b.Edad||0),0)/pacientes.length).toFixed(1) + " años";
+  document.getElementById("controlados").textContent = (60+Math.random()*30).toFixed(1)+"%";
+  document.getElementById("adherencia").textContent = (70+Math.random()*20).toFixed(1)+"%";
+
+  const tbody = document.querySelector("#tablaPacientes tbody");
+  tbody.innerHTML = pacientes.map(p =>
+    `<tr>
+      <td>${p.PacienteID}</td>
+      <td>${p.Nombre}</td>
+      <td>${p.Edad}</td>
+      <td>${p.IMC || '-'}</td>
+      <td>${p.diagnostico_principal}</td>
+      <td><button onclick="abrirPaciente('${p.PacienteID}')" class='bg-[var(--verde)] text-white px-2 py-1 rounded text-xs'>+</button></td>
+    </tr>`
+  ).join("");
+
+  await renderGraficoCohorte(pacientes, metricas[indexGrafico]);
+  await renderGraficoMedicaciones(pacientes);
 }
 
-// === GRAFICOS ===
-async function renderGraficoIndicadores(pacientes) {
-  const ctx=document.getElementById("graficoCohorte");
-  if(window.graficoCohorte)window.graficoCohorte.destroy();
-  const labels=["Frecuencia cardiaca","Saturación O₂","Temperatura"];
-  const valores=[Math.random()*20+60,Math.random()*10+90,Math.random()*2+36];
-  window.graficoCohorte=new Chart(ctx,{type:"bar",data:{labels,datasets:[{data:valores,backgroundColor:"#3d7658"}]},options:{plugins:{legend:{display:false}}}});
+// Limita datos al último mes
+function filtrarUltimoMes(data, campoFecha) {
+  const haceUnMes = new Date();
+  haceUnMes.setMonth(haceUnMes.getMonth() - 1);
+  return data.filter(d => new Date(d[campoFecha]) >= haceUnMes);
 }
+
+async function renderGraficoCohorte(pacientes, metrica) {
+  const { data: labs } = await supabase.from("laboratorios").select("*");
+  const recientes = filtrarUltimoMes(labs, "fecha_prueba");
+  const fechas = [...new Set(recientes.map(l => l.fecha_prueba))].sort();
+  const valores = fechas.map(f => {
+    const subset = recientes.filter(l => l.fecha_prueba === f && l[metrica]);
+    return subset.length ? subset.reduce((a,b)=>a+(+b[metrica]||0),0)/subset.length : null;
+  });
+  const ctx = document.getElementById("graficoCohorte");
+  if (grafico) grafico.destroy();
+  grafico = new Chart(ctx,{
+    type:"line",
+    data:{labels:fechas,datasets:[{label:metrica,data:valores,borderColor:colores[indexGrafico],tension:0.3,fill:false}]},
+    options:{plugins:{legend:{display:true}},scales:{y:{beginAtZero:false}}}
+  });
+}
+
 async function renderGraficoMedicaciones(pacientes) {
+  const ids = pacientes.map(p=>p.PacienteID);
+  const { data: meds } = await supabase.from("medicaciones").select("principio_activo, PacienteID");
+  const cuenta = {};
+  meds.forEach(m=>{if(ids.includes(m.PacienteID))cuenta[m.principio_activo]=(cuenta[m.principio_activo]||0)+1;});
+  const labels=Object.keys(cuenta), valores=Object.values(cuenta);
   const ctx=document.getElementById("graficoMed");
-  if(window.graficoMed)window.graficoMed.destroy();
-  const labels=["Salbutamol","Prednisona","Teofilina"];
-  const valores=[Math.random()*30+10,Math.random()*20+5,Math.random()*10+3];
-  window.graficoMed=new Chart(ctx,{type:"bar",data:{labels,datasets:[{data:valores,backgroundColor:"#4ba67d"}]},options:{indexAxis:"y",plugins:{legend:{display:false}}}});
-  document.getElementById("topMeds").innerHTML = labels.map((m,i)=>`<li>${m} — ${valores[i].toFixed(0)} pacientes</li>`).join("");
+  if(graficoMed)graficoMed.destroy();
+  graficoMed=new Chart(ctx,{type:"bar",data:{labels,datasets:[{data:valores,backgroundColor:"#3d7658"}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
+  document.getElementById("topMeds").innerHTML = labels.map((m,i)=>`<li>${m} — ${valores[i]} pacientes</li>`).join("");
 }
 
-// === GRAFICO DESDE N8N ===
-async function generarGraficoDesdeTexto(){
-  const consulta=document.getElementById("inputGrafico").value.trim();
-  if(!consulta)return mostrarPopup("⚠️ Escribe una descripción del gráfico.");
-  mostrarPopup("⏳ Generando gráfico...",true);
-  try{
-    const res=await fetch("https://rubaseval.app.n8n.cloud/webhook/grafico",{
-      method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({consulta,cohorte:cohorteActual,timestamp:new Date().toISOString(),origen:"CohortIQ frontend"})
+function prevGrafico(){indexGrafico=(indexGrafico-1+metricas.length)%metricas.length;renderGraficoCohorte(window.pacientes,metricas[indexGrafico]);}
+function nextGrafico(){indexGrafico=(indexGrafico+1)%metricas.length;renderGraficoCohorte(window.pacientes,metricas[indexGrafico]);}
+function abrirPaciente(id){window.location.href=`explorar.html?paciente=${id}`;}
+function cerrarGraficoModal(){document.getElementById("graficoModal").classList.add("hidden");}
+
+// === 🔹 Enviar consulta al webhook n8n ===
+async function generarGraficoN8N() {
+  const consulta = document.getElementById("inputGrafico").value.trim();
+  if (!consulta) return alert("Escribe una consulta o tipo de gráfico.");
+
+  document.getElementById("modal").classList.remove("hidden");
+  const payload = {
+    consulta,
+    cohorte: cohorteActual,
+    timestamp: new Date().toISOString(),
+    origen: "CohortIQ frontend"
+  };
+
+  try {
+    const res = await fetch("https://rubaseval.app.n8n.cloud/webhook/grafico", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
     });
-    const text=await res.text();
-    let parsed; try{parsed=JSON.parse(text);}catch{return mostrarPopup("💥 Error al interpretar respuesta:\n\n"+text);}
-    renderGraficoPopup(parsed);
-  }catch(err){mostrarPopup("❌ Error al contactar con n8n:\n"+err.message);}
-}
-
-// === POPUP ===
-function mostrarPopup(msg,spinner=false){
-  const overlay=document.getElementById("popupOverlay");
-  overlay.innerHTML=spinner
-    ?`<div class="bg-white p-6 rounded-lg shadow-lg text-center w-[300px]"><div class="spinner mx-auto mb-4"></div><p>${msg}</p></div>`
-    :`<div class="bg-white p-6 rounded-lg shadow-lg text-center max-w-md"><p class="whitespace-pre-wrap">${msg}</p><button onclick="cerrarPopup()" class="mt-4 bg-[var(--verde)] text-white px-4 py-1 rounded-md">Cerrar</button></div>`;
-  overlay.classList.remove("hidden");
-}
-function cerrarPopup(){document.getElementById("popupOverlay").classList.add("hidden");}
-function abrirChat(){window.open("chat.html","_blank");}
-async function renderGraficoPopup(parsed){
-  const overlay=document.getElementById("popupOverlay");
-  overlay.innerHTML=`<div class="bg-white p-6 rounded-lg shadow-lg w-[90%] max-w-3xl h-[70%] flex flex-col">
-    <div class="flex justify-between mb-3"><h3 class="text-lg font-semibold text-[var(--verde)]">${parsed.titulo||"Gráfico generado"}</h3>
-    <button onclick="cerrarPopup()" class="bg-[var(--verde)] text-white px-3 py-1 rounded-md text-sm">Cerrar</button></div>
-    <canvas id="popupChart" class="flex-grow"></canvas></div>`;
-  overlay.classList.remove("hidden");
-  const ctx=document.getElementById("popupChart");
-  new Chart(ctx,{type:"bar",data:{labels:["A","B","C"],datasets:[{data:[5,9,7],backgroundColor:"#3d7658"}]},options:{plugins:{legend:{display:false}}}});
+    const text = await res.text();
+    document.getElementById("modal").classList.add("hidden");
+    document.getElementById("contenidoGrafico").textContent = text;
+    document.getElementById("graficoModal").classList.remove("hidden");
+  } catch (err) {
+    document.getElementById("modal").classList.add("hidden");
+    document.getElementById("contenidoGrafico").textContent = "Error al contactar con n8n:\n" + err.message;
+    document.getElementById("graficoModal").classList.remove("hidden");
+  }
 }
 </script>
 </body>
