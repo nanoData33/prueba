@@ -103,13 +103,14 @@ body {
 <div id="popupOverlay" class="hidden fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50"></div>
 
 <div class="chat-btn" onclick="abrirChat()"><i data-lucide="message-circle"></i></div>
-
 <script>
 lucide.createIcons();
 const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
 let cohorteActual = "General";
+let pacientes = [];
 
 window.onload = async () => {
   const params = new URLSearchParams(window.location.search);
@@ -118,34 +119,113 @@ window.onload = async () => {
   await cargarCohorte();
 };
 
-// === Cargar datos de Supabase ===
+// === CARGA DE COHORTE ===
 async function cargarCohorte() {
-  const { data: pacientes, error } = await supabase.from("pacientes").select("*");
-  if (error || !pacientes?.length) return;
+  const hoy = new Date();
+  const haceUnMes = new Date(hoy);
+  haceUnMes.setMonth(hoy.getMonth() - 1);
+  const fechaISO = haceUnMes.toISOString().split("T")[0];
+
+  const { data: dataPac, error } = await supabase
+    .from("pacientes")
+    .select("*")
+    .ilike("DiagnosticoPrincipal", `%${cohorteActual}%`);
+
+  if (error) return mostrarPopup("❌ Error al conectar con Supabase:\n" + error.message);
+  if (!dataPac?.length) return mostrarPopup(`No hay pacientes con diagnóstico '${cohorteActual}'.`);
+
+  pacientes = dataPac;
 
   document.getElementById("nPac").textContent = pacientes.length;
-  document.getElementById("edadMedia").textContent =
-    (pacientes.reduce((a,b)=>a+(b.Edad||0),0)/pacientes.length).toFixed(1)+" años";
+  const edadMedia = pacientes.reduce((a,b)=>a+(b.Edad||0),0)/pacientes.length;
+  document.getElementById("edadMedia").textContent = `${edadMedia.toFixed(1)} años`;
   document.getElementById("controlados").textContent = (60+Math.random()*30).toFixed(1)+"%";
   document.getElementById("adherencia").textContent = (70+Math.random()*20).toFixed(1)+"%";
 
+  // Tabla
   const tbody = document.querySelector("#tablaPacientes tbody");
-  tbody.innerHTML = pacientes.map(p =>
-    `<tr><td>${p.PacienteID}</td><td>${p.Nombre}</td><td>${p.Edad}</td><td>${p.DiagnosticoPrincipal||'-'}</td></tr>`
-  ).join("");
+  tbody.innerHTML = pacientes.map(p => `
+    <tr>
+      <td>${p.PacienteID || "-"}</td>
+      <td>${p.Nombre || "-"}</td>
+      <td>${p.Edad || "-"}</td>
+      <td>${p.DiagnosticoPrincipal || "-"}</td>
+    </tr>`).join("");
+
+  // Cargar datos auxiliares para el último mes
+  await renderGraficoCohorteUltimoMes(fechaISO);
+  await renderGraficoMedicacionesUltimoMes(fechaISO);
 }
 
-// === Generar gráfico desde texto ===
+// === GRAFICO INDICADORES (último mes) ===
+async function renderGraficoCohorteUltimoMes(fechaMin) {
+  const { data: evo } = await supabase
+    .from("evolucion")
+    .select("PacienteID,Fecha,PresionSistolica,FrecuenciaCardiaca,SaturacionOxigeno,Temperatura")
+    .gte("Fecha", fechaMin);
+
+  const cohorteIDs = pacientes.map(p=>p.PacienteID);
+  const datos = evo.filter(e => cohorteIDs.includes(e.PacienteID));
+
+  if (!datos.length) return;
+
+  const fechas = [...new Set(datos.map(d=>d.Fecha))].sort();
+  const vars = ["FrecuenciaCardiaca","SaturacionOxigeno","Temperatura"];
+  const colores = ["#4ba67d","#3d7658","#f7c15a"];
+  const datasets = vars.map((v,i) => ({
+    label: v,
+    data: fechas.map(f => {
+      const subset = datos.filter(d=>d.Fecha===f && d[v]!=null);
+      return subset.length ? subset.reduce((a,b)=>a+b[v],0)/subset.length : null;
+    }),
+    borderColor: colores[i],
+    fill:false,
+    tension:0.3
+  }));
+
+  const ctx = document.getElementById("graficoCohorte");
+  if (window.graficoCohorte) window.graficoCohorte.destroy();
+  window.graficoCohorte = new Chart(ctx,{
+    type:"line",
+    data:{labels:fechas,datasets},
+    options:{plugins:{legend:{display:true}},scales:{y:{beginAtZero:false}}}
+  });
+}
+
+// === GRAFICO MEDICACIONES (último mes) ===
+async function renderGraficoMedicacionesUltimoMes(fechaMin) {
+  const { data: meds } = await supabase
+    .from("medicacion")
+    .select("PacienteID,NombreFarmaco,FechaInicio")
+    .gte("FechaInicio", fechaMin);
+
+  const cohorteIDs = pacientes.map(p=>p.PacienteID);
+  const datos = meds.filter(m=>cohorteIDs.includes(m.PacienteID));
+  const conteo = {};
+  datos.forEach(m=>{conteo[m.NombreFarmaco]=(conteo[m.NombreFarmaco]||0)+1;});
+
+  const labels = Object.keys(conteo);
+  const valores = Object.values(conteo);
+  const ctx=document.getElementById("graficoMed");
+  if(window.graficoMed)window.graficoMed.destroy();
+  window.graficoMed=new Chart(ctx,{
+    type:"bar",
+    data:{labels,datasets:[{data:valores,backgroundColor:"#3d7658"}]},
+    options:{indexAxis:"y",plugins:{legend:{display:false}}}
+  });
+  document.getElementById("topMeds").innerHTML = labels.map((m,i)=>`<li>${m} — ${valores[i]} pacientes</li>`).join("");
+}
+
+// === BOTÓN "GENERAR" — gráfico dinámico n8n ===
 async function generarGraficoDesdeTexto() {
   const consulta = document.getElementById("inputGrafico").value.trim();
   if (!consulta) return mostrarPopup("⚠️ Escribe una descripción del gráfico.");
 
-  mostrarPopup("⏳ Procesando consulta...", true);
-
+  mostrarPopup("⏳ Enviando consulta a n8n...", true);
   try {
-    const response = await fetch("https://rubaseval.app.n8n.cloud/webhook/grafico", {
+    const res = await fetch("https://rubaseval.app.n8n.cloud/webhook/grafico", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         consulta,
         cohorte: cohorteActual,
@@ -153,19 +233,19 @@ async function generarGraficoDesdeTexto() {
         origen: "CohortIQ frontend"
       })
     });
-    const text = await response.text();
+    const text = await res.text();
     let parsed;
     try { parsed = JSON.parse(text); }
     catch { return mostrarPopup("💥 Error al interpretar respuesta:\n\n" + text); }
 
-    await renderGrafico(parsed);
+    await renderGraficoPopup(parsed);
   } catch (err) {
     mostrarPopup("❌ Error al contactar con n8n:\n" + err.message);
   }
 }
 
-// === Renderiza el gráfico ===
-async function renderGrafico(parsed) {
+// === RENDER POP-UP ===
+async function renderGraficoPopup(parsed) {
   const overlay = document.getElementById("popupOverlay");
   overlay.innerHTML = `
     <div class="bg-white rounded-lg shadow-xl p-6 w-[90%] max-w-3xl h-[70%] flex flex-col">
@@ -179,38 +259,36 @@ async function renderGrafico(parsed) {
 
   const match = parsed.sql.match(/SELECT\s+(.+)\s+FROM\s+(\w+)/i);
   if (!match) return mostrarPopup("⚠️ Consulta no reconocida:\n" + parsed.sql);
-
   const columnas = match[1].split(",").map(c => c.trim());
   const tabla = match[2];
-  const { data, error } = await supabase.from(tabla).select(columnas.join(","));
-  if (error || !data?.length) return mostrarPopup("⚠️ No se pudieron obtener datos de Supabase.");
+  const { data } = await supabase.from(tabla).select(columnas.join(","));
+  if (!data?.length) return mostrarPopup("⚠️ No se encontraron datos para graficar.");
 
   const ctx = document.getElementById("popupChart");
   const tipo = parsed.chart_type || "bar";
+  const valores = data.map(d=>+d[columnas[0]]).filter(x=>!isNaN(x));
 
   if (tipo === "histogram") {
-    const vals = data.map(d => +d[columnas[0]]).filter(x => !isNaN(x));
-    const bins = 10, min = Math.min(...vals), max = Math.max(...vals);
+    const bins = 10, min = Math.min(...valores), max = Math.max(...valores);
     const step = (max-min)/bins, labels=[], freqs=new Array(bins).fill(0);
-    vals.forEach(v=>freqs[Math.min(Math.floor((v-min)/step),bins-1)]++);
+    valores.forEach(v=>freqs[Math.min(Math.floor((v-min)/step),bins-1)]++);
     for(let i=0;i<bins;i++) labels.push(`${(min+i*step).toFixed(0)}-${(min+(i+1)*step).toFixed(0)}`);
     new Chart(ctx,{type:"bar",data:{labels,datasets:[{data:freqs,backgroundColor:"#3d7658"}]},options:{scales:{x:{title:{text:columnas[0],display:true}},y:{title:{text:"Frecuencia",display:true}}}}});
   } else {
-    new Chart(ctx,{type:"line",data:{labels:data.map((_,i)=>i+1),datasets:[{label:columnas[0],data:data.map(d=>d[columnas[0]]),borderColor:"#3d7658",fill:false,tension:0.3}]}});
+    new Chart(ctx,{type:"line",data:{labels:data.map((_,i)=>i+1),datasets:[{label:columnas[0],data:valores,borderColor:"#3d7658",fill:false,tension:0.3}]}});
   }
 }
 
-// === Popup genérico ===
+// === POPUPS ===
 function mostrarPopup(msg, spinner=false) {
   const overlay = document.getElementById("popupOverlay");
   overlay.innerHTML = `
     <div class="bg-white rounded-lg shadow-xl p-6 w-[90%] max-w-md text-center text-gray-700">
-      ${spinner ? '<div class="spinner"></div>' : `<p class="whitespace-pre-wrap">${msg}</p>`}
+      ${spinner ? '<div class="spinner mx-auto mb-4"></div>' : `<p class="whitespace-pre-wrap">${msg}</p>`}
       <button onclick="cerrarPopup()" class="mt-4 bg-[var(--verde)] text-white px-4 py-1 rounded-md">Cerrar</button>
     </div>`;
   overlay.classList.remove("hidden");
 }
-
 function cerrarPopup(){document.getElementById("popupOverlay").classList.add("hidden");}
 function abrirChat(){window.open("chat.html","_blank");}
 </script>
