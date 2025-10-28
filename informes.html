@@ -3,175 +3,138 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CohortIQ — Informe Clínico Profesional</title>
+<title>CohortIQ — Informe Clínico Comparativo</title>
 
+<!-- Librerías -->
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
 :root {
-  --verde: #1e604a;
-  --verde-claro: #3ca375;
-  --gris-fondo: #f7f9f8;
-  --gris-texto: #1a1a1a;
+  --verde: #3d7658;
+  --verde-claro: #4ba67d;
+  --gris-fondo: #f8f9f8;
+  --gris-borde: #e5e7eb;
 }
-
 body {
-  font-family: "Inter", sans-serif;
-  background-color: var(--gris-fondo);
-  color: var(--gris-texto);
-  display: flex;
-  justify-content: center;
+  background: var(--gris-fondo);
+  font-family: 'Inter', sans-serif;
+  color: #1f2937;
 }
-
-main {
-  max-width: 880px;
-  width: 100%;
-  background: white;
-  margin: 1.5rem;
-  padding: 1.5rem 2rem;
-  border-radius: 0.8rem;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
-}
-
-header {
-  border-bottom: 2px solid var(--verde);
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.4rem;
-}
-
-header h1 {
-  color: var(--verde);
-  font-weight: 700;
-  font-size: 1.35rem;
-}
-
-.section {
-  margin-bottom: 1.8rem;
-}
-
 .card {
-  background: linear-gradient(135deg, #f9fefb, #ecf9f3);
-  border-left: 4px solid var(--verde);
+  background: white;
   border-radius: 0.6rem;
-  padding: 0.8rem 1rem;
-  text-align: center;
-  font-size: 0.85rem;
+  padding: 1.2rem 1.4rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  border-left: 4px solid var(--verde);
 }
-
-.card h3 {
-  color: var(--verde);
-  font-weight: 600;
-  font-size: 0.95rem;
-  margin-bottom: 0.2rem;
+h2 { color: var(--verde); font-weight: 600; margin-bottom: 0.8rem; }
+canvas { max-height: 220px !important; }
+.table-container {
+  overflow-x: auto;
+  background: white;
+  border-radius: 0.6rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  padding: 1rem;
 }
-
-canvas {
-  width: 100% !important;
-  max-height: 160px !important;
-}
-
-.table-custom {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8rem;
-  margin-top: 1rem;
-}
-.table-custom th, .table-custom td {
-  border: 1px solid #e5e7eb;
-  padding: 0.4rem 0.6rem;
-  text-align: center;
-}
-.table-custom th {
-  background: #f3f6f4;
-  color: var(--verde);
-  font-weight: 600;
-}
-.table-custom tbody tr:nth-child(even) {
-  background-color: #fafafa;
-}
-
-.btn-main {
-  background: linear-gradient(90deg, var(--verde) 0%, var(--verde-claro) 100%);
-  color: white;
-  border: none;
-  padding: 0.45rem 1rem;
-  border-radius: 0.35rem;
-  font-weight: 500;
-  font-size: 0.85rem;
-  transition: 0.25s;
-}
-.btn-main:hover { filter: brightness(1.1); }
-
-.interpretacion {
-  background: #f9faf9;
-  border-left: 3px solid var(--verde);
-  border-radius: 0.4rem;
-  padding: 0.8rem 1rem;
-  margin-top: 1.2rem;
-  font-size: 0.85rem;
-  color: #333;
-  line-height: 1.4;
-}
-
-footer {
-  text-align: center;
-  font-size: 0.75rem;
-  color: #666;
-  margin-top: 1rem;
-  border-top: 1px solid #eee;
-  padding-top: 0.5rem;
-}
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th, td { padding: 0.5rem; border-bottom: 1px solid var(--gris-borde); text-align: center; }
+th { background: #f1f5f4; color: #374151; font-weight: 600; }
+.section { margin-top: 1.8rem; }
 </style>
 </head>
 
-<body>
-<main>
-<header class="flex justify-between items-center">
-  <h1>Informe Clínico Comparativo</h1>
-  <a href="index.html" class="text-sm text-[var(--verde)] hover:underline">Volver al inicio</a>
-</header>
-
-<section class="section">
-  <h2 class="font-semibold mb-3 text-[var(--verde)]">Configuración</h2>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <div>
-      <label class="text-xs font-semibold">Cohortes</label>
-      <select id="selCohortes" multiple class="w-full border border-gray-300 rounded-md p-1.5 text-sm h-24"></select>
-      <p class="text-xs text-gray-500 mt-1">Ctrl + clic para varias cohortes</p>
+<body class="p-8">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-semibold text-[var(--verde)]">Informe Clínico Comparativo</h1>
+      <a href="index.html" class="text-[var(--verde)] text-sm hover:underline">Volver al inicio</a>
     </div>
-    <div>
-      <label class="text-xs font-semibold">Filtros</label>
-      <div class="grid grid-cols-2 gap-2 mt-1">
-        <input id="fGenero" placeholder="Género (M/F)" class="border rounded-md p-1 text-sm">
-        <input id="fEdadMin" placeholder="Edad mín." type="number" class="border rounded-md p-1 text-sm">
-        <input id="fEdadMax" placeholder="Edad máx." type="number" class="border rounded-md p-1 text-sm">
-        <input id="fIMC" placeholder="IMC mín." type="number" class="border rounded-md p-1 text-sm">
+
+    <!-- CONFIGURACIÓN -->
+    <div class="card">
+      <h2>Configuración</h2>
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+        <div class="md:col-span-2">
+          <label class="text-sm font-medium">Cohortes</label>
+          <select id="cohortes" multiple class="border rounded-md p-2 w-full text-sm">
+            <option>Diabetes tipo 2</option>
+            <option>EPOC</option>
+            <option>Insuficiencia cardíaca</option>
+            <option>Hipertensión arterial</option>
+            <option>Enfermedad renal crónica</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1">Ctrl + clic para seleccionar varias cohortes</p>
+        </div>
+        <div>
+          <label class="text-sm font-medium">Género</label>
+          <select id="genero" class="border rounded-md p-2 w-full text-sm">
+            <option value="">Todos</option>
+            <option value="F">Femenino</option>
+            <option value="M">Masculino</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-sm font-medium">Edad mínima</label>
+          <input id="edadMin" type="number" class="border rounded-md p-2 w-full text-sm" />
+        </div>
+        <div>
+          <label class="text-sm font-medium">Edad máxima</label>
+          <input id="edadMax" type="number" class="border rounded-md p-2 w-full text-sm" />
+        </div>
+        <div class="md:col-span-5 text-right mt-2">
+          <button onclick="generarInforme()" class="bg-[var(--verde)] text-white px-5 py-2 rounded-md text-sm hover:bg-[var(--verde-claro)]">Generar Informe</button>
+        </div>
       </div>
     </div>
-    <div class="flex items-end">
-      <button onclick="generarInforme()" class="btn-main w-full">Generar Informe</button>
+
+    <!-- BLOQUE DE INFORME -->
+    <div id="informe" class="mt-8 space-y-6 hidden">
+      
+      <!-- Filtros redactados -->
+      <div class="card">
+        <h2>Resumen de Filtros Aplicados</h2>
+        <p id="textoFiltros" class="text-sm text-gray-700"></p>
+      </div>
+
+      <!-- Métricas -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="resumenCohortes"></div>
+
+      <!-- Gráficos -->
+      <div class="section grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="card">
+          <h2>Distribución de Medicaciones</h2>
+          <canvas id="graficoMeds"></canvas>
+        </div>
+        <div class="card">
+          <h2>Adherencia Media por Cohorte</h2>
+          <canvas id="graficoAdherencia"></canvas>
+        </div>
+      </div>
+
+      <!-- Tabla comparativa -->
+      <div class="section table-container">
+        <h2>Comparativa Detallada</h2>
+        <table id="tablaComparativa">
+          <thead><tr><th>Cohorte</th><th>Pacientes</th><th>Edad media</th><th>IMC medio</th><th>% Mujeres</th><th>% Fumadores</th><th>Adherencia media</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- Interpretación -->
+      <div class="card section">
+        <h2>Interpretación Automática</h2>
+        <p id="interpretacion" class="text-sm text-gray-700 leading-relaxed"></p>
+      </div>
+
+      <div class="text-right mt-4">
+        <button onclick="descargarPDF()" class="bg-gray-700 text-white px-5 py-2 rounded-md text-sm hover:bg-gray-800">Descargar PDF</button>
+      </div>
     </div>
   </div>
-</section>
-
-<section id="informe" class="hidden">
-  <div id="resumen" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
-  <div id="graficos" class="grid grid-cols-1 gap-5 mb-4"></div>
-  <div id="interpretacion" class="interpretacion hidden"></div>
-
-  <h3 class="text-[var(--verde)] font-semibold mt-6 mb-2">Comparativa detallada</h3>
-  <div id="tablaContainer"></div>
-
-  <div class="text-right mt-3">
-    <button onclick="descargarPDF()" class="btn-main">Descargar PDF</button>
-  </div>
-</section>
-
-<footer>© 2025 CohortIQ · Informe analítico generado automáticamente</footer>
 
 <script>
 const supabase = window.supabase.createClient(
@@ -179,118 +142,133 @@ const supabase = window.supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw"
 );
 
-let charts=[];
+let chartMeds, chartAdh;
 
-async function cargarCohortes(){
-  const { data } = await supabase.from("pacientes").select("enfermedad_principal");
-  const unicas=[...new Set(data.map(d=>d.enfermedad_principal).filter(Boolean))];
-  document.getElementById("selCohortes").innerHTML=unicas.map(u=>`<option>${u}</option>`).join("");
-}
-cargarCohortes();
+async function generarInforme() {
+  const cohSel = Array.from(document.getElementById("cohortes").selectedOptions).map(o => o.value);
+  const genero = document.getElementById("genero").value;
+  const edadMin = +document.getElementById("edadMin").value || null;
+  const edadMax = +document.getElementById("edadMax").value || null;
 
-function promedio(arr){return arr.length?(arr.reduce((a,b)=>a+(+b||0),0)/arr.length).toFixed(1):0;}
-function filtrar(p,genero,edadMin,edadMax,imcMin){
-  return p.filter(x=>{
-    if(genero && x.sexo?.toUpperCase()!==genero.toUpperCase()) return false;
-    if(edadMin && x.edad<edadMin) return false;
-    if(edadMax && x.edad>edadMax) return false;
-    if(imcMin && (x.IMC||0)<imcMin) return false;
-    return true;
+  if (!cohSel.length) return alert("Selecciona al menos una cohorte.");
+
+  // Texto redactado de filtros
+  let texto = `El informe compara las cohortes ${cohSel.join(", ")}. `;
+  if (genero) texto += `Solo se incluyen pacientes de género ${genero === "F" ? "femenino" : "masculino"}. `;
+  if (edadMin || edadMax) texto += `El rango de edad analizado es de ${edadMin || "cualquier"} a ${edadMax || "cualquier"} años.`;
+  document.getElementById("textoFiltros").textContent = texto;
+
+  // Cargar datos
+  const { data: pacientes } = await supabase.from("pacientes").select("*");
+  const { data: meds } = await supabase.from("medicaciones").select("principio_activo, adherencia, patient_id");
+
+  // Filtrado
+  const filtrados = pacientes.filter(p =>
+    cohSel.includes(p.enfermedad_principal) &&
+    (!genero || p.sexo === genero) &&
+    (!edadMin || p.edad >= edadMin) &&
+    (!edadMax || p.edad <= edadMax)
+  );
+
+  // Métricas y agregados
+  const cohortes = {};
+  cohSel.forEach(c => {
+    const subset = filtrados.filter(p => p.enfermedad_principal === c);
+    if (!subset.length) return;
+    const mujeres = subset.filter(p => p.sexo === "F").length;
+    const fumadores = subset.filter(p => p.fumador === "Sí").length;
+    const ids = subset.map(p => p.patient_id);
+    const medsSubset = meds.filter(m => ids.includes(m.patient_id));
+    const adherenciaMedia = medsSubset.length ? medsSubset.reduce((a,b)=>a+(+b.adherencia||0),0)/medsSubset.length : 0;
+    cohortes[c] = {
+      n: subset.length,
+      edad: subset.reduce((a,b)=>a+b.edad,0)/subset.length,
+      imc: subset.reduce((a,b)=>a+(+b.IMC||0),0)/subset.length,
+      mujeres: (mujeres/subset.length)*100,
+      fumadores: (fumadores/subset.length)*100,
+      adherencia: adherenciaMedia
+    };
   });
-}
 
-async function generarInforme(){
-  const cohortes=Array.from(document.getElementById("selCohortes").selectedOptions).map(o=>o.value);
-  if(!cohortes.length) return alert("Selecciona al menos una cohorte.");
-
-  const genero=document.getElementById("fGenero").value.trim();
-  const edadMin=+document.getElementById("fEdadMin").value||null;
-  const edadMax=+document.getElementById("fEdadMax").value||null;
-  const imcMin=+document.getElementById("fIMC").value||null;
-
-  const { data: todos } = await supabase.from("pacientes").select("*");
-
+  // Render
   document.getElementById("informe").classList.remove("hidden");
-  document.getElementById("resumen").innerHTML="";
-  document.getElementById("graficos").innerHTML="";
-  document.getElementById("tablaContainer").innerHTML="";
-  document.getElementById("interpretacion").classList.add("hidden");
-  charts.forEach(c=>c.destroy());
+  renderResumen(cohortes);
+  renderTabla(cohortes);
+  renderGraficos(cohortes, meds, filtrados);
+  renderInterpretacion(cohortes);
+}
 
-  const resumen=[];
-  for(const enf of cohortes){
-    const { data: p }=await supabase.from("pacientes").select("*").ilike("enfermedad_principal",`%${enf}%`);
-    const pacientes=filtrar(p,genero,edadMin,edadMax,imcMin);
-    const edad=promedio(pacientes.map(x=>x.edad));
-    const imc=promedio(pacientes.map(x=>x.IMC));
-    const fem=pacientes.filter(x=>x.sexo?.toLowerCase().startsWith("f")).length;
-    const fum=pacientes.filter(x=>x.fumador==="Sí"||x.fumador==="si").length;
-    const riesgo=promedio(pacientes.map(x=>parseFloat(x.gravedad_score||0)));
-    resumen.push({cohorte:enf,n:pacientes.length,edad,imc,fem,porFem:(fem/pacientes.length*100).toFixed(1),fum:(fum/pacientes.length*100).toFixed(1),riesgo});
-  }
+function renderResumen(cohortes){
+  const div = document.getElementById("resumenCohortes");
+  div.innerHTML = Object.entries(cohortes).map(([c,v])=>`
+    <div class='card'>
+      <h3 class='font-semibold text-[var(--verde)] text-sm mb-1'>${c}</h3>
+      <p class='text-sm text-gray-600'>Pacientes: <b>${v.n}</b><br>
+      Edad media: ${v.edad.toFixed(1)} | IMC: ${v.imc.toFixed(1)}</p>
+    </div>`).join("");
+}
 
-  resumen.forEach(r=>{
-    document.getElementById("resumen").innerHTML+=`
-      <div class="card"><h3>${r.cohorte}</h3>
-      <p><b>${r.n}</b> pacientes</p>
-      <p>Edad media: ${r.edad} · IMC: ${r.imc}</p></div>`;
+function renderTabla(cohortes){
+  const tbody=document.querySelector("#tablaComparativa tbody");
+  tbody.innerHTML=Object.entries(cohortes).map(([c,v])=>`
+    <tr><td>${c}</td><td>${v.n}</td><td>${v.edad.toFixed(1)}</td><td>${v.imc.toFixed(1)}</td>
+    <td>${v.mujeres.toFixed(1)}%</td><td>${v.fumadores.toFixed(1)}%</td><td>${v.adherencia.toFixed(1)}%</td></tr>`).join("");
+}
+
+function renderGraficos(cohortes, meds, filtrados){
+  const ctxMeds=document.getElementById("graficoMeds");
+  const ctxAdh=document.getElementById("graficoAdherencia");
+
+  // Medicaciones top
+  const medsAll=meds.filter(m=>filtrados.some(p=>p.patient_id===m.patient_id));
+  const counts={};
+  medsAll.forEach(m=>counts[m.principio_activo]=(counts[m.principio_activo]||0)+1);
+  const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const labels=top.map(t=>t[0]), valores=top.map(t=>t[1]);
+
+  if(chartMeds)chartMeds.destroy();
+  chartMeds=new Chart(ctxMeds,{
+    type:'bar',
+    data:{labels,datasets:[{data:valores,backgroundColor:'#3d7658'}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}
   });
 
-  const labels=resumen.map(r=>r.cohorte);
-  const metricas=[
-    {titulo:"Edad media",data:resumen.map(r=>r.edad)},
-    {titulo:"IMC medio",data:resumen.map(r=>r.imc)},
-    {titulo:"% Mujeres",data:resumen.map(r=>r.porFem)},
-    {titulo:"% Fumadores",data:resumen.map(r=>r.fum)},
-    {titulo:"Riesgo clínico medio",data:resumen.map(r=>r.riesgo)}
-  ];
-
-  metricas.forEach(m=>{
-    const c=document.createElement("canvas");
-    document.getElementById("graficos").appendChild(c);
-    const g=new Chart(c,{
-      type:"bar",
-      data:{labels,datasets:[{label:m.titulo,data:m.data,backgroundColor:"#4fa87b",borderRadius:6}]},
-      options:{plugins:{legend:{display:false},title:{display:true,text:m.titulo,color:"#1e604a",font:{size:13}}},scales:{y:{beginAtZero:true},x:{ticks:{font:{size:10}}}}}
-    });
-    charts.push(g);
+  // Adherencia
+  if(chartAdh)chartAdh.destroy();
+  chartAdh=new Chart(ctxAdh,{
+    type:'bar',
+    data:{
+      labels:Object.keys(cohortes),
+      datasets:[{label:'Adherencia (%)',data:Object.values(cohortes).map(v=>v.adherencia.toFixed(1)),backgroundColor:'#4ba67d'}]
+    },
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100}}}
   });
+}
 
-  // Interpretación automática
-  const mayorEdad = resumen.reduce((a,b)=>a.edad>b.edad?a:b);
-  const mayorIMC = resumen.reduce((a,b)=>a.imc>b.imc?a:b);
-  const mayorRiesgo = resumen.reduce((a,b)=>a.riesgo>b.riesgo?a:b);
-  document.getElementById("interpretacion").innerHTML=`
-    <b>Interpretación automática:</b><br>
-    La cohorte con mayor edad media es <b>${mayorEdad.cohorte}</b> (${mayorEdad.edad} años),
-    mientras que el mayor IMC promedio se observa en <b>${mayorIMC.cohorte}</b>.
-    En cuanto al riesgo clínico, destaca <b>${mayorRiesgo.cohorte}</b> con una puntuación media de ${mayorRiesgo.riesgo}.
-    Estos resultados sugieren posibles diferencias en la composición demográfica y el control clínico de las cohortes seleccionadas.`;
-  document.getElementById("interpretacion").classList.remove("hidden");
-
-  // Tabla
-  document.getElementById("tablaContainer").innerHTML=`
-    <table class="table-custom">
-      <thead><tr><th>Cohorte</th><th>Pacientes</th><th>Edad</th><th>IMC</th><th>% Mujeres</th><th>% Fumadores</th><th>Riesgo</th></tr></thead>
-      <tbody>${resumen.map(r=>`
-        <tr><td>${r.cohorte}</td><td>${r.n}</td><td>${r.edad}</td><td>${r.imc}</td>
-        <td>${r.porFem}%</td><td>${r.fum}%</td><td>${r.riesgo}</td></tr>`).join("")}</tbody>
-    </table>`;
+function renderInterpretacion(cohortes){
+  const keys=Object.keys(cohortes);
+  if(keys.length<1)return;
+  const maxAdh=keys.reduce((a,b)=>cohortes[a].adherencia>cohortes[b].adherencia?a:b);
+  const maxIMC=keys.reduce((a,b)=>cohortes[a].imc>cohortes[b].imc?a:b);
+  document.getElementById("interpretacion").textContent=
+    `La cohorte con mayor adherencia al tratamiento es ${maxAdh} (${cohortes[maxAdh].adherencia.toFixed(1)}%). `+
+    `El IMC medio más alto se observa en ${maxIMC} (${cohortes[maxIMC].imc.toFixed(1)}). `+
+    `Estos resultados sugieren diferencias potenciales en los hábitos y seguimiento terapéutico entre cohortes.`;
 }
 
 async function descargarPDF(){
-  const { jsPDF }=window.jspdf;
-  const pdf=new jsPDF("p","mm","a4");
-  const elem=document.querySelector("main");
-  await html2canvas(elem,{scale:2}).then(canvas=>{
-    const img=canvas.toDataURL("image/png");
-    const w=pdf.internal.pageSize.getWidth();
-    const h=canvas.height*w/canvas.width;
-    pdf.addImage(img,"PNG",0,0,w,h);
-    pdf.save("Informe_Clinico.pdf");
-  });
+  const doc=new jspdf.jsPDF('p','pt','a4');
+  const elem=document.getElementById('informe');
+  const canvas=await html2canvas(elem,{scale:2});
+  const img=canvas.toDataURL('image/png');
+  const imgWidth=550;
+  const pageHeight=800;
+  const imgHeight=canvas.height*imgWidth/canvas.width;
+  let heightLeft=imgHeight;
+  let position=20;
+  doc.addImage(img,'PNG',30,position,imgWidth,imgHeight);
+  doc.save('informe_clinico.pdf');
 }
 </script>
-</main>
 </body>
 </html>
