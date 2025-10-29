@@ -17,23 +17,18 @@ header h1{color:var(--verde);display:flex;align-items:center;gap:8px;font-size:1
 header button{background:var(--verde);color:white;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;}
 header button:hover{background:var(--verde-oscuro);}
 
-/* --- INICIO CAMBIO: CSS RESPONSIVE --- */
+/* --- INICIO CAMBIO: CSS Fijo 50/50 --- */
 main{
     flex:1;
     display:grid;
-    /* Por defecto (móvil), una sola columna */
-    grid-template-columns: 1fr;
+    /* Forzamos 2 columnas siempre */
+    grid-template-columns: 1fr 1fr;
     gap:20px;
     padding:20px;
     min-height:0;
 }
 
-/* En pantallas de más de 900px, dos columnas */
-@media (min-width: 900px) {
-    main {
-        grid-template-columns: 1fr 1fr;
-    }
-}
+/* Se elimina el @media query para que sea fijo */
 
 .chat-box,.tabla-box{
     background:var(--card);
@@ -171,7 +166,7 @@ const webhookEnviarGmail = "https://rubaseval.app.n8n.cloud/webhook/enviar-gmail
 // --- Fin URLs Webhooks ---
 
 const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
+const supabaseKey = "eyJhbGciOiJIZzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let ultimaConsulta = "";
@@ -434,7 +429,7 @@ async function manejarGrafico(tipo) {
 }
 
 async function renderChartFromSQL(sql, xField, yField, chartType) {
-   try {
+  try {
     const { data, error } = await supabase.rpc("execute_sql_query", { query: sql });
     if (error || !data?.length) {
       appendMessage("bot", "Sin resultados en la consulta para graficar.");
@@ -480,7 +475,7 @@ async function renderChartFromSQL(sql, xField, yField, chartType) {
 }
 
 async function enviarDataset() {
-  if (!ultimaConsultaSQL) {
+  if (!ultimaConsultaSQL) {
     appendMessage("bot", "No hay SQL disponible para enviar.");
     return;
   }
@@ -559,7 +554,7 @@ async function handleGmailGeneration(consulta) {
       
       if (sendButton) {
         // Pasa el ID del botón y el cuerpo del email (data.gmail)
-        sendButton.addEventListener("click", () => handleSendGmail(uniqueButtonTid, data.gmail));
+        sendButton.addEventListener("click", () => handleSendGmail(uniqueButtonId, data.gmail));
       }
 
     } else {
