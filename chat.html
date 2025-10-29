@@ -75,7 +75,7 @@ button.action:hover{background:var(--verde-oscuro);}
 /* Estilo para el botón de grabar */
 button.action.is-recording {
     background: #e74c3c; /* Rojo mientras graba */
-    animation: pulse 1.5s infinite;
+    animation: pulse 1.s infinite;
 }
 
 @keyframes pulse {
@@ -86,7 +86,7 @@ button.action.is-recording {
 /* --- FIN CSS de Audio --- */
 
 table{width:100%;border-collapse:collapse;margin-top:10px;font-size:0.9rem;}
-th,td{border:1px solid #ddd;padding:10px;text-align:left;}
+th,td{border:1px solid #ddd;padding:10px;text-align:left; white-space: nowrap;}
 
 /* Encabezado de tabla fijo */
 th{
@@ -138,16 +138,27 @@ tr:nth-child(even){background:#f5f7f5;}
     flex-direction: column;
     min-height: 0; /* Para que funcione el overflow en flex */
 }
-#closeDatasetModal {
-    background: var(--verde);
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 6px;
-    cursor: pointer;
+
+/* NUEVO: Header del Modal con botones */
+.modal-header-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
     margin-bottom: 10px;
-    align-self: flex-end; /* Se alinea a la derecha */
+    flex-shrink: 0;
 }
+.modal-header-controls h2 {
+    margin: 0;
+    text-align: left;
+}
+.modal-header-controls div {
+    display: flex;
+    gap: 10px;
+}
+/* Los botones #downloadCsvBtn y #closeDatasetModal usan .btn-chart, .btn-alt, .btn-rec */
+/* FIN: Header del Modal */
+
 #datasetInfoContainer {
     text-align: center;
     font-size: 0.95rem;
@@ -231,8 +242,16 @@ pre.debug{background:#222;color:#e3e3e3;padding:10px;border-radius:8px;overflow:
 <!-- --- INICIO: NUEVO HTML PARA MODAL DE DATASET --- -->
 <div id="datasetModal">
   <div id="datasetModalContent">
-    <button id="closeDatasetModal">Cerrar</button>
-    <h2>Dataset Completo</h2>
+    <!-- INICIO: Contenedor para botones/título del modal -->
+    <div class="modal-header-controls">
+        <h2>Dataset Completo</h2>
+        <div>
+            <!-- NUEVO BOTÓN CSV -->
+            <button id="downloadCsvBtn" class="btn-chart btn-alt">Descargar CSV</button>
+            <button id="closeDatasetModal" class="btn-chart btn-rec">Cerrar</button>
+        </div>
+    </div>
+    <!-- FIN: Contenedor para botones/título del modal -->
     <div id="datasetInfoContainer">Cargando...</div>
     <div id="datasetTableWrapper">
         <!-- La tabla completa se generará aquí -->
@@ -264,6 +283,13 @@ let ultimaConsultaSQL = "";
 let ultimaX = "";
 let ultimaY = "";
 let chartInstance = null;
+
+// --- INICIO: NUEVAS VARIABLES GLOBALES PARA CSV ---
+let currentDataset = {
+    columns: [],
+    rows: []
+};
+// --- FIN: NUEVAS VARIABLES GLOBALES PARA CSV ---
 
 // --- INICIO NUEVAS VARIABLES AUDIO ---
 let mediaRecorder;
@@ -451,12 +477,39 @@ async function sendAudio(audioBlob) {
 // --- FIN NUEVAS FUNCIONES DE AUDIO ---
 
 
+// --- FUNCIÓN renderMarkdownTable (CORREGIDA Y ROBUSTA) ---
 function renderMarkdownTable(tituloCohorte, tablaString, mensajeTotal) {
   const lines = tablaString.trim().split("\n").filter(l => l.includes("|"));
   if (lines.length < 2) return;
 
-  const headers = lines[0].split("|").map(h => h.trim()).filter(Boolean);
-  const rows = lines.slice(2).map(line => line.split("|").map(c => c.trim()).filter(Boolean));
+  /**
+   * Helper robusto para parsear una fila de Markdown.
+   * Divide por "|", quita espacios y elimina los elementos vacíos ("")
+   * que se generan por los pipes "|" al inicio o al final.
+   * @param {string} line - La línea de texto de la tabla.
+   * @returns {string[]} Un array de celdas limpias.
+   */
+  function parseRow(line) {
+      const cells = line.split("|").map(c => c.trim());
+      // Si la línea empieza con "|", el primer elemento es "". Lo quitamos.
+      if (cells[0] === "") {
+          cells.shift();
+      }
+      // Si la línea termina con "|", el último elemento es "". Lo quitamos.
+      if (cells.length > 0 && cells[cells.length - 1] === "") {
+          cells.pop();
+      }
+      return cells;
+  }
+
+  // Parseamos los headers y los filtramos (los headers no pueden estar vacíos)
+  const headers = parseRow(lines[0]).filter(Boolean);
+  
+  // Parseamos las filas. Usamos la misma lógica, pero NO filtramos
+  // para poder conservar celdas de datos vacías (ej: pronostico).
+  const rows = lines.slice(2).map(line => parseRow(line));
+  
+  // --- FIN DE LA CORRECCIÓN ---
 
   let html = "";
   if (tituloCohorte) {
@@ -608,6 +661,12 @@ function renderDatasetModal(data) {
         // Parsear los datos anidados
         const columns = JSON.parse(data.columns);
         const rows = JSON.parse(data.rows);
+
+        // --- INICIO: GUARDAR DATOS PARA CSV ---
+        currentDataset.columns = columns;
+        currentDataset.rows = rows;
+        // --- FIN: GUARDAR DATOS PARA CSV ---
+
         const total = data.total_registros || (rows ? rows.length : 0);
         const sql = data.sql || "No se proporcionó SQL.";
 
@@ -660,6 +719,51 @@ document.getElementById("closeDatasetModal").addEventListener("click", () => {
   document.getElementById('datasetInfoContainer').innerHTML = "Cargando...";
 });
 // --- FIN: NUEVO LISTENER PARA CERRAR EL MODAL DEL DATASET ---
+
+// --- INICIO: NUEVA FUNCIÓN Y LISTENER PARA DESCARGAR CSV ---
+function downloadCSV() {
+    const { columns, rows } = currentDataset;
+    if (columns.length === 0 || rows.length === 0) {
+        appendMessage("bot", "No hay datos para descargar.");
+        return;
+    }
+
+    // Función para escapar celdas de CSV
+    const escapeCsvCell = (cell) => {
+        let str = String(cell === null ? "" : cell);
+        // Si la celda contiene comas, comillas dobles o saltos de línea, envolver entre comillas dobles
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+            // Escapar comillas dobles existentes (reemplazando " por "")
+            str = str.replace(/"/g, '""');
+            str = `"${str}"`;
+        }
+        return str;
+    };
+
+    // 1. Crear la fila de cabecera
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += columns.map(escapeCsvCell).join(",") + "\r\n";
+
+    // 2. Crear las filas de datos
+    rows.forEach(row => {
+        csvContent += row.map(escapeCsvCell).join(",") + "\r\n";
+    });
+
+    // 3. Crear el enlace y disparar la descarga
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "cohortiq_dataset.csv");
+    document.body.appendChild(link); // Necesario para Firefox
+    
+    link.click();
+    
+    document.body.removeChild(link);
+}
+
+// Añadir el listener al nuevo botón
+document.getElementById("downloadCsvBtn").addEventListener("click", downloadCSV);
+// --- FIN: NUEVA FUNCIÓN Y LISTENER PARA DESCARGAR CSV ---
 
 
 // --- INICIO FUNCIONES GMAIL ---
