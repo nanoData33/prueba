@@ -291,6 +291,11 @@ let currentDataset = {
 };
 // --- FIN: NUEVAS VARIABLES GLOBALES PARA CSV ---
 
+// --- INICIO: NUEVAS VARIABLES PARA MEMORIA ---
+let conversationHistory = [];
+const MAX_HISTORY_TURNS = 5; // 5 turnos (user + bot) = 10 items
+// --- FIN: NUEVAS VARIABLES PARA MEMORIA ---
+
 // --- INICIO NUEVAS VARIABLES AUDIO ---
 let mediaRecorder;
 let audioChunks = [];
@@ -326,11 +331,24 @@ async function sendText() {
   input.value = "";
   appendMessage("bot", "Consultando al agente...");
 
+  // --- INICIO CAMBIO MEMORIA ---
+  // 1. Prepara el historial de USUARIO para enviar
+  const userHistoryString = getFormattedUserHistoryString();
+  
+  // 2. Añade el mensaje actual del usuario al historial local
+  conversationHistory.push({ role: "user", content: text });
+  // --- FIN CAMBIO MEMORIA ---
+
   try {
     const res = await fetch(webhookText, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({type:"text", content:text})
+      // 3. Envía la consulta actual Y el historial de usuario
+      body: JSON.stringify({
+          type:"text", 
+          content: text, // Consulta actual
+          history: userHistoryString // Historial de usuario formateado
+      })
     });
     
     const rawResponse = await res.text();
@@ -343,27 +361,42 @@ async function sendText() {
     document.querySelector(".msg.bot:last-child").remove();
 
     let hasHandled = false; 
+    let botResponseContent = ""; // Para guardar la respuesta del bot
 
     if (data.tabla) {
       renderMarkdownTable(data.cohorte, data.tabla, data.n_total);
       ultimaConsulta = data.consulta || "";
       ultimaConsultaSQL = data.sql || "";
       hasHandled = true;
+      botResponseContent = `Tabla: ${data.cohorte}\n${data.tabla}`; 
     }
 
     if (data.gmail && data.gmail === "True" && data.consulta) {
       renderGmailButton(data.consulta);
       hasHandled = true;
+      if (!botResponseContent) botResponseContent = "Acción de Gmail sugerida.";
     }
 
     if (data.respuesta && !data.tabla) {
       appendMessage("bot", data.respuesta);
       hasHandled = true;
+      botResponseContent = data.respuesta;
     } 
     
     if (!hasHandled) {
       appendMessage("bot", "No se ha encontrado información.");
+      botResponseContent = "No se ha encontrado información.";
     }
+
+    // --- INICIO CAMBIO MEMORIA ---
+    // 4. Añade la respuesta del bot al historial local
+    if (botResponseContent) {
+        conversationHistory.push({ role: "bot", content: botResponseContent });
+    }
+
+    // 5. Llama a la función de limpieza
+    pruneHistory();
+    // --- FIN CAMBIO MEMORIA ---
 
   } catch (err) {
     console.error("Error en sendText:", err);
@@ -427,6 +460,11 @@ async function sendAudio(audioBlob) {
     const formData = new FormData();
     formData.append('file', audioBlob, 'audio.webm'); 
 
+    // --- INICIO CAMBIO MEMORIA ---
+    // 1. Añade el historial de USUARIO formateado al FormData
+    formData.append('history', getFormattedUserHistoryString());
+    // --- FIN CAMBIO MEMORIA ---
+
     const res = await fetch(webhookText, {
       method: "POST",
       body: formData
@@ -442,31 +480,50 @@ async function sendAudio(audioBlob) {
     document.querySelector(".msg.bot:last-child").remove();
 
     let hasHandled = false; 
+    let botResponseContent = ""; // Para guardar la respuesta
 
     if (data.consulta) {
         appendMessage("user", `[Audio] ${data.consulta}`);
         ultimaConsulta = data.consulta;
+        // --- INICIO CAMBIO MEMORIA ---
+        // 2. Añade la transcripción del usuario al historial local
+        conversationHistory.push({ role: "user", content: data.consulta });
+        // --- FIN CAMBIO MEMORIA ---
     }
 
     if (data.tabla) {
       renderMarkdownTable(data.cohorte, data.tabla, data.n_total);
       ultimaConsultaSQL = data.sql || "";
       hasHandled = true;
+      botResponseContent = `Tabla: ${data.cohorte}\n${data.tabla}`;
     }
 
     if (data.gmail && data.gmail === "True") {
       renderGmailButton(data.consulta || "Acción de audio"); 
       hasHandled = true;
+      if (!botResponseContent) botResponseContent = "Acción de Gmail sugerida.";
     }
 
     if (data.respuesta && !data.tabla) {
       appendMessage("bot", data.respuesta);
       hasHandled = true;
+      botResponseContent = data.respuesta;
     } 
     
     if (!hasHandled) {
       appendMessage("bot", "No se ha encontrado información.");
+      botResponseContent = "No se ha encontrado información.";
     }
+
+    // --- INICIO CAMBIO MEMORIA ---
+    // 3. Añade la respuesta del bot al historial local
+    if (botResponseContent) {
+        conversationHistory.push({ role: "bot", content: botResponseContent });
+    }
+    
+    // 4. Llama a la función de limpieza
+    pruneHistory();
+    // --- FIN CAMBIO MEMORIA ---
 
   } catch (err) {
     console.error("Error en sendAudio:", err);
@@ -475,6 +532,36 @@ async function sendAudio(audioBlob) {
   }
 }
 // --- FIN NUEVAS FUNCIONES DE AUDIO ---
+
+// --- INICIO: NUEVA FUNCIÓN PARA MEMORIA (Formateo de USUARIO) ---
+function getFormattedUserHistoryString() {
+    // Filtra solo las consultas del usuario
+    const userHistory = conversationHistory.filter(item => item.role === 'user');
+    
+    if (userHistory.length === 0) {
+        return "Consultas anteriores: (ninguna)"; // Devuelve un string, no un objeto
+    }
+    
+    let historyString = "Consultas anteriores:\n";
+    userHistory.forEach(item => {
+        // Limpiamos los saltos de línea
+        const cleanContent = (item.content || "").replace(/\n/g, ' ');
+        historyString += `- ${cleanContent}\n`;
+    });
+    return historyString;
+}
+// --- FIN: NUEVA FUNCIÓN PARA MEMORIA (Formateo de USUARIO) ---
+
+// --- INICIO: NUEVA FUNCIÓN PARA MEMORIA ---
+function pruneHistory() {
+    // MAX_HISTORY_TURNS = 5. (5 user + 5 bot = 10 items)
+    const maxItems = MAX_HISTORY_TURNS * 2; 
+    while (conversationHistory.length > maxItems) {
+        // Quita el elemento más antiguo (primero)
+        conversationHistory.shift(); 
+    }
+}
+// --- FIN: NUEVA FUNCIÓN PARA MEMORIA ---
 
 
 // --- FUNCIÓN renderMarkdownTable (CORREGIDA Y ROBUSTA) ---
@@ -530,7 +617,10 @@ function renderMarkdownTable(tituloCohorte, tablaString, mensajeTotal) {
   
   document.getElementById("tablaContainer").innerHTML = html;
   // IMPORTANTE: Se añade el listener aquí, después de crear el botón
-  document.getElementById("verDatasetBtn").addEventListener("click", enviarDataset);
+  const btn = document.getElementById("verDatasetBtn");
+  if (btn) {
+      btn.addEventListener("click", enviarDataset);
+  }
 }
 
 function renderChartButtonsInChat() {
@@ -635,7 +725,7 @@ async function enviarDataset() {
     const data = await res.json();
     
     // Quita el mensaje "Cargando..."
-    document.querySelector(".msg.bot:last-child").remove(); 
+    document.querySelector(".msg.bot:last-child")?.remove(); 
     
     // Llama a la nueva función para renderizar el modal
     renderDatasetModal(data);
@@ -659,8 +749,8 @@ function renderDatasetModal(data) {
 
     try {
         // Parsear los datos anidados
-        const columns = JSON.parse(data.columns);
-        const rows = JSON.parse(data.rows);
+        const columns = (data.columns && JSON.parse(data.columns)) || [];
+        const rows = (data.rows && JSON.parse(data.rows)) || [];
 
         // --- INICIO: GUARDAR DATOS PARA CSV ---
         currentDataset.columns = columns;
@@ -804,7 +894,7 @@ async function handleGmailGeneration(consulta) {
     });
 
     const data = await res.json();
-    document.querySelector(".msg.bot:last-child").remove(); 
+    document.querySelector(".msg.bot:last-child")?.remove(); 
 
     if (data.gmail) {
       const uniqueButtonId = `enviar-btn-${Date.now()}`;
@@ -830,7 +920,7 @@ async function handleGmailGeneration(consulta) {
     }
 
   } catch (err) {
-    document.querySelector(".msg.bot:last-child")?.remove();
+    document.querySelector(".msg.bot:last-admin")?.remove();
     console.error("Error en handleGmailGeneration:", err);
     appendMessage("bot", "Error al conectar con el servicio de Gmail.");
   }
