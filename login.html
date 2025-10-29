@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login – CohortLab</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root {
+  --verde: #3d7658;
+  --verde-claro: #4ba67d;
+  --gris-fondo: #f8f9f8;
+  --gris-borde: #e5e7eb;
+}
+body {
+  font-family: "Inter", sans-serif;
+  background: var(--gris-fondo);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  padding: 2rem;
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+}
+h1 {
+  color: var(--verde);
+  font-size: 1.6rem;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+}
+input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--gris-borde);
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  outline: none;
+}
+input:focus {
+  border-color: var(--verde);
+}
+button {
+  width: 100%;
+  background: var(--verde);
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: 0.25s;
+}
+button:hover {
+  background: var(--verde-claro);
+}
+.error {
+  color: #b91c1c;
+  background: #fee2e2;
+  padding: 0.5rem;
+  border-radius: 0.4rem;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+</style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>CohortLab</h1>
+    <p class="text-gray-500 mb-6 text-sm">Acceso para profesionales</p>
+
+    <input type="email" id="email" placeholder="Correo electrónico">
+    <input type="password" id="password" placeholder="Contraseña">
+    <button onclick="login()">Iniciar sesión</button>
+
+    <div id="errorMsg" class="error hidden"></div>
+  </div>
+
+<script>
+const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+async function login() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const errorDiv = document.getElementById("errorMsg");
+  errorDiv.classList.add("hidden");
+
+  if (!email || !password) {
+    errorDiv.textContent = "Completa todos los campos.";
+    errorDiv.classList.remove("hidden");
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("medicos")
+    .select("*")
+    .eq("email", email)
+    .eq("password", password)
+    .single();
+
+  if (error || !data) {
+    errorDiv.textContent = "Credenciales incorrectas o usuario no encontrado.";
+    errorDiv.classList.remove("hidden");
+  } else {
+    localStorage.setItem("medico", JSON.stringify({
+      id: data.id,
+      nombre: data.nombre,
+      email: data.email
+    }));
+    window.location.href = "index.html";
+  }
+}
+</script>
+</body>
+</html>
