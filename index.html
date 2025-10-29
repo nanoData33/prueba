@@ -4,15 +4,17 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>CohortLab — Plataforma Inteligente de Investigación Clínica</title>
-<script>
-  if (!localStorage.getItem('medico')) {
-    window.location.href = 'login.html';
-  }
-</script>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+// Redirección si no hay sesión activa
+if (!localStorage.getItem('medico')) {
+  window.location.href = 'login.html';
+}
+</script>
 
 <style>
 :root {
@@ -114,14 +116,21 @@ header {
 
 <body>
 <header class="w-full flex justify-between items-center px-10 py-4">
-  <h1 class="flex items-center gap-2 text-xl font-semibold text-[var(--verde)]">
+  <div class="flex items-center gap-2 text-xl font-semibold text-[var(--verde)]">
     <i data-lucide="flask-conical"></i>
     CohortLab
-    <span class="text-gray-500 text-sm font-normal">Clinical Research Assistant</span>
-  </h1>
-  <a href="chat.html" class="btn-main flex items-center gap-2">
-    <i data-lucide="bot"></i> Asistente Conversacional
-  </a>
+    <span class="text-gray-500 text-sm font-normal">Plataforma Inteligente de Investigación Clínica</span>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <span id="nombre-medico" class="text-gray-600 font-medium"></span>
+    <a href="chat.html" class="btn-main flex items-center gap-2">
+      <i data-lucide="bot"></i> Asistente Conversacional
+    </a>
+    <button id="logout-btn" class="btn-main flex items-center gap-2 bg-[var(--verde)] px-3 py-2 text-sm">
+      <i data-lucide="log-out"></i> Cerrar sesión
+    </button>
+  </div>
 </header>
 
 <section class="hero">
@@ -175,17 +184,40 @@ header {
 
 <script>
 lucide.createIcons();
+
 const supabase = window.supabase.createClient(
   "https://tmolxeszsgkffurhrcxy.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw"
 );
+
+// Mostrar nombre del médico en la esquina superior
+const medico = JSON.parse(localStorage.getItem('medico'));
+if (medico && medico.nombre) {
+  document.getElementById('nombre-medico').textContent = `👩‍⚕️ ${medico.nombre}`;
+}
+
+// Cerrar sesión
+document.getElementById('logout-btn').addEventListener('click', () => {
+  localStorage.removeItem('medico');
+  window.location.href = 'login.html';
+});
+
 async function cargarCohortes() {
-  const c=document.getElementById("cohortes");
-  const {data,error}=await supabase.from("pacientes").select("enfermedad_principal");
-  if(error){c.innerHTML="<p class='text-red-600'>Error al conectar con Supabase.</p>";return;}
-  const conteo={};data.forEach(p=>{const enf=p.enfermedad_principal||"Sin especificar";conteo[enf]=(conteo[enf]||0)+1;});
-  c.innerHTML=Object.entries(conteo).sort((a,b)=>b[1]-a[1]).slice(0,5)
-    .map(([e,t])=>`
+  const c = document.getElementById("cohortes");
+  const { data, error } = await supabase.from("pacientes").select("enfermedad_principal");
+  if (error) {
+    c.innerHTML = "<p class='text-red-600'>Error al conectar con Supabase.</p>";
+    return;
+  }
+  const conteo = {};
+  data.forEach(p => {
+    const enf = p.enfermedad_principal || "Sin especificar";
+    conteo[enf] = (conteo[enf] || 0) + 1;
+  });
+  c.innerHTML = Object.entries(conteo)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([e, t]) => `
       <div class='cohorte'>
         <div>
           <h4 class='font-semibold text-gray-800'>${e}</h4>
