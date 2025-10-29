@@ -17,31 +17,28 @@ header h1{color:var(--verde);display:flex;align-items:center;gap:8px;font-size:1
 header button{background:var(--verde);color:white;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;}
 header button:hover{background:var(--verde-oscuro);}
 
-/* --- INICIO CAMBIO: CSS Fijo 50/50 --- */
-main{
-    flex:1;
-    display:grid;
+main {
+    flex: 1;
+    display: grid;
     /* Forzamos 2 columnas siempre */
     grid-template-columns: 1fr 1fr;
-    gap:20px;
-    padding:20px;
-    min-height:0;
+    gap: 20px;
+    padding: 20px;
+    min-height: 0;
 }
 
 /* Se elimina el @media query para que sea fijo */
 
-.chat-box,.tabla-box{
-    background:var(--card);
-    border-radius:12px;
-    box-shadow:0 4px 10px var(--sombra);
-    padding:20px;
-    display:flex;
-    flex-direction:column;
-    min-height:0; /* Para el scroll vertical */
+.chat-box, .tabla-box {
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: 0 4px 10px var(--sombra);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Para el scroll vertical */
     min-width: 0;  /* Para que el contenido no rompa el grid */
 }
-/* --- FIN CAMBIO --- */
-
 
 /* --- CSS para layout 50/50 --- */
 #tablaContainer {
