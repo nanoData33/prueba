@@ -17,18 +17,25 @@ header h1{color:var(--verde);display:flex;align-items:center;gap:8px;font-size:1
 header button{background:var(--verde);color:white;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;}
 header button:hover{background:var(--verde-oscuro);}
 
-/* --- INICIO CAMBIO: CSS Fijo 50/50 (CORREGIDO) --- */
+/* --- INICIO CAMBIO: CSS Responsivo (Móvil/Desktop) --- */
 main {
     flex: 1;
-    display: grid;
-    /* Forzamos 2 columnas siempre */
-    grid-template-columns: 1fr 1fr;
+    display: flex; /* Por defecto, apilado vertical (móvil) */
+    flex-direction: column; 
     gap: 20px;
     padding: 20px;
     min-height: 0;
 }
 
-/* Se elimina el @media query para que sea fijo */
+/* En pantallas grandes (tablets/escritorio), usamos el grid 50/50 */
+@media (min-width: 768px) {
+    main {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+}
+/* --- FIN CAMBIO --- */
+
 .chat-box, .tabla-box {
     background: var(--card);
     border-radius: 12px;
@@ -39,7 +46,6 @@ main {
     min-height: 0; /* Para el scroll vertical */
     min-width: 0;  /* Para que el contenido no rompa el grid */
 }
-/* --- FIN CAMBIO --- */
 
 
 /* --- CSS para layout 50/50 --- */
@@ -51,13 +57,13 @@ main {
 
 h2{text-align:center;color:var(--verde);margin:0 0 10px;}
 .messages{flex:1;overflow:auto;background:#f8faf8;border-radius:10px;padding:15px;margin-bottom:10px;}
-.msg{margin-bottom:12px;padding:12px 15px;border-radius:12px;max-width:100%;}
+.msg{margin-bottom:12px;padding:12px 15px;border-radius:12px;max-width:100%;word-wrap:break-word;}
 .msg.user{background:var(--verde);color:white;align-self:flex-end;}
-.msg.bot{background:#e8f3e8;white-space:pre-wrap;}
+.msg.bot{background:#e8f3e8;white-space:pre-wrap;align-self:flex-start;}
 
 /* --- CSS de Audio --- */
 .input-area{display:flex;gap:10px;}
-input{flex:1;padding:10px;border:1px solid #ccc;border-radius:10px;}
+input{flex:1;padding:10px;border:1px solid #ccc;border-radius:10px;min-width:0;}
 button.action{
     background:var(--verde);
     color:white;
@@ -75,7 +81,7 @@ button.action:hover{background:var(--verde-oscuro);}
 /* Estilo para el botón de grabar */
 button.action.is-recording {
     background: #e74c3c; /* Rojo mientras graba */
-    animation: pulse 1.s infinite;
+    animation: pulse 1.5s infinite;
 }
 
 @keyframes pulse {
@@ -86,7 +92,8 @@ button.action.is-recording {
 /* --- FIN CSS de Audio --- */
 
 table{width:100%;border-collapse:collapse;margin-top:10px;font-size:0.9rem;}
-th,td{border:1px solid #ddd;padding:10px;text-align:left; white-space: nowrap;}
+/* Se añade white-space:nowrap para forzar el scroll horizontal en tablas */
+th,td{border:1px solid #ddd;padding:10px;text-align:left; white-space: nowrap;} 
 
 /* Encabezado de tabla fijo */
 th{
@@ -107,97 +114,74 @@ tr:nth-child(even){background:#f5f7f5;}
 #verDatasetBtn:hover{background:var(--verde-oscuro);}
 
 /* Modal de Gráfico */
-#chartModal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:9999;}
+#chartModal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:9999;padding:10px;}
 #chartModalContent{background:white;padding:20px;border-radius:10px;width:90%;max-width:900px;box-shadow:0 0 10px rgba(0,0,0,0.3);}
 #closeModal{background:var(--verde);color:white;border:none;padding:8px 12px;border-radius:6px;float:right;cursor:pointer;margin-bottom:10px;}
 #chartWrap{width:100%;height:440px;}
 #chartWrap canvas{width:100%!important;height:100%!important;}
 
-/* --- INICIO: NUEVOS ESTILOS PARA MODAL DE DATASET --- */
-#datasetModal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.6);
-    display: none; /* Oculto por defecto */
-    align-items: center;
-    justify-content: center;
-    z-index: 10000; /* Por encima del modal de gráfico */
+/* --- INICIO: Nuevo Modal de Dataset --- */
+#datasetModal{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.6);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:9998; /* Un poco menos que el de gráfico */
+    padding: 10px; /* Margen para pantallas pequeñas */
 }
-#datasetModalContent {
-    background: white;
+#datasetModalContent{
+    background:white;
+    border-radius:10px;
+    width:95%; /* Más ancho en móviles */
+    max-width:1400px; /* Límite en escritorio */
+    height: 90%; /* Ocupa casi toda la altura */
+    box-shadow:0 0 10px rgba(0,0,0,0.3);
+    display:flex;
+    flex-direction:column; /* Para apilar header, info, tabla */
     padding: 20px;
-    border-radius: 10px;
-    width: 90%;  /* Más ancho */
-    height: 90%; /* Más alto */
-    max-width: 1400px; /* Límite más grande */
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
-    display: flex;
-    flex-direction: column;
-    min-height: 0; /* Para que funcione el overflow en flex */
 }
-
-/* NUEVO: Header del Modal con botones */
-.modal-header-controls {
+#datasetModalHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
-    margin-bottom: 10px;
-    flex-shrink: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+    margin-bottom: 5px;
 }
-.modal-header-controls h2 {
+#datasetModalHeader h2 {
     margin: 0;
     text-align: left;
+    font-size: 1.2rem;
 }
-.modal-header-controls div {
-    display: flex;
-    gap: 10px;
+#datasetModalHeader .btn-group {
+    margin-top: 0;
 }
-/* Los botones #downloadCsvBtn y #closeDatasetModal usan .btn-chart, .btn-alt, .btn-rec */
-/* FIN: Header del Modal */
-
-#datasetInfoContainer {
+#datasetInfo {
     text-align: center;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: #555;
     margin-bottom: 15px;
     flex-shrink: 0;
-    word-break: break-all;
 }
 #datasetTableWrapper {
-    flex: 1; /* Ocupa el espacio restante */
-    overflow: auto; /* AÑADE SCROLL A LA TABLA */
+    flex: 1; /* Ocupa todo el espacio restante */
+    overflow: auto; /* Añade scroll vertical Y horizontal */
     min-height: 0;
-    width: 100%;
 }
-
-/* Estilos de la tabla dentro del modal */
-#datasetTableWrapper table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9rem;
-}
-#datasetTableWrapper th, 
-#datasetTableWrapper td {
-    border: 1px solid #ddd;
-    padding: 10px;
-    text-align: left;
-    white-space: nowrap; /* Evita que el texto se parta */
-}
-#datasetTableWrapper th {
-    background: var(--verde);
+/* Botones del modal (usamos los genéricos) */
+.btn-modal-close {
+    background: #777;
     color: white;
-    position: sticky; /* Encabezado fijo DENTRO del wrapper */
-    top: 0;
-    z-index: 1;
 }
-#datasetTableWrapper tr:nth-child(even) { 
-    background: #f5f7f5; 
+.btn-modal-close:hover {
+    background: #555;
 }
-/* --- FIN: NUEVOS ESTILOS PARA MODAL DE DATASET --- */
+/* --- FIN: Nuevo Modal de Dataset --- */
 
 
 footer{text-align:center;background:var(--card);padding:8px;color:#555;font-size:0.85rem;}
@@ -211,8 +195,9 @@ pre.debug{background:#222;color:#e3e3e3;padding:10px;border-radius:8px;overflow:
   <button onclick="window.location.href='index.html'">Volver al Inicio</button>
 </header>
 
+<!-- --- INICIO CAMBIO DE ORDEN --- -->
 <main>
-  <!-- Columna de Chat (izquierda) -->
+  <!-- Columna de Chat (ahora a la izquierda) -->
   <div class="chat-box">
     <h2>Chat con el Agente</h2>
     <div id="messages" class="messages"></div>
@@ -223,12 +208,13 @@ pre.debug{background:#222;color:#e3e3e3;padding:10px;border-radius:8px;overflow:
   </div>
   </div>
 
-  <!-- Columna de Resultados (derecha) -->
+  <!-- Columna de Resultados (ahora a la derecha) -->
   <div class="tabla-box">
     <h2>Resultados</h2>
     <div id="tablaContainer">Esperando resultados...</div>
   </div>
 </main>
+<!-- --- FIN CAMBIO DE ORDEN --- -->
 
 
 <!-- Modal gráfico -->
@@ -239,26 +225,30 @@ pre.debug{background:#222;color:#e3e3e3;padding:10px;border-radius:8px;overflow:
   </div>
 </div>
 
-<!-- --- INICIO: NUEVO HTML PARA MODAL DE DATASET --- -->
+<!-- --- INICIO: Nuevo Modal HTML para Dataset --- -->
 <div id="datasetModal">
-  <div id="datasetModalContent">
-    <!-- INICIO: Contenedor para botones/título del modal -->
-    <div class="modal-header-controls">
-        <h2>Dataset Completo</h2>
-        <div>
-            <!-- NUEVO BOTÓN CSV -->
-            <button id="downloadCsvBtn" class="btn-chart btn-alt">Descargar CSV</button>
-            <button id="closeDatasetModal" class="btn-chart btn-rec">Cerrar</button>
+    <div id="datasetModalContent">
+        <!-- Cabecera del Modal -->
+        <div id="datasetModalHeader">
+            <h2><i data-lucide="database" style="width:20px; margin-right: 8px;"></i>Dataset Completo</h2>
+            <div class="btn-group">
+                <button class="btn-chart btn-rec" id="downloadCsvBtn">
+                    <i data-lucide="download" style="width:14px; margin-right: 5px;"></i>Descargar CSV
+                </button>
+                <button class="btn-chart btn-modal-close" id="closeDatasetModal">Cerrar</button>
+            </div>
+        </div>
+        
+        <!-- Info de registros -->
+        <div id="datasetInfo">Cargando...</div>
+        
+        <!-- Contenedor de la tabla con scroll -->
+        <div id="datasetTableWrapper">
+            <!-- La tabla se generará aquí por JS -->
         </div>
     </div>
-    <!-- FIN: Contenedor para botones/título del modal -->
-    <div id="datasetInfoContainer">Cargando...</div>
-    <div id="datasetTableWrapper">
-        <!-- La tabla completa se generará aquí -->
-    </div>
-  </div>
 </div>
-<!-- --- FIN: NUEVO HTML PARA MODAL DE DATASET --- -->
+<!-- --- FIN: Nuevo Modal HTML para Dataset --- -->
 
 
 <footer>© 2025 CohortIQ – Plataforma Inteligente de Apoyo Clínico</footer>
@@ -284,18 +274,6 @@ let ultimaX = "";
 let ultimaY = "";
 let chartInstance = null;
 
-// --- INICIO: NUEVAS VARIABLES GLOBALES PARA CSV ---
-let currentDataset = {
-    columns: [],
-    rows: []
-};
-// --- FIN: NUEVAS VARIABLES GLOBALES PARA CSV ---
-
-// --- INICIO: NUEVAS VARIABLES PARA MEMORIA ---
-let conversationHistory = [];
-const MAX_HISTORY_TURNS = 5; // 5 turnos (user + bot) = 10 items
-// --- FIN: NUEVAS VARIABLES PARA MEMORIA ---
-
 // --- INICIO NUEVAS VARIABLES AUDIO ---
 let mediaRecorder;
 let audioChunks = [];
@@ -303,14 +281,69 @@ let isRecording = false;
 const micBtn = document.getElementById("micBtn");
 // --- FIN NUEVAS VARIABLES AUDIO ---
 
+// --- INICIO: Variables de Memoria ---
+let conversationHistory = [];
+const MAX_HISTORY_TURNS = 5; // 5 turnos (5 user, 5 bot = 10 items)
+// --- FIN: Variables de Memoria ---
+
+// --- INICIO: Variables para CSV ---
+let currentDataset = { columns: [], rows: [] };
+// --- FIN: Variables para CSV ---
+
 
 // Event Listeners (Texto y Enter)
-document.addEventListener("keydown", e => { if (e.key === "Enter") sendText(); });
+document.addEventListener("keydown", e => { if (e.key === "Enter" && document.getElementById("userInput") === document.activeElement) sendText(); });
 document.getElementById("sendBtn").addEventListener("click", sendText);
 
 // --- INICIO NUEVO EVENT LISTENER AUDIO ---
 micBtn.addEventListener("click", toggleRecording);
 // --- FIN NUEVO EVENT LISTENER AUDIO ---
+
+// --- INICIO: Listeners Modales ---
+document.getElementById("closeModal").addEventListener("click", () => {
+  document.getElementById("chartModal").style.display = "none";
+});
+document.getElementById("closeDatasetModal").addEventListener("click", () => {
+    document.getElementById("datasetModal").style.display = "none";
+});
+document.getElementById("downloadCsvBtn").addEventListener("click", downloadCSV);
+// --- FIN: Listeners Modales ---
+
+
+// --- INICIO: Funciones de Memoria ---
+
+/**
+ * Borra el historial antiguo, manteniendo solo los últimos MAX_HISTORY_TURNS
+ */
+function pruneHistory() {
+    const maxItems = MAX_HISTORY_TURNS * 2; // (user + bot)
+    if (conversationHistory.length > maxItems) {
+        // Elimina los items más antiguos del principio del array
+        conversationHistory.splice(0, conversationHistory.length - maxItems);
+    }
+}
+
+/**
+ * Prepara el string de historial SOLO con las consultas del usuario
+ * @returns {string} - El string formateado.
+ */
+function getFormattedUserHistoryString() {
+    // 1. Filtra solo las entradas del usuario
+    const userQueries = conversationHistory
+        .filter(item => item.role === 'user')
+        .map(item => item.content); // 2. Obtiene solo el texto
+    
+    if (userQueries.length === 0) {
+        return ""; // Devuelve vacío si no hay historial
+    }
+    
+    // 3. Formatea el string
+    const header = "Consultas anteriores:\n";
+    const queriesList = userQueries.map(q => `- ${q}`).join("\n");
+    
+    return `${header}${queriesList}`;
+}
+// --- FIN: Funciones de Memoria ---
 
 
 function appendMessage(sender, text, html = false) {
@@ -327,27 +360,25 @@ async function sendText() {
   const input = document.getElementById("userInput");
   const text = input.value.trim();
   if (!text) return;
+
+  // Prepara el historial ANTES de añadir el mensaje actual
+  const historyString = getFormattedUserHistoryString();
+  
+  // Añade el mensaje actual al historial
+  conversationHistory.push({ role: 'user', content: text });
+  
   appendMessage("user", text);
   input.value = "";
-  appendMessage("bot", "Consultando al agente...");
-
-  // --- INICIO CAMBIO MEMORIA ---
-  // 1. Prepara el historial de USUARIO para enviar
-  const userHistoryString = getFormattedUserHistoryString();
-  
-  // 2. Añade el mensaje actual del usuario al historial local
-  conversationHistory.push({ role: "user", content: text });
-  // --- FIN CAMBIO MEMORIA ---
+  const loadingMsg = appendMessage("bot", "Consultando al agente...");
 
   try {
     const res = await fetch(webhookText, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      // 3. Envía la consulta actual Y el historial de usuario
       body: JSON.stringify({
           type:"text", 
-          content: text, // Consulta actual
-          history: userHistoryString // Historial de usuario formateado
+          content: text,
+          history: historyString // Envía el historial de usuario formateado
       })
     });
     
@@ -358,50 +389,50 @@ async function sendText() {
     
     const data = JSON.parse(rawResponse);
 
-    document.querySelector(".msg.bot:last-child").remove();
+    loadingMsg.remove(); // Quita el "Consultando..."
 
     let hasHandled = false; 
-    let botResponseContent = ""; // Para guardar la respuesta del bot
+    let botResponse = ""; // Variable para guardar la respuesta del bot
 
     if (data.tabla) {
       renderMarkdownTable(data.cohorte, data.tabla, data.n_total);
-      ultimaConsulta = data.consulta || "";
+      ultimaConsulta = data.consulta || text; // Usa la consulta reescrita si existe
       ultimaConsultaSQL = data.sql || "";
+      // Prepara una respuesta de bot para el historial
+      botResponse = `[Mostrando tabla para la cohorte: ${data.cohorte || 'Resultados'}]`;
       hasHandled = true;
-      botResponseContent = `Tabla: ${data.cohorte}\n${data.tabla}`; 
     }
 
-    if (data.gmail && data.gmail === "True" && data.consulta) {
-      renderGmailButton(data.consulta);
+    if (data.gmail && data.gmail === "True") {
+      renderGmailButton(data.consulta || text);
+      botResponse = `[Acción sugerida: Generar Gmail]`; // Respuesta para el historial
       hasHandled = true;
-      if (!botResponseContent) botResponseContent = "Acción de Gmail sugerida.";
     }
 
     if (data.respuesta && !data.tabla) {
       appendMessage("bot", data.respuesta);
+      botResponse = data.respuesta; // Respuesta de texto para el historial
       hasHandled = true;
-      botResponseContent = data.respuesta;
     } 
     
     if (!hasHandled) {
-      appendMessage("bot", "No se ha encontrado información.");
-      botResponseContent = "No se ha encontrado información.";
+      const errorTxt = "No se ha encontrado información.";
+      appendMessage("bot", errorTxt);
+      botResponse = errorTxt;
     }
 
-    // --- INICIO CAMBIO MEMORIA ---
-    // 4. Añade la respuesta del bot al historial local
-    if (botResponseContent) {
-        conversationHistory.push({ role: "bot", content: botResponseContent });
-    }
-
-    // 5. Llama a la función de limpieza
-    pruneHistory();
-    // --- FIN CAMBIO MEMORIA ---
+    // Guarda la respuesta del bot (lo que sea) en el historial
+    conversationHistory.push({ role: 'bot', content: botResponse });
+    pruneHistory(); // Limpia el historial si es necesario
 
   } catch (err) {
     console.error("Error en sendText:", err);
-    document.querySelector(".msg.bot:last-child")?.remove();
-    appendMessage("bot", "Error al conectar con el agente. " + err.message);
+    loadingMsg?.remove();
+    const errorTxt = "Error al conectar con el agente. " + err.message;
+    appendMessage("bot", errorTxt);
+    // Guarda el error en el historial para contexto
+    conversationHistory.push({ role: 'bot', content: `[Error: ${err.message}]` });
+    pruneHistory();
   }
 }
 
@@ -454,16 +485,15 @@ function stopRecording() {
 }
 
 async function sendAudio(audioBlob) {
-  appendMessage("bot", "Procesando audio...");
+  const loadingMsg = appendMessage("bot", "Procesando audio...");
+  
+  // Prepara el historial ANTES de enviar
+  const historyString = getFormattedUserHistoryString();
 
   try {
     const formData = new FormData();
     formData.append('file', audioBlob, 'audio.webm'); 
-
-    // --- INICIO CAMBIO MEMORIA ---
-    // 1. Añade el historial de USUARIO formateado al FormData
-    formData.append('history', getFormattedUserHistoryString());
-    // --- FIN CAMBIO MEMORIA ---
+    formData.append('history', historyString); // Añade el historial al FormData
 
     const res = await fetch(webhookText, {
       method: "POST",
@@ -477,150 +507,122 @@ async function sendAudio(audioBlob) {
 
     const data = JSON.parse(rawResponse);
 
-    document.querySelector(".msg.bot:last-child").remove();
+    loadingMsg.remove(); // Quita "Procesando..."
 
     let hasHandled = false; 
-    let botResponseContent = ""; // Para guardar la respuesta
+    let botResponse = ""; // Para el historial
+    let userQuery = "[Consulta de audio]"; // Default por si no viene transcripción
 
     if (data.consulta) {
         appendMessage("user", `[Audio] ${data.consulta}`);
+        userQuery = data.consulta; // Transcripción para el historial
         ultimaConsulta = data.consulta;
-        // --- INICIO CAMBIO MEMORIA ---
-        // 2. Añade la transcripción del usuario al historial local
-        conversationHistory.push({ role: "user", content: data.consulta });
-        // --- FIN CAMBIO MEMORIA ---
     }
+    
+    // Guarda la transcripción del usuario en el historial
+    conversationHistory.push({ role: 'user', content: userQuery });
 
     if (data.tabla) {
       renderMarkdownTable(data.cohorte, data.tabla, data.n_total);
       ultimaConsultaSQL = data.sql || "";
+      botResponse = `[Mostrando tabla para la cohorte: ${data.cohorte || 'Resultados'}]`;
       hasHandled = true;
-      botResponseContent = `Tabla: ${data.cohorte}\n${data.tabla}`;
     }
 
     if (data.gmail && data.gmail === "True") {
       renderGmailButton(data.consulta || "Acción de audio"); 
+      botResponse = `[Acción sugerida: Generar Gmail]`;
       hasHandled = true;
-      if (!botResponseContent) botResponseContent = "Acción de Gmail sugerida.";
     }
 
     if (data.respuesta && !data.tabla) {
       appendMessage("bot", data.respuesta);
+      botResponse = data.respuesta;
       hasHandled = true;
-      botResponseContent = data.respuesta;
     } 
     
     if (!hasHandled) {
-      appendMessage("bot", "No se ha encontrado información.");
-      botResponseContent = "No se ha encontrado información.";
-    }
-
-    // --- INICIO CAMBIO MEMORIA ---
-    // 3. Añade la respuesta del bot al historial local
-    if (botResponseContent) {
-        conversationHistory.push({ role: "bot", content: botResponseContent });
+      const errorTxt = "No se ha encontrado información.";
+      appendMessage("bot", errorTxt);
+      botResponse = errorTxt;
     }
     
-    // 4. Llama a la función de limpieza
-    pruneHistory();
-    // --- FIN CAMBIO MEMORIA ---
+    // Guarda la respuesta del bot en el historial
+    conversationHistory.push({ role: 'bot', content: botResponse });
+    pruneHistory(); // Limpia el historial
 
   } catch (err) {
     console.error("Error en sendAudio:", err);
-    document.querySelector(".msg.bot:last-child")?.remove();
-    appendMessage("bot", "Error al procesar el audio. " + err.message);
+    loadingMsg?.remove();
+    const errorTxt = "Error al procesar el audio. " + err.message;
+    appendMessage("bot", errorTxt);
+    // Guarda el error en el historial
+    conversationHistory.push({ role: 'user', content: '[Consulta de audio fallida]' });
+    conversationHistory.push({ role: 'bot', content: `[Error: ${err.message}]` });
+    pruneHistory();
   }
 }
 // --- FIN NUEVAS FUNCIONES DE AUDIO ---
 
-// --- INICIO: NUEVA FUNCIÓN PARA MEMORIA (Formateo de USUARIO) ---
-function getFormattedUserHistoryString() {
-    // Filtra solo las consultas del usuario
-    const userHistory = conversationHistory.filter(item => item.role === 'user');
-    
-    if (userHistory.length === 0) {
-        return "Consultas anteriores: (ninguna)"; // Devuelve un string, no un objeto
-    }
-    
-    let historyString = "Consultas anteriores:\n";
-    userHistory.forEach(item => {
-        // Limpiamos los saltos de línea
-        const cleanContent = (item.content || "").replace(/\n/g, ' ');
-        historyString += `- ${cleanContent}\n`;
-    });
-    return historyString;
-}
-// --- FIN: NUEVA FUNCIÓN PARA MEMORIA (Formateo de USUARIO) ---
 
-// --- INICIO: NUEVA FUNCIÓN PARA MEMORIA ---
-function pruneHistory() {
-    // MAX_HISTORY_TURNS = 5. (5 user + 5 bot = 10 items)
-    const maxItems = MAX_HISTORY_TURNS * 2; 
-    while (conversationHistory.length > maxItems) {
-        // Quita el elemento más antiguo (primero)
-        conversationHistory.shift(); 
-    }
-}
-// --- FIN: NUEVA FUNCIÓN PARA MEMORIA ---
-
-
-// --- FUNCIÓN renderMarkdownTable (CORREGIDA Y ROBUSTA) ---
+/**
+ * Renderiza la tabla de resumen en el panel derecho.
+ * (Versión robusta que maneja celdas vacías y formatos)
+ */
 function renderMarkdownTable(tituloCohorte, tablaString, mensajeTotal) {
-  const lines = tablaString.trim().split("\n").filter(l => l.includes("|"));
-  if (lines.length < 2) return;
+    if (!tablaString) return;
+    
+    const lines = tablaString.trim().split("\n");
+    if (lines.length < 2) return; // Necesita cabecera y separador
 
-  /**
-   * Helper robusto para parsear una fila de Markdown.
-   * Divide por "|", quita espacios y elimina los elementos vacíos ("")
-   * que se generan por los pipes "|" al inicio o al final.
-   * @param {string} line - La línea de texto de la tabla.
-   * @returns {string[]} Un array de celdas limpias.
-   */
-  function parseRow(line) {
-      const cells = line.split("|").map(c => c.trim());
-      // Si la línea empieza con "|", el primer elemento es "". Lo quitamos.
-      if (cells[0] === "") {
-          cells.shift();
-      }
-      // Si la línea termina con "|", el último elemento es "". Lo quitamos.
-      if (cells.length > 0 && cells[cells.length - 1] === "") {
-          cells.pop();
-      }
-      return cells;
-  }
+    // Función limpia para parsear una línea de tabla
+    const parseRow = (rowString) => {
+        // 1. Quita los pipes de los bordes (si existen)
+        let cleanRow = rowString.trim();
+        if (cleanRow.startsWith('|')) cleanRow = cleanRow.substring(1);
+        if (cleanRow.endsWith('|')) cleanRow = cleanRow.slice(0, -1);
+        // 2. Divide por el pipe y limpia cada celda
+        return cleanRow.split('|').map(cell => cell.trim());
+    };
 
-  // Parseamos los headers y los filtramos (los headers no pueden estar vacíos)
-  const headers = parseRow(lines[0]).filter(Boolean);
-  
-  // Parseamos las filas. Usamos la misma lógica, pero NO filtramos
-  // para poder conservar celdas de datos vacías (ej: pronostico).
-  const rows = lines.slice(2).map(line => parseRow(line));
-  
-  // --- FIN DE LA CORRECCIÓN ---
+    const headers = parseRow(lines[0]);
+    // lines[1] es el separador '---|---|---', lo saltamos
+    const rows = lines.slice(2).map(parseRow);
 
-  let html = "";
-  if (tituloCohorte) {
-    html += `<h3 style="text-align: left; margin-top: 0;">Cohorte: ${tituloCohorte}</h3>`;
-  }
+    let html = "";
+    if (tituloCohorte) {
+        html += `<h3 style="text-align: left; margin-top: 0;">Cohorte: ${tituloCohorte}</h3>`;
+    }
 
-  html += "<table><thead><tr>";
-  headers.forEach(h => html += `<th>${h}</th>`);
-  html += "</tr></thead><tbody>";
-  rows.forEach(r => html += "<tr>" + r.map(c => `<td>${c}</td>`).join("") + "</tr>");
-  html += "</tbody></table>";
+    html += "<table><thead><tr>";
+    headers.forEach(h => html += `<th>${h}</th>`);
+    html += "</tr></thead><tbody>";
+    
+    rows.forEach(r => {
+        html += "<tr>";
+        // Itera usando los headers para asegurar el número correcto de celdas
+        headers.forEach((_, index) => {
+            const cellData = r[index] || ""; // Pone "" si la celda está indefinida
+            html += `<td>${cellData}</td>`;
+        });
+        html += "</tr>";
+    });
+    
+    html += "</tbody></table>";
 
-  if (mensajeTotal) {
-    html += `<p style="text-align: center; font-size: 0.9rem; color: #555; margin-top: 12px;">${mensajeTotal}</p>`;
-  }
+    if (mensajeTotal) {
+        html += `<p style="text-align: center; font-size: 0.9rem; color: #555; margin-top: 12px;">${mensajeTotal}</p>`;
+    }
 
-  html += `<button id="verDatasetBtn">Ver resultado completo</button>`;
-  
-  document.getElementById("tablaContainer").innerHTML = html;
-  // IMPORTANTE: Se añade el listener aquí, después de crear el botón
-  const btn = document.getElementById("verDatasetBtn");
-  if (btn) {
-      btn.addEventListener("click", enviarDataset);
-  }
+    html += `<button id="verDatasetBtn">Ver resultado completo</button>`;
+    
+    document.getElementById("tablaContainer").innerHTML = html;
+    
+    // El botón SÓLO puede existir después de renderizar la tabla
+    const btn = document.getElementById("verDatasetBtn");
+    if (btn) {
+        btn.addEventListener("click", enviarDataset);
+    }
 }
 
 function renderChartButtonsInChat() {
@@ -642,7 +644,7 @@ async function manejarGrafico(tipo) {
     const payload = {
       consulta: ultimaConsulta,
       sql: ultimaConsultaSQL,
-    decision: tipo
+      decision: tipo
     };
 
     const res = await fetch(webhookGraf, {
@@ -708,152 +710,143 @@ async function renderChartFromSQL(sql, xField, yField, chartType) {
  }
 }
 
-// --- INICIO: FUNCIÓN enviarDataset MODIFICADA ---
+// --- INICIO: Funciones de Modal de Dataset (Modificadas) ---
+
 async function enviarDataset() {
-  if (!ultimaConsultaSQL) {
-    appendMessage("bot", "No hay SQL disponible para enviar.");
-    return;
-  }
-  appendMessage("bot", "Cargando dataset completo...");
-  
-  try {
-    const res = await fetch(webhookData, {
-      method: "POST",
-     headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ sql: ultimaConsultaSQL })
-    });
-    const data = await res.json();
+    if (!ultimaConsultaSQL) {
+        appendMessage("bot", "No hay SQL disponible para enviar.");
+        return;
+    }
+    const loadingMsg = appendMessage("bot", "Cargando dataset completo...");
     
-    // Quita el mensaje "Cargando..."
-    document.querySelector(".msg.bot:last-child")?.remove(); 
-    
-    // Llama a la nueva función para renderizar el modal
-    renderDatasetModal(data);
-
-  } catch(err) {
-      console.error("Error en enviarDataset:", err);
-      const loadingMsg = document.querySelector(".msg.bot:last-child");
-      if (loadingMsg) {
-          loadingMsg.innerHTML = "Error al solicitar el dataset completo.";
-      } else {
-          appendMessage("bot", "Error al solicitar el dataset completo.");
-      }
-  }
+    try {
+        const res = await fetch(webhookData, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ sql: ultimaConsultaSQL })
+        });
+        const data = await res.json();
+        
+        // Llama a la nueva función para renderizar el modal
+        renderDatasetModal(data);
+        loadingMsg.remove(); // Quita "Cargando..."
+        
+    } catch(err) {
+        console.error("Error en enviarDataset:", err);
+        loadingMsg?.remove();
+        appendMessage("bot", "Error al solicitar el dataset completo.");
+    }
 }
-// --- FIN: FUNCIÓN enviarDataset MODIFICADA ---
 
-// --- INICIO: NUEVA FUNCIÓN PARA RENDERIZAR EL MODAL DEL DATASET ---
+/**
+ * Renderiza los datos completos en el modal
+ * @param {object} data - El objeto JSON con {columns, rows, total_registros, sql}
+ */
 function renderDatasetModal(data) {
     const tableWrapper = document.getElementById('datasetTableWrapper');
-    const infoContainer = document.getElementById('datasetInfoContainer');
+    const infoContainer = document.getElementById('datasetInfo');
+    const modal = document.getElementById('datasetModal');
 
+    // Limpia el contenido anterior
+    tableWrapper.innerHTML = "";
+    infoContainer.innerHTML = "";
+    
     try {
-        // Parsear los datos anidados
-        const columns = (data.columns && JSON.parse(data.columns)) || [];
-        const rows = (data.rows && JSON.parse(data.rows)) || [];
-
-        // --- INICIO: GUARDAR DATOS PARA CSV ---
-        currentDataset.columns = columns;
-        currentDataset.rows = rows;
-        // --- FIN: GUARDAR DATOS PARA CSV ---
-
-        const total = data.total_registros || (rows ? rows.length : 0);
+        // 1. Parsear las propiedades 'columns' y 'rows' (que son strings)
+        const columns = JSON.parse(data.columns);
+        const rows = JSON.parse(data.rows);
+        const total = data.total_registros;
         const sql = data.sql || "No se proporcionó SQL.";
 
-        // Poblar el contenedor de información
+        // Guarda los datos para el CSV
+        currentDataset = { columns, rows };
+
+        // 2. Actualizar el contador de registros
         infoContainer.innerHTML = `
             <strong>Total de registros:</strong> ${total} <br>
             <small style="color: #777;"><strong>Consulta SQL:</strong> ${sql}</small>
         `;
 
-        // Construir la tabla HTML
-        let html = "<table><thead><tr>";
+        // 3. Construir la tabla HTML
+        let html = "<table>";
+        
+        // Cabecera
+        html += "<thead><tr>";
         columns.forEach(col => {
             html += `<th>${col}</th>`;
         });
-        html += "</tr></thead><tbody>";
-
+        html += "</tr></thead>";
+        
+        // Cuerpo
+        html += "<tbody>";
         rows.forEach(row => {
             html += "<tr>";
             row.forEach(cell => {
-                // Escapar HTML para seguridad
-                const safeCell = cell !== null ? String(cell).replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
-                html += `<td>${safeCell}</td>`;
+                html += `<td>${cell !== null ? cell : ""}</td>`;
             });
             html += "</tr>";
         });
         html += "</tbody></table>";
         
-        // Inyectar la tabla y mostrar el modal
+        // 4. Insertar la tabla en el DOM
         tableWrapper.innerHTML = html;
-        document.getElementById('datasetModal').style.display = 'flex';
+        
+        // 5. Mostrar el modal
+        modal.style.display = "flex";
+        lucide.createIcons(); // Recarga iconos por si hay en el modal
 
     } catch (e) {
-        console.error("Error al renderizar el modal del dataset:", e);
-        appendMessage("bot", `Error al procesar los datos: ${e.message}`);
+        console.error("Error al parsear o renderizar los datos del modal:", e);
+        infoContainer.innerText = "Error al procesar los datos.";
+        tableWrapper.innerHTML = `<p style='text-align:center;'>Ocurrió un error: ${e.message}</p>`;
+        modal.style.display = "flex"; // Muestra el modal incluso si hay error
     }
 }
-// --- FIN: NUEVA FUNCIÓN PARA RENDERIZAR EL MODAL DEL DATASET ---
 
-
-// Listener para cerrar el modal de gráfico
-document.getElementById("closeModal").addEventListener("click", () => {
-  document.getElementById("chartModal").style.display = "none";
-});
-
-// --- INICIO: NUEVO LISTENER PARA CERRAR EL MODAL DEL DATASET ---
-document.getElementById("closeDatasetModal").addEventListener("click", () => {
-  document.getElementById("datasetModal").style.display = "none";
-  // Opcional: Limpiar la tabla para liberar memoria
-  document.getElementById('datasetTableWrapper').innerHTML = ""; 
-  document.getElementById('datasetInfoContainer').innerHTML = "Cargando...";
-});
-// --- FIN: NUEVO LISTENER PARA CERRAR EL MODAL DEL DATASET ---
-
-// --- INICIO: NUEVA FUNCIÓN Y LISTENER PARA DESCARGAR CSV ---
+/**
+ * Función para descargar los datos del modal como CSV
+ */
 function downloadCSV() {
     const { columns, rows } = currentDataset;
-    if (columns.length === 0 || rows.length === 0) {
+    if (!columns || columns.length === 0 || !rows) {
         appendMessage("bot", "No hay datos para descargar.");
         return;
     }
 
-    // Función para escapar celdas de CSV
-    const escapeCsvCell = (cell) => {
-        let str = String(cell === null ? "" : cell);
-        // Si la celda contiene comas, comillas dobles o saltos de línea, envolver entre comillas dobles
-        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-            // Escapar comillas dobles existentes (reemplazando " por "")
-            str = str.replace(/"/g, '""');
-            str = `"${str}"`;
-        }
-        return str;
-    };
-
-    // 1. Crear la fila de cabecera
+    // 1. Prepara el contenido CSV
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += columns.map(escapeCsvCell).join(",") + "\r\n";
 
-    // 2. Crear las filas de datos
+    // 2. Añade la cabecera (columnas)
+    // Maneja comas en los nombres de columnas (poco probable, pero seguro)
+    const header = columns.map(col => `"${col.replace(/"/g, '""')}"`).join(",");
+    csvContent += header + "\r\n";
+
+    // 3. Añade las filas
     rows.forEach(row => {
-        csvContent += row.map(escapeCsvCell).join(",") + "\r\n";
+        const rowString = row.map(cell => {
+            let cellString = String(cell === null || cell === undefined ? "" : cell);
+            // Escapa comillas dobles duplicándolas
+            cellString = cellString.replace(/"/g, '""');
+            // Envuelve la celda en comillas si contiene comas, saltos de línea o comillas
+            if (cellString.includes(",") || cellString.includes("\n") || cellString.includes('"')) {
+                return `"${cellString}"`;
+            }
+            return cellString;
+        }).join(",");
+        csvContent += rowString + "\r\n";
     });
 
-    // 3. Crear el enlace y disparar la descarga
+    // 4. Crea y simula el clic en el enlace de descarga
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
     link.setAttribute("download", "cohortiq_dataset.csv");
     document.body.appendChild(link); // Necesario para Firefox
-    
+
     link.click();
-    
     document.body.removeChild(link);
 }
-
-// Añadir el listener al nuevo botón
-document.getElementById("downloadCsvBtn").addEventListener("click", downloadCSV);
-// --- FIN: NUEVA FUNCIÓN Y LISTENER PARA DESCARGAR CSV ---
+// --- FIN: Funciones de Modal de Dataset ---
 
 
 // --- INICIO FUNCIONES GMAIL ---
@@ -875,11 +868,12 @@ function renderGmailButton(consulta) {
 }
 
 async function handleGmailGeneration(consulta) {
-  const btn = document.getElementById("gmailBtn"); 
+  // Busca el botón por clase dentro del último mensaje, no por ID
+  const btn = document.querySelector(".msg.bot:last-child #gmailBtn"); 
   if (btn) {
     btn.disabled = true;
     btn.textContent = "Generando...";
-    btn.id = "";
+    btn.id = ""; // Quita ID para evitar duplicados
   }
   
   appendMessage("bot", "Generando borrador de Gmail...");
@@ -894,12 +888,12 @@ async function handleGmailGeneration(consulta) {
     });
 
     const data = await res.json();
-    document.querySelector(".msg.bot:last-child")?.remove(); 
+    document.querySelector(".msg.bot:last-child").remove(); 
 
     if (data.gmail) {
       const uniqueButtonId = `enviar-btn-${Date.now()}`;
       const emailHtml = `
-        <div style="white-space: pre-wrap; background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; padding: 12px;">
+        <div style="white-space: pre-wrap; background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; padding: 12px; font-size: 0.9rem;">
           ${data.gmail}
         </div>
         <div class="btn-group" style="margin-top: 10px;">
@@ -920,7 +914,7 @@ async function handleGmailGeneration(consulta) {
     }
 
   } catch (err) {
-    document.querySelector(".msg.bot:last-admin")?.remove();
+    document.querySelector(".msg.bot:last-child")?.remove();
     console.error("Error en handleGmailGeneration:", err);
     appendMessage("bot", "Error al conectar con el servicio de Gmail.");
   }
