@@ -129,13 +129,7 @@ pre.debug{background:#222;color:#e3e3e3;padding:10px;border-radius:8px;overflow:
 
 <!-- --- INICIO CAMBIO DE ORDEN --- -->
 <main>
-  <!-- Columna de Resultados (ahora a la izquierda) -->
-  <div class="tabla-box">
-    <h2>Resultados</h2>
-    <div id="tablaContainer">Esperando resultados...</div>
-  </div>
-
-  <!-- Columna de Chat (ahora a la derecha) -->
+  <!-- Columna de Chat (ahora a la izquierda) -->
   <div class="chat-box">
     <h2>Chat con el Agente</h2>
     <div id="messages" class="messages"></div>
@@ -143,7 +137,13 @@ pre.debug{background:#222;color:#e3e3e3;padding:10px;border-radius:8px;overflow:
       <input id="userInput" placeholder="Escribe tu mensaje o graba un audio...">
       <button class="action" id="sendBtn"><i data-lucide="send"></i></button>
       <button class="action" id="micBtn"><i data-lucide="mic"></i></button>
-    </div>
+  </div>
+  </div>
+
+  <!-- Columna de Resultados (ahora a la derecha) -->
+  <div class="tabla-box">
+    <h2>Resultados</h2>
+    <div id="tablaContainer">Esperando resultados...</div>
   </div>
 </main>
 <!-- --- FIN CAMBIO DE ORDEN --- -->
@@ -430,7 +430,7 @@ async function manejarGrafico(tipo) {
     }
   } catch {
     appendMessage("bot", "Error al conectar con el agente.");
-  }
+}
 }
 
 async function renderChartFromSQL(sql, xField, yField, chartType) {
@@ -476,7 +476,7 @@ async function renderChartFromSQL(sql, xField, yField, chartType) {
     });
   } catch {
     appendMessage("bot", "Error al generar el gráfico desde Supabase.");
-  }
+ }
 }
 
 async function enviarDataset() {
@@ -559,7 +559,7 @@ async function handleGmailGeneration(consulta) {
       
       if (sendButton) {
         // Pasa el ID del botón y el cuerpo del email (data.gmail)
-        sendButton.addEventListener("click", () => handleSendGmail(uniqueButtonId, data.gmail));
+        sendButton.addEventListener("click", () => handleSendGmail(uniqueButtonTid, data.gmail));
       }
 
     } else {
