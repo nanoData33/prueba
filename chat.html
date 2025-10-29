@@ -17,7 +17,7 @@ header h1{color:var(--verde);display:flex;align-items:center;gap:8px;font-size:1
 header button{background:var(--verde);color:white;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;}
 header button:hover{background:var(--verde-oscuro);}
 
-/* --- INICIO CAMBIO: CSS Fijo 50/50 --- */
+/* --- INICIO CAMBIO: CSS Fijo 50/50 (CORREGIDO) --- */
 main {
     flex: 1;
     display: grid;
@@ -29,7 +29,6 @@ main {
 }
 
 /* Se elimina el @media query para que sea fijo */
-
 .chat-box, .tabla-box {
     background: var(--card);
     border-radius: 12px;
@@ -106,11 +105,90 @@ tr:nth-child(even){background:#f5f7f5;}
 .btn-alt:hover{background:#d3d5d3;}
 #verDatasetBtn{margin-top:12px;background:var(--verde);color:white;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;width:100%;}
 #verDatasetBtn:hover{background:var(--verde-oscuro);}
+
+/* Modal de Gráfico */
 #chartModal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:9999;}
 #chartModalContent{background:white;padding:20px;border-radius:10px;width:90%;max-width:900px;box-shadow:0 0 10px rgba(0,0,0,0.3);}
 #closeModal{background:var(--verde);color:white;border:none;padding:8px 12px;border-radius:6px;float:right;cursor:pointer;margin-bottom:10px;}
 #chartWrap{width:100%;height:440px;}
 #chartWrap canvas{width:100%!important;height:100%!important;}
+
+/* --- INICIO: NUEVOS ESTILOS PARA MODAL DE DATASET --- */
+#datasetModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: none; /* Oculto por defecto */
+    align-items: center;
+    justify-content: center;
+    z-index: 10000; /* Por encima del modal de gráfico */
+}
+#datasetModalContent {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 90%;  /* Más ancho */
+    height: 90%; /* Más alto */
+    max-width: 1400px; /* Límite más grande */
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Para que funcione el overflow en flex */
+}
+#closeDatasetModal {
+    background: var(--verde);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 10px;
+    align-self: flex-end; /* Se alinea a la derecha */
+}
+#datasetInfoContainer {
+    text-align: center;
+    font-size: 0.95rem;
+    color: #555;
+    margin-bottom: 15px;
+    flex-shrink: 0;
+    word-break: break-all;
+}
+#datasetTableWrapper {
+    flex: 1; /* Ocupa el espacio restante */
+    overflow: auto; /* AÑADE SCROLL A LA TABLA */
+    min-height: 0;
+    width: 100%;
+}
+
+/* Estilos de la tabla dentro del modal */
+#datasetTableWrapper table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+#datasetTableWrapper th, 
+#datasetTableWrapper td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+    white-space: nowrap; /* Evita que el texto se parta */
+}
+#datasetTableWrapper th {
+    background: var(--verde);
+    color: white;
+    position: sticky; /* Encabezado fijo DENTRO del wrapper */
+    top: 0;
+    z-index: 1;
+}
+#datasetTableWrapper tr:nth-child(even) { 
+    background: #f5f7f5; 
+}
+/* --- FIN: NUEVOS ESTILOS PARA MODAL DE DATASET --- */
+
+
 footer{text-align:center;background:var(--card);padding:8px;color:#555;font-size:0.85rem;}
 pre.debug{background:#222;color:#e3e3e3;padding:10px;border-radius:8px;overflow:auto}
 </style>
@@ -122,9 +200,8 @@ pre.debug{background:#222;color:#e3e3e3;padding:10px;border-radius:8px;overflow:
   <button onclick="window.location.href='index.html'">Volver al Inicio</button>
 </header>
 
-<!-- --- INICIO CAMBIO DE ORDEN --- -->
 <main>
-  <!-- Columna de Chat (ahora a la izquierda) -->
+  <!-- Columna de Chat (izquierda) -->
   <div class="chat-box">
     <h2>Chat con el Agente</h2>
     <div id="messages" class="messages"></div>
@@ -135,13 +212,12 @@ pre.debug{background:#222;color:#e3e3e3;padding:10px;border-radius:8px;overflow:
   </div>
   </div>
 
-  <!-- Columna de Resultados (ahora a la derecha) -->
+  <!-- Columna de Resultados (derecha) -->
   <div class="tabla-box">
     <h2>Resultados</h2>
     <div id="tablaContainer">Esperando resultados...</div>
   </div>
 </main>
-<!-- --- FIN CAMBIO DE ORDEN --- -->
 
 
 <!-- Modal gráfico -->
@@ -151,6 +227,20 @@ pre.debug{background:#222;color:#e3e3e3;padding:10px;border-radius:8px;overflow:
     <div id="chartWrap"><canvas id="chartCanvas"></canvas></div>
   </div>
 </div>
+
+<!-- --- INICIO: NUEVO HTML PARA MODAL DE DATASET --- -->
+<div id="datasetModal">
+  <div id="datasetModalContent">
+    <button id="closeDatasetModal">Cerrar</button>
+    <h2>Dataset Completo</h2>
+    <div id="datasetInfoContainer">Cargando...</div>
+    <div id="datasetTableWrapper">
+        <!-- La tabla completa se generará aquí -->
+    </div>
+  </div>
+</div>
+<!-- --- FIN: NUEVO HTML PARA MODAL DE DATASET --- -->
+
 
 <footer>© 2025 CohortIQ – Plataforma Inteligente de Apoyo Clínico</footer>
 
@@ -386,6 +476,7 @@ function renderMarkdownTable(tituloCohorte, tablaString, mensajeTotal) {
   html += `<button id="verDatasetBtn">Ver resultado completo</button>`;
   
   document.getElementById("tablaContainer").innerHTML = html;
+  // IMPORTANTE: Se añade el listener aquí, después de crear el botón
   document.getElementById("verDatasetBtn").addEventListener("click", enviarDataset);
 }
 
@@ -474,12 +565,14 @@ async function renderChartFromSQL(sql, xField, yField, chartType) {
  }
 }
 
+// --- INICIO: FUNCIÓN enviarDataset MODIFICADA ---
 async function enviarDataset() {
   if (!ultimaConsultaSQL) {
     appendMessage("bot", "No hay SQL disponible para enviar.");
     return;
   }
   appendMessage("bot", "Cargando dataset completo...");
+  
   try {
     const res = await fetch(webhookData, {
       method: "POST",
@@ -487,16 +580,87 @@ async function enviarDataset() {
       body: JSON.stringify({ sql: ultimaConsultaSQL })
     });
     const data = await res.json();
-    localStorage.setItem("datasetData", JSON.stringify(data));
-    window.open("dataset.html", "_blank");
-  } catch {
-    appendMessage("bot", "Error al solicitar el dataset completo.");
+    
+    // Quita el mensaje "Cargando..."
+    document.querySelector(".msg.bot:last-child").remove(); 
+    
+    // Llama a la nueva función para renderizar el modal
+    renderDatasetModal(data);
+
+  } catch(err) {
+      console.error("Error en enviarDataset:", err);
+      const loadingMsg = document.querySelector(".msg.bot:last-child");
+      if (loadingMsg) {
+          loadingMsg.innerHTML = "Error al solicitar el dataset completo.";
+      } else {
+          appendMessage("bot", "Error al solicitar el dataset completo.");
+      }
   }
 }
+// --- FIN: FUNCIÓN enviarDataset MODIFICADA ---
 
+// --- INICIO: NUEVA FUNCIÓN PARA RENDERIZAR EL MODAL DEL DATASET ---
+function renderDatasetModal(data) {
+    const tableWrapper = document.getElementById('datasetTableWrapper');
+    const infoContainer = document.getElementById('datasetInfoContainer');
+
+    try {
+        // Parsear los datos anidados
+        const columns = JSON.parse(data.columns);
+        const rows = JSON.parse(data.rows);
+        const total = data.total_registros || (rows ? rows.length : 0);
+        const sql = data.sql || "No se proporcionó SQL.";
+
+        // Poblar el contenedor de información
+        infoContainer.innerHTML = `
+            <strong>Total de registros:</strong> ${total} <br>
+            <small style="color: #777;"><strong>Consulta SQL:</strong> ${sql}</small>
+        `;
+
+        // Construir la tabla HTML
+        let html = "<table><thead><tr>";
+        columns.forEach(col => {
+            html += `<th>${col}</th>`;
+        });
+        html += "</tr></thead><tbody>";
+
+        rows.forEach(row => {
+            html += "<tr>";
+            row.forEach(cell => {
+                // Escapar HTML para seguridad
+                const safeCell = cell !== null ? String(cell).replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
+                html += `<td>${safeCell}</td>`;
+            });
+            html += "</tr>";
+        });
+        html += "</tbody></table>";
+        
+        // Inyectar la tabla y mostrar el modal
+        tableWrapper.innerHTML = html;
+        document.getElementById('datasetModal').style.display = 'flex';
+
+    } catch (e) {
+        console.error("Error al renderizar el modal del dataset:", e);
+        appendMessage("bot", `Error al procesar los datos: ${e.message}`);
+    }
+}
+// --- FIN: NUEVA FUNCIÓN PARA RENDERIZAR EL MODAL DEL DATASET ---
+
+
+// Listener para cerrar el modal de gráfico
 document.getElementById("closeModal").addEventListener("click", () => {
   document.getElementById("chartModal").style.display = "none";
 });
+
+// --- INICIO: NUEVO LISTENER PARA CERRAR EL MODAL DEL DATASET ---
+document.getElementById("closeDatasetModal").addEventListener("click", () => {
+  document.getElementById("datasetModal").style.display = "none";
+  // Opcional: Limpiar la tabla para liberar memoria
+  document.getElementById('datasetTableWrapper').innerHTML = ""; 
+  document.getElementById('datasetInfoContainer').innerHTML = "Cargando...";
+});
+// --- FIN: NUEVO LISTENER PARA CERRAR EL MODAL DEL DATASET ---
+
 
 // --- INICIO FUNCIONES GMAIL ---
 function renderGmailButton(consulta) {
@@ -603,3 +767,4 @@ async function handleSendGmail(buttonId, emailBody) {
 </script>
 </body>
 </html>
+
