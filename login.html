@@ -1,126 +1,175 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login – CohortLab</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Inicio de sesión – Asistente Clínico</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-:root {
-  --verde: #3d7658;
-  --verde-claro: #4ba67d;
-  --gris-fondo: #f8f9f8;
-  --gris-borde: #e5e7eb;
-}
-body {
-  font-family: "Inter", sans-serif;
-  background: var(--gris-fondo);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-.card {
-  background: white;
-  border-radius: 1rem;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-  padding: 2rem;
-  width: 100%;
-  max-width: 380px;
-  text-align: center;
-}
-h1 {
-  color: var(--verde);
-  font-size: 1.6rem;
-  margin-bottom: 1.5rem;
-  font-weight: 700;
-}
-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--gris-borde);
-  border-radius: 0.5rem;
-  margin-bottom: 1rem;
-  outline: none;
-}
-input:focus {
-  border-color: var(--verde);
-}
-button {
-  width: 100%;
-  background: var(--verde);
-  color: white;
-  border: none;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  transition: 0.25s;
-}
-button:hover {
-  background: var(--verde-claro);
-}
-.error {
-  color: #b91c1c;
-  background: #fee2e2;
-  padding: 0.5rem;
-  border-radius: 0.4rem;
-  margin-top: 1rem;
-  font-size: 0.9rem;
-}
+  :root {
+    --fondo: #f2efe9;
+    --card: #ffffff;
+    --texto: #2e2e2e;
+    --acento: #c08457;
+    --acento-hover: #a5673f;
+    --sombra: rgba(0, 0, 0, 0.1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: var(--fondo);
+    color: var(--texto);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+
+  .login-card {
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow: 0 4px 12px var(--sombra);
+    padding: 40px 35px;
+    width: 340px;
+    text-align: center;
+    animation: fadeIn 0.6s ease;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--acento);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  p.subtitle {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 25px;
+  }
+
+  input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    margin-bottom: 15px;
+    outline: none;
+    transition: border 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus {
+    border-color: var(--acento);
+    box-shadow: 0 0 0 2px rgba(192,132,87,0.25);
+  }
+
+  button {
+    width: 100%;
+    padding: 10px 0;
+    background: var(--acento);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 500;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.25s, transform 0.15s;
+  }
+
+  button:hover {
+    background: var(--acento-hover);
+    transform: translateY(-2px);
+  }
+
+  #error {
+    color: #b91c1c;
+    font-size: 0.85rem;
+    margin-top: 10px;
+    min-height: 18px;
+  }
+
+  footer {
+    position: fixed;
+    bottom: 12px;
+    text-align: center;
+    width: 100%;
+    font-size: 0.8rem;
+    color: #777;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 </style>
 </head>
 
 <body>
-  <div class="card">
-    <h1>CohortLab</h1>
-    <p class="text-gray-500 mb-6 text-sm">Acceso para profesionales</p>
+  <div class="login-card">
+    <h1><i data-lucide="stethoscope"></i> Cohortlab</h1>
+    <p class="subtitle">Acceso restringido al personal médico autorizado</p>
 
-    <input type="email" id="email" placeholder="Correo electrónico">
-    <input type="password" id="password" placeholder="Contraseña">
-    <button onclick="login()">Iniciar sesión</button>
+    <input type="email" id="email" placeholder="Correo institucional" autocomplete="username">
+    <input type="password" id="password" placeholder="Contraseña" autocomplete="current-password">
+    <button onclick="login()"><i data-lucide="log-in"></i> Iniciar sesión</button>
 
-    <div id="errorMsg" class="error hidden"></div>
+    <p id="error"></p>
   </div>
 
+  <footer>© 2025 Asistente Clínico – Plataforma de Apoyo Inteligente</footer>
+
 <script>
-const supabaseUrl = "https://tmolxeszsgkffurhrcxy.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw";
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+  lucide.createIcons();
 
-async function login() {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
-  const errorDiv = document.getElementById("errorMsg");
-  errorDiv.classList.add("hidden");
+  const supabase = window.supabase.createClient(
+    "https://tmolxeszsgkffurhrcxy.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtb2x4ZXN6c2drZmZ1cmhyY3h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5ODA4NDgsImV4cCI6MjA3NjU1Njg0OH0.UAEsNX7CpFXbns9ONynstAAKdcvmZUfsX5J6cOTE6Pw"
+  );
 
-  if (!email || !password) {
-    errorDiv.textContent = "Completa todos los campos.";
-    errorDiv.classList.remove("hidden");
-    return;
-  }
+  async function login() {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const errorBox = document.getElementById("error");
+    errorBox.textContent = "";
 
-  const { data, error } = await supabase
-    .from("medicos")
-    .select("*")
-    .eq("email", email)
-    .eq("password", password)
-    .single();
+    if (!email || !password) {
+      errorBox.textContent = "Completa todos los campos.";
+      return;
+    }
 
-  if (error || !data) {
-    errorDiv.textContent = "Credenciales incorrectas o usuario no encontrado.";
-    errorDiv.classList.remove("hidden");
-  } else {
-    localStorage.setItem("medico", JSON.stringify({
-      id: data.id,
-      nombre: data.nombre,
-      email: data.email
-    }));
+    const { data, error } = await supabase
+      .from("medicos")
+      .select("*")
+      .eq("email", email)
+      .eq("password", password)
+      .maybeSingle();
+
+    if (error) {
+      console.error(error);
+      errorBox.textContent = "Error de conexión con la base de datos.";
+      return;
+    }
+
+    if (!data) {
+      errorBox.textContent = "Correo o contraseña incorrectos.";
+      return;
+    }
+
+    localStorage.setItem("medico", JSON.stringify(data));
     window.location.href = "index.html";
   }
-}
 </script>
 </body>
 </html>
+
